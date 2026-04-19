@@ -70,7 +70,7 @@ fun MainScreen() {
                 horizontalArrangement = Arrangement.SpaceBetween, // Rozpycha elementy na boki
                 verticalAlignment = Alignment.Bottom
             ) {
-                // LEWA STRONA: Suma
+                // Sum
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
@@ -93,7 +93,7 @@ fun MainScreen() {
                     }
                 }
 
-                // PRAWA STRONA: Przycisk (zmieniony na okrągły FAB, by było lżej)
+                //Add button
                 FloatingActionButton(
                     onClick = { /* TODO */ },
                     containerColor = MaterialTheme.colorScheme.secondary,
