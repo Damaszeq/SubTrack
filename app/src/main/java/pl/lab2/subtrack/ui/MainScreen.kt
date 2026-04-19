@@ -13,7 +13,7 @@ import pl.lab2.subtrack.R // Upewnij się, że importujesz swój R
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
-    // Scaffold to baza naszego ekranu
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -26,7 +26,7 @@ fun MainScreen() {
                     IconButton(onClick = { /* Tu później dodamy nawigację */ }) {
                         Icon(
                             imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings" // To też warto wrzucić do strings.xml później
+                            contentDescription = "Settings" // To też warto wrzucić do strings.xml, ale później
                         )
                     }
                 },
@@ -37,7 +37,6 @@ fun MainScreen() {
             )
         }
     ) { innerPadding ->
-        // Tutaj w następnym kroku dodamy listę i saldo na dole
-        // innerPadding jest kluczowy, żeby treść nie wchodziła pod TopBar
+
     }
 }
