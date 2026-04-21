@@ -61,13 +61,13 @@ fun MainScreen() {
                 SubscriptionItem()
             }
 
-            // 2. PASEK DOLNY (Suma + Przycisk)
+            // 2. PASEK DOLNY
             Row(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter) // Cały wiersz na dół
+                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(16.dp), // Odstęp od krawędzi ekranu
-                horizontalArrangement = Arrangement.SpaceBetween, // Rozpycha elementy na boki
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Bottom
             ) {
                 // Sum
@@ -124,7 +124,7 @@ fun SubscriptionItem() {
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Miejsce na ikonę / logo
+            // Miejsce na logo
             Surface(
                 modifier = Modifier.size(48.dp),
                 shape = RoundedCornerShape(8.dp),

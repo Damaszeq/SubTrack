@@ -187,7 +187,7 @@ fun SubAccountRow(name: String, price: String) {
     }
 }
 
-//--- Historia płatności ---
+//--- Historia płatności - element ---
 @Composable
 fun PaymentHistoryItem(date: String, price: String) {
     Card(
