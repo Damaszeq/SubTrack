@@ -8,13 +8,14 @@ import androidx.compose.material3.MaterialTheme
 import pl.lab2.subtrack.ui.AddSubscriptionScreen
 import pl.lab2.subtrack.ui.MainScreen
 import pl.lab2.subtrack.ui.SubTrackTheme
+import pl.lab2.subtrack.ui.SubscriptionDetailsScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             SubTrackTheme {
-                AddSubscriptionScreen()
+                SubscriptionDetailsScreen()
             }
         }
     }
@@ -24,7 +25,7 @@ class MainActivity : ComponentActivity() {
 zamien
             SubTrackTheme {
                 AddSubscriptionScreen()
-            }
+            } lub inny
 
             na
 
