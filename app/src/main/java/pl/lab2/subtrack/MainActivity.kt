@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
 import pl.lab2.subtrack.ui.AddSubscriptionScreen
 import pl.lab2.subtrack.ui.MainScreen
+import pl.lab2.subtrack.ui.NotificationsScreen
 import pl.lab2.subtrack.ui.SubTrackTheme
 import pl.lab2.subtrack.ui.SubscriptionDetailsScreen
 
@@ -15,7 +16,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             SubTrackTheme {
-                SubscriptionDetailsScreen()
+                NotificationsScreen()
             }
         }
     }
@@ -32,4 +33,5 @@ zamien
                         SubTrackTheme {
                 MainScreen()
             }
+            itd
  */
