@@ -11,25 +11,26 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import pl.lab2.subtrack.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)
 @Composable
 fun NotificationsScreen() {
-    // Stany dla ustawień globalnych
     val notify3Days = remember { mutableStateOf(true) }
     val notify24h = remember { mutableStateOf(true) }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Powiadomienia") },
+                title = { Text(stringResource(id = R.string.notifications_title)) },
                 navigationIcon = {
-                    IconButton(onClick = { /* TODO: Wróć */ }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Wróć")
+                    IconButton(onClick = { /* TODO */ }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(id = R.string.back_desc))
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -47,10 +48,9 @@ fun NotificationsScreen() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // --- SEKCJA: USTAWIENIA GLOBALNE ---
             item {
                 Text(
-                    text = "Ustawienia przypomnień",
+                    text = stringResource(id = R.string.settings_header),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -63,8 +63,8 @@ fun NotificationsScreen() {
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         NotificationSettingRow(
-                            title = "3 dni przed terminem",
-                            subtitle = "Domyślne przypomnienie wstępne",
+                            title = stringResource(id = R.string.notify_3days_title),
+                            subtitle = stringResource(id = R.string.notify_3days_sub),
                             checked = notify3Days.value,
                             onCheckedChange = { notify3Days.value = it }
                         )
@@ -73,8 +73,8 @@ fun NotificationsScreen() {
                             color = MaterialTheme.colorScheme.surfaceVariant
                         )
                         NotificationSettingRow(
-                            title = "24 godziny przed",
-                            subtitle = "Ostatnie ostrzeżenie przed płatnością",
+                            title = stringResource(id = R.string.notify_24h_title),
+                            subtitle = stringResource(id = R.string.notify_24h_sub),
                             checked = notify24h.value,
                             onCheckedChange = { notify24h.value = it }
                         )
@@ -82,7 +82,7 @@ fun NotificationsScreen() {
                         Spacer(modifier = Modifier.height(14.dp))
 
                         TextButton(
-                            onClick = { /* TODO: Otwórz dialog lub nowy ekran */ },
+                            onClick = { /* TODO */ },
                             modifier = Modifier.fillMaxWidth(),
                             contentPadding = PaddingValues(0.dp)
                         ) {
@@ -100,13 +100,13 @@ fun NotificationsScreen() {
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
                                     Text(
-                                        text = "Niestandardowe ustawienia",
+                                        text = stringResource(id = R.string.custom_settings_title),
                                         style = MaterialTheme.typography.bodyLarge,
                                         color = MaterialTheme.colorScheme.primary,
                                         fontWeight = FontWeight.Bold
                                     )
                                     Text(
-                                        text = "Dodaj własne terminy przypomnień",
+                                        text = stringResource(id = R.string.custom_settings_sub),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = Color.Gray
                                     )
@@ -123,11 +123,10 @@ fun NotificationsScreen() {
                 }
             }
 
-            // --- SEKCJA: LISTA POWIADOMIEŃ ---
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Nadchodzące alerty",
+                    text = stringResource(id = R.string.alerts_header),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -137,8 +136,8 @@ fun NotificationsScreen() {
             items(listOf("Netflix", "Spotify", "Disney+")) { service ->
                 NotificationItem(
                     serviceName = service,
-                    date = "12.05.2024",
-                    description = "Przypomnienie: Płatność za 3 dni"
+                    date = "12.05.2024", // To docelowo będzie z bazy/formatowania daty
+                    description = stringResource(id = R.string.mock_notification_desc)
                 )
             }
         }

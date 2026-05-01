@@ -36,7 +36,10 @@ fun MainScreen() {
                 },
                 actions = {
                     IconButton(onClick = { /* TODO */ }) {
-                        Icon(Icons.Default.Tune, contentDescription = "Settings")
+                        Icon(
+                            Icons.Default.Tune,
+                            contentDescription = stringResource(id = R.string.settings_auth)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -46,7 +49,7 @@ fun MainScreen() {
                 )
             )
         },
-    )  { innerPadding ->
+    ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -80,12 +83,12 @@ fun MainScreen() {
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
                         Text(
-                            text = "Suma",
+                            text = stringResource(id = R.string.total_sum_label),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         Text(
-                            text = "142.90PLN",
+                            text = "142.90 ${stringResource(id = R.string.currency_suffix)}",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -100,13 +103,16 @@ fun MainScreen() {
                     contentColor = MaterialTheme.colorScheme.onSecondary,
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Dodaj")
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = stringResource(id = R.string.add_subscription)
+                    )
                 }
             }
         }
-        }
-                }
-@Preview
+    }
+}
+
 @Composable
 fun SubscriptionItem() {
     Card(
@@ -124,40 +130,29 @@ fun SubscriptionItem() {
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Miejsce na logo
             Surface(
                 modifier = Modifier.size(48.dp),
                 shape = RoundedCornerShape(8.dp),
                 color = MaterialTheme.colorScheme.primary
-            ) {
-
-            }
+            ) { /* Tu będzie logo */ }
 
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Nazwa Subskrypcji",
+                    text = stringResource(id = R.string.placeholder_service_name),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = "Plan / Cykl",
+                    text = stringResource(id = R.string.placeholder_plan),
                     style = MaterialTheme.typography.bodySmall
                 )
             }
 
             Text(
-                text = "0.00 PLN",
+                text = stringResource(id = R.string.placeholder_price),
                 style = MaterialTheme.typography.labelLarge
             )
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun MainScreenPreview() {
-    SubTrackTheme {
-        MainScreen()
     }
 }

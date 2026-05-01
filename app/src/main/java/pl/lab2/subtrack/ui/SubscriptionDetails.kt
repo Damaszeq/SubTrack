@@ -13,30 +13,35 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import pl.lab2.subtrack.R
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Preview(showBackground = true)
 @Composable
 fun SubscriptionDetailsScreen() {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Szczegóły") },
+                title = { Text(stringResource(id = R.string.details_title)) },
                 navigationIcon = {
                     IconButton(onClick = { /* TODO */ }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Wróć")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(id = R.string.back_desc))
                     }
                 },
                 actions = {
                     IconButton(onClick = { /* TODO */ }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edytuj")
+                        Icon(Icons.Default.Edit, contentDescription = stringResource(id = R.string.edit_desc))
                     }
                     IconButton(onClick = { /* TODO */ }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Usuń", tint = MaterialTheme.colorScheme.error)
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = stringResource(id = R.string.delete_desc),
+                            tint = MaterialTheme.colorScheme.error
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -55,7 +60,6 @@ fun SubscriptionDetailsScreen() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // --- GŁÓWNA KARTA SZCZEGÓŁÓW ---
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -67,7 +71,6 @@ fun SubscriptionDetailsScreen() {
                         modifier = Modifier.padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // Logo / Ikona
                         Surface(
                             modifier = Modifier.size(80.dp),
                             shape = CircleShape,
@@ -77,19 +80,19 @@ fun SubscriptionDetailsScreen() {
                                 imageVector = Icons.Default.AppShortcut,
                                 contentDescription = null,
                                 modifier = Modifier.padding(20.dp),
-                                tint = MaterialTheme.colorScheme.primaryContainer
+                                tint = MaterialTheme.colorScheme.primary // Zmieniłem z primaryContainer na primary, żeby był widoczny!
                             )
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Text(
-                            text = "Netflix",
+                            text = stringResource(id = R.string.mock_service_name),
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Streaming Video",
+                            text = stringResource(id = R.string.mock_category),
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.Gray
                         )
@@ -101,17 +104,25 @@ fun SubscriptionDetailsScreen() {
                         )
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            InfoColumn(label = "Cena całkowita", value = "43.00 PLN")
-                            InfoColumn(label = "Cykl", value = "Miesiąc")
+                            InfoColumn(
+                                label = stringResource(id = R.string.label_total_price),
+                                value = stringResource(id = R.string.mock_price)
+                            )
+                            InfoColumn(
+                                label = stringResource(id = R.string.label_cycle),
+                                value = stringResource(id = R.string.mock_cycle)
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
-                            InfoColumn(label = "Następna płatność", value = "2024-05-12")
+                            InfoColumn(
+                                label = stringResource(id = R.string.label_next_payment),
+                                value = stringResource(id = R.string.mock_next_date)
+                            )
                         }
 
-                        // --- SUBKONTA ---
                         val maSubkonta = true
                         if (maSubkonta) {
                             HorizontalDivider(
@@ -125,24 +136,29 @@ fun SubscriptionDetailsScreen() {
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Text(
-                                    text = "Subkonta",
+                                    text = stringResource(id = R.string.label_subaccounts),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Bold
                                 )
 
-                                SubAccountRow(name = "Cwel (Ty)", price = "21.50 PLN")
-                                SubAccountRow(name = "王明", price = "21.50 PLN")
+                                SubAccountRow(
+                                    name = stringResource(id = R.string.mock_user_main),
+                                    price = stringResource(id = R.string.mock_sub_price)
+                                )
+                                SubAccountRow(
+                                    name = stringResource(id = R.string.mock_user_other),
+                                    price = stringResource(id = R.string.mock_sub_price)
+                                )
                             }
                         }
                     }
                 }
             }
 
-            // --- SEKCJA HISTORII ---
             item {
                 Text(
-                    text = "Historia płatności",
+                    text = stringResource(id = R.string.label_payment_history),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(start = 8.dp)
@@ -150,7 +166,10 @@ fun SubscriptionDetailsScreen() {
             }
 
             items(6) { index ->
-                PaymentHistoryItem(date = "2024-0${6-index}-12", price = "43.00 PLN")
+                PaymentHistoryItem(
+                    date = "2024-0${6-index}-12",
+                    price = stringResource(id = R.string.mock_price)
+                )
             }
         }
     }
