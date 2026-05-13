@@ -88,4 +88,5 @@
 
     <!-- Przycisk główny -->
     <string name="btn_save_subscription">Dodaj subskrypcję</string>
+    <string name="en">en</string>
 </resources>

@@ -1,0 +1,92 @@
+<resources>
+    <string name="settings">Settings</string>
+    <string name="monthly_balance">Monthly balance</string>
+    <string name="app_name">SubTrack</string>
+    <string name="settings_auth">Settings</string>
+    <string name="add_subscription">Add subscription</string>
+    <string name="total_sum_label">Total sum</string>
+    <string name="placeholder_price">0.00 PLN</string>
+    <string name="placeholder_service_name">Subscription name</string>
+    <string name="placeholder_plan">Plan / Cycle</string>
+    <string name="currency_suffix">PLN</string>
+    <string name="details_title">Details</string>
+    <string name="back_desc">Back</string>
+    <string name="edit_desc">Edit</string>
+    <string name="delete_desc">Delete</string>
+
+    <!-- Data Labels -->
+    <string name="label_total_price">Total price</string>
+    <string name="label_cycle">Cycle</string>
+    <string name="label_next_payment">Next payment</string>
+    <string name="label_subaccounts">Subaccounts</string>
+    <string name="label_payment_history">Payment history</string>
+
+    <!-- Mock Data (Temporary) -->
+    <string name="mock_service_name">Netflix</string>
+    <string name="mock_category">Video Streaming</string>
+    <string name="mock_price">43.00 PLN</string>
+    <string name="mock_cycle">Month</string>
+    <string name="mock_next_date">2024-05-12</string>
+    <string name="mock_user_main">You (Main)</string>
+    <string name="mock_user_other">王明</string>
+    <string name="mock_sub_price">21.50 PLN</string>
+
+    <!-- Top Bar -->
+    <string name="notifications_title">Notifications</string>
+
+    <!-- Section Headers -->
+    <string name="settings_header">Reminder settings</string>
+    <string name="alerts_header">Upcoming alerts</string>
+
+    <!-- Settings -->
+    <string name="notify_3days_title">3 days before deadline</string>
+    <string name="notify_3days_sub">Default early reminder</string>
+    <string name="notify_24h_title">24 hours before</string>
+    <string name="notify_24h_sub">Final payment warning</string>
+
+    <!-- Custom -->
+    <string name="custom_settings_title">Custom settings</string>
+    <string name="custom_settings_sub">Add your own reminder dates</string>
+
+    <!-- Notification Mock -->
+    <string name="mock_notification_desc">Reminder: Payment in 3 days</string>
+
+    <!-- Add Sub Screen -->
+    <string name="add_sub_title">Subscription details</string>
+
+    <!-- Section 1: Service Info -->
+    <string name="header_service_info">Service information</string>
+    <string name="label_service_name">Service name</string>
+    <string name="label_category">Category</string>
+    <string name="placeholder_category">e.g. Audio Streaming</string>
+    <string name="label_total_price_field">Total price</string>
+    <string name="currency_pln">PLN</string>
+
+    <!-- Section 2: Payment Type -->
+    <string name="header_payment_type">Payment type</string>
+    <string name="payment_cyclic">Recurring</string>
+    <string name="payment_one_time">One-time</string>
+    <string name="label_billing_period">Billing period</string>
+
+    <!-- Period Options -->
+    <string name="period_monthly">Monthly</string>
+    <string name="period_yearly">Yearly</string>
+    <string name="period_30days">Every 30 days</string>
+    <string name="period_quarterly">Quarterly</string>
+
+    <!-- Section 3: Dates -->
+    <string name="label_start_date">Start date</string>
+    <string name="label_end_date">End date</string>
+    <string name="placeholder_date">YYYY-MM-DD</string>
+    <string name="support_end_date">Access expiration date</string>
+
+    <!-- Section 4: Subaccounts -->
+    <string name="checkbox_subaccounts">Has subaccounts</string>
+    <string name="label_user">User</string>
+    <string name="label_price">Price</string>
+    <string name="btn_add_subaccount">Add another subaccount</string>
+
+    <!-- Main Button -->
+    <string name="btn_save_subscription">Add subscription</string>
+    <string name="en">en</string>
+</resources>
