@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
+import pl.lab2.subtrack.ui.components.SubscriptionIcon
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -134,7 +135,7 @@ fun SubscriptionItem() {
                 modifier = Modifier.size(48.dp),
                 shape = RoundedCornerShape(8.dp),
                 color = MaterialTheme.colorScheme.primary
-            ) { /* Tu będzie logo */ }
+            ) { SubscriptionIcon(serviceName = "google") }
 
             Spacer(modifier = Modifier.width(16.dp))
 
