@@ -22,13 +22,9 @@ fun SubscriptionIcon(
     serviceName: String,
     modifier: Modifier = Modifier
 ) {
-    // Czyszczenie nazwy pod API DuckDuckGo
     val cleanName = serviceName.lowercase().trim().replace(" ", "")
     val domain = if (cleanName.contains(".")) cleanName else "$cleanName.com"
 
-    // Używamy darmowego, stabilnego API od DuckDuckGo
-    // Dodajemy parametr, który próbuje wyciągnąć większą ikonę (np. apple-touch-icon)
-    // Używamy bezpiecznego API Google z parametrem sztywnego rozmiaru 128px
     val logoUrl = "https://www.google.com/s2/favicons?domain=$domain&sz=128"
 
     AsyncImage(
