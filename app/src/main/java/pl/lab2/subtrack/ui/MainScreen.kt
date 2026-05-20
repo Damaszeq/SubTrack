@@ -24,7 +24,7 @@ import pl.lab2.subtrack.ui.components.SubscriptionIcon
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen() {
+fun MainScreen(onAddClick: () -> Unit) { // Prawidłowo zdefiniowany parametr
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -102,7 +102,7 @@ fun MainScreen() {
 
                 //Add button
                 FloatingActionButton(
-                    onClick = { /* TODO */ },
+                    onClick = onAddClick, // POPRAWIONE: Podpięcie akcji nawigacji pod przycisk
                     containerColor = MaterialTheme.colorScheme.secondary,
                     contentColor = MaterialTheme.colorScheme.onSecondary,
                     shape = RoundedCornerShape(16.dp)
@@ -167,5 +167,5 @@ fun SubscriptionItem(
 @Preview(showBackground = true)
 @Composable
 fun MainScreenPreview() {
-    MainScreen()
+    MainScreen(onAddClick = {})
 }

@@ -3,35 +3,51 @@ package pl.lab2.subtrack
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import pl.lab2.subtrack.ui.AddSubscriptionScreen
 import pl.lab2.subtrack.ui.MainScreen
-import pl.lab2.subtrack.ui.NotificationsScreen
+import kotlinx.serialization.Serializable
 import pl.lab2.subtrack.ui.SubTrackTheme
-import pl.lab2.subtrack.ui.SubscriptionDetailsScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            SubTrackTheme {
-                MainScreen()
+            SubTrackTheme { // Tutaj aplikacja startuje z poprawnym motywem
+                AppNavigation()
             }
         }
     }
 }
 
-/* By wrocic do MainScreen, klikając run
-zamien
-            SubTrackTheme {
-                AddSubscriptionScreen()
-            } lub inny
+@Composable
+fun AppNavigation() {
+    val navController = rememberNavController()
 
-            na
+    // Tradycyjne, niezawodne podejście oparte na ciągach tekstowych (String)
+    NavHost(
+        navController = navController,
+        startDestination = "main"
+    ) {
+        // Ekran główny
+        composable("main") {
+            MainScreen(
+                onAddClick = {
+                    navController.navigate("add")
+                }
+            )
+        }
 
-                        SubTrackTheme {
-                MainScreen()
-            }
-            itd
- */
+        // Ekran dodawania subskrypcji
+        composable("add") {
+            AddSubscriptionScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                }
+            )
+        }
+    }
+}
