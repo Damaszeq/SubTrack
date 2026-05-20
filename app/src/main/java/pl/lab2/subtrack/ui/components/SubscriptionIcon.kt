@@ -22,8 +22,36 @@ fun SubscriptionIcon(
     serviceName: String,
     modifier: Modifier = Modifier
 ) {
+    // 1. SŁOWNIK WYJĄTKÓW - Tutaj wpisujesz usługi, które po wyczyszczeniu spacji dają złe domeny
+    val specialDomains = mapOf(
+        "disneyplus" to "disneyplus.com",
+        "disney+" to "disneyplus.com",
+        "disney" to "disneyplus.com",
+        "hbomax" to "max.com",
+        "max" to "max.com",
+        "allegrosmart" to "allegro.pl",
+        "allegrosmart!" to "allegro.pl",
+        "allegro" to "allegro.pl",
+        "canal+online" to "canalplus.com",
+        "canal+" to "canalplus.com",
+        "polsatboxgo" to "polsatboxgo.pl",
+        "tvpvod" to "tvp.pl",
+        "primevideo" to "primevideo.com",
+        "amazonprime" to "primevideo.com"
+    )
+
     val cleanName = serviceName.lowercase().trim().replace(" ", "")
-    val domain = if (cleanName.contains(".")) cleanName else "$cleanName.com"
+
+    val domain = when {
+
+        specialDomains.containsKey(cleanName) -> specialDomains[cleanName]!!
+
+        // Jeśli użytkownik sam wpisał kropkę (np. "google.pl", "onet.pl"), bierzemy to co wpisał
+        cleanName.contains(".") -> cleanName
+
+        // W każdym innym przypadku domyślnie dodajemy .com
+        else -> "$cleanName.com"
+    }
 
     val logoUrl = "https://www.google.com/s2/favicons?domain=$domain&sz=128"
 
@@ -59,15 +87,13 @@ fun SubscriptionIconPreview() {
         modifier = Modifier.padding(16.dp),
         verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
     ) {
-        // Test popularnych usług
+
         SubscriptionIcon(serviceName = "Netflix")
         SubscriptionIcon(serviceName = "disney+")
-        SubscriptionIcon(serviceName = "YouTube")
-        SubscriptionIcon(serviceName = "google.com")
-        SubscriptionIcon(serviceName = "facebook")
-        // Test usługi ze spacją
         SubscriptionIcon(serviceName = "Disney Plus")
-        // Test błędnej nazwy (powinien pokazać Twój placeholder)
+        SubscriptionIcon(serviceName = "YouTube")
+        SubscriptionIcon(serviceName = "allegro")
+        SubscriptionIcon(serviceName = "wp.pl")
         SubscriptionIcon(serviceName = "JakasNieistniejacaUsługa123")
     }
 }

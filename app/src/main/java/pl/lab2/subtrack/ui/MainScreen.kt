@@ -6,20 +6,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import pl.lab2.subtrack.R
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import pl.lab2.subtrack.ui.components.SubscriptionIcon
 
@@ -56,13 +55,17 @@ fun MainScreen() {
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // 1. Lista subskrypcji
             Column(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 80.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
-                SubscriptionItem()
-                SubscriptionItem()
-                SubscriptionItem()
+                SubscriptionItem(serviceName = "Netflix", plan = "Premium / 4K", price = "43.00")
+                SubscriptionItem(serviceName = "Spotify", plan = "Dla Rodziny", price = "29.99")
+                SubscriptionItem(serviceName = "YouTube", plan = "Premium", price = "25.99")
+                SubscriptionItem(serviceName = "Disney Plus", plan = "Miesięczny", price = "37.99")
+                SubscriptionItem(serviceName = "Allegro", plan = "Smart! Roczny", price = "59.90")
             }
 
             // 2. PASEK DOLNY
@@ -89,7 +92,7 @@ fun MainScreen() {
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         Text(
-                            text = "142.90 ${stringResource(id = R.string.currency_suffix)}",
+                            text = "196.87 ${stringResource(id = R.string.currency_suffix)}",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -115,7 +118,11 @@ fun MainScreen() {
 }
 
 @Composable
-fun SubscriptionItem() {
+fun SubscriptionItem(
+    serviceName: String,
+    plan: String,
+    price: String
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -131,29 +138,34 @@ fun SubscriptionItem() {
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Surface(
-                modifier = Modifier.size(48.dp),
-                shape = RoundedCornerShape(8.dp),
-                color = MaterialTheme.colorScheme.primary
-            ) { SubscriptionIcon(serviceName = "google") }
+            SubscriptionIcon(
+                serviceName = serviceName,
+                modifier = Modifier.size(48.dp)
+            )
 
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(id = R.string.placeholder_service_name),
+                    text = serviceName,
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = stringResource(id = R.string.placeholder_plan),
+                    text = plan,
                     style = MaterialTheme.typography.bodySmall
                 )
             }
 
             Text(
-                text = stringResource(id = R.string.placeholder_price),
+                text = "$price ${stringResource(id = R.string.currency_suffix)}",
                 style = MaterialTheme.typography.labelLarge
             )
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun MainScreenPreview() {
+    MainScreen()
 }
