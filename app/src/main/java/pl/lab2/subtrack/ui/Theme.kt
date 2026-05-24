@@ -5,36 +5,36 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-val BluePrimary = Color(0xFF0056D2)
-val DarkSeaGreen = Color(0xFF004B41)
-val JuicyGreen = Color(0xFF2ECC71)
-val PalmMint = Color(0xFFE8F5E9)
+val BrandIndigo = Color(0xFF4F46E5)
+val IceBlue = Color(0xFFEEF2FF)
+val DeepSlate = Color(0xFF1E1B4B)
+val EmeraldGreen = Color(0xFF10B981)
 val White = Color(0xFFFFFFFF)
-val ErrorRed = Color(0xFFBA1A1A)
-val LabelGray = Color(0xFF747978)
-
-
-val OffWhite = Color(0xFFFBFDFB)
-val TextGray = Color(0xFF444746)
+val PremiumRed = Color(0xFFEF4444)
+val CoolGray = Color(0xFF6B7280)
+val AppBackground = Color(0xFFF9FAFB)
+val CardStroke = Color(0xFFE5E7EB)
 
 private val LightColorScheme = lightColorScheme(
-    primary = BluePrimary,
+    primary = BrandIndigo,
     onPrimary = White,
 
-    primaryContainer = BluePrimary,
-    onPrimaryContainer = DarkSeaGreen,
+    primaryContainer = IceBlue,
+    onPrimaryContainer = DeepSlate,
 
-    secondary = JuicyGreen,
+    secondary = EmeraldGreen,
     onSecondary = White,
 
-    background = OffWhite,
+    background = AppBackground,
+    onBackground = DeepSlate,
+
     surface = White,
-    onSurface = TextGray,
+    onSurface = DeepSlate,
 
-    surfaceVariant = Color(0xFFF2F2F2),
-    onSurfaceVariant = LabelGray,
+    surfaceVariant = CardStroke,
+    onSurfaceVariant = CoolGray,
 
-    error = ErrorRed,
+    error = PremiumRed,
     onError = White
 )
 
