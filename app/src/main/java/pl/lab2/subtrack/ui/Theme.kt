@@ -31,7 +31,7 @@ private val LightColorScheme = lightColorScheme(
     surface = White,
     onSurface = DeepSlate,
 
-    surfaceVariant = CardStroke,
+    surfaceVariant = IceBlue,
     onSurfaceVariant = CoolGray,
 
     error = PremiumRed,

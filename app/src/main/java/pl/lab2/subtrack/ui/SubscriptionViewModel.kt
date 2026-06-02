@@ -12,8 +12,10 @@ class SubscriptionViewModel : ViewModel() {
             Subscription(name = "Netflix", plan = "Premium / 4K", price = 43.00, billingCycle = "Miesiąc"),
             Subscription(name = "Spotify", plan = "Dla Rodziny", price = 29.99, billingCycle = "Miesiąc"),
             Subscription(name = "YouTube", plan = "Premium", price = 25.99, billingCycle = "Miesiąc"),
-            Subscription(name = "Disney Plus", plan = "Miesięczny", price = 37.99, billingCycle = "Miesiąc")
-        )
+            Subscription(name = "Disney Plus", plan = "Miesięczny", price = 37.99, billingCycle = "Miesiąc"),
+            Subscription(name = "Google", plan = "Miesięczny", price = 37.99, billingCycle = "Miesiąc")
+
+    )
     )
     val subscriptions: StateFlow<List<Subscription>> = _subscriptions.asStateFlow()
 
@@ -25,7 +27,7 @@ class SubscriptionViewModel : ViewModel() {
             price = parsedPrice,
             billingCycle = billingCycle
         )
-        _subscriptions.value = _subscriptions.value + newSub
+        _subscriptions.value += newSub
     }
 
     fun deleteSubscription(id: String) {
