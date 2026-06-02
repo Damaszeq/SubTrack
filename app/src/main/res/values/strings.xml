@@ -1,5 +1,92 @@
 <resources>
-    <string name="app_name">SubTrack</string>
     <string name="settings">Settings</string>
     <string name="monthly_balance">Monthly balance</string>
+    <string name="app_name">SubTrack</string>
+    <string name="settings_auth">Ustawienia</string>
+    <string name="add_subscription">Dodaj subskrypcję</string>
+    <string name="total_sum_label">Sumassss</string>
+    <string name="placeholder_price">0.00 PLN</string>
+    <string name="placeholder_service_name">Nazwa subskrypcji</string>
+    <string name="placeholder_plan">Plan / Cykl</string>
+    <string name="currency_suffix">PLN</string>
+    <string name="details_title">Szczegóły</string>
+    <string name="back_desc">Wróć</string>
+    <string name="edit_desc">Edytuj</string>
+    <string name="delete_desc">Usuń</string>
+
+    <!-- Etykiety danych -->
+    <string name="label_total_price">Cena całkowita</string>
+    <string name="label_cycle">Cykl</string>
+    <string name="label_next_payment">Następna płatność</string>
+    <string name="label_subaccounts">Subkonta</string>
+    <string name="label_payment_history">Historia płatności</string>
+
+    <!-- Przykładowe dane (tymczasowe) -->
+    <string name="mock_service_name">Netflix</string>
+    <string name="mock_category">Streaming Video</string>
+    <string name="mock_price">43.00 PLN</string>
+    <string name="mock_cycle">Miesiąc</string>
+    <string name="mock_next_date">2024-05-12</string>
+    <string name="mock_user_main">Ty (Główne)</string>
+    <string name="mock_user_other">王明</string>
+    <string name="mock_sub_price">21.50 PLN</string>
+
+    <!-- Top Bar -->
+    <string name="notifications_title">Powiadomienia</string>
+
+    <!-- Nagłówki sekcji -->
+    <string name="settings_header">Ustawienia przypomnień</string>
+    <string name="alerts_header">Nadchodzące alerty</string>
+
+    <!-- Ustawienia -->
+    <string name="notify_3days_title">3 dni przed terminem</string>
+    <string name="notify_3days_sub">Domyślne przypomnienie wstępne</string>
+    <string name="notify_24h_title">24 godziny przed</string>
+    <string name="notify_24h_sub">Ostatnie ostrzeżenie przed płatnością</string>
+
+    <!-- Niestandardowe -->
+    <string name="custom_settings_title">Niestandardowe ustawienia</string>
+    <string name="custom_settings_sub">Dodaj własne terminy przypomnień</string>
+
+    <!-- Przykładowe powiadomienie -->
+    <string name="mock_notification_desc">Przypomnienie: Płatność za 3 dni</string>
+
+    <!-- Top Bar -->
+    <string name="add_sub_title">Szczegóły subskrypcji</string>
+
+    <!-- Sekcja 1: Informacje główne -->
+    <string name="header_service_info">Informacje o usłudze</string>
+    <string name="label_service_name">Nazwa usługi</string>
+    <string name="label_category">Kategoria</string>
+    <string name="placeholder_category">np. Streaming Audio</string>
+    <string name="label_total_price_field">Cena całkowita</string>
+    <string name="currency_pln">PLN</string>
+
+    <!-- Sekcja 2: Rodzaj płatności -->
+    <string name="header_payment_type">Rodzaj płatności</string>
+    <string name="payment_cyclic">Cykliczna</string>
+    <string name="payment_one_time">Jednorazowa</string>
+    <string name="label_billing_period">Okres rozliczeniowy</string>
+
+    <!-- Opcje okresu (możesz też zrobić to w tablicy <string-array>) -->
+    <string name="period_monthly">Co miesiąc</string>
+    <string name="period_yearly">Co rok</string>
+    <string name="period_30days">Co 30 dni</string>
+    <string name="period_quarterly">Co kwartał</string>
+
+    <!-- Sekcja 3: Terminy -->
+    <string name="label_start_date">Data rozpoczęcia</string>
+    <string name="label_end_date">Data zakończenia</string>
+    <string name="placeholder_date">RRRR-MM-DD</string>
+    <string name="support_end_date">Dzień wygaśnięcia dostępu</string>
+
+    <!-- Sekcja 4: Subkonta -->
+    <string name="checkbox_subaccounts">Posiada subkonta</string>
+    <string name="label_user">Użytkownik</string>
+    <string name="label_price">Cena</string>
+    <string name="btn_add_subaccount">Dodaj kolejne subkonto</string>
+
+    <!-- Przycisk główny -->
+    <string name="btn_save_subscription">Dodaj subskrypcję</string>
+    <string name="en">en</string>
 </resources>
