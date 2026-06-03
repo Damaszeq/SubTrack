@@ -6,6 +6,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import pl.lab2.subtrack.Subscription
 
+enum class AppThemeMode {
+    SYSTEM, LIGHT, DARK
+}
 class SubscriptionViewModel : ViewModel() {
     private val _subscriptions = MutableStateFlow<List<Subscription>>(
         listOf(
@@ -19,6 +22,12 @@ class SubscriptionViewModel : ViewModel() {
     )
     val subscriptions: StateFlow<List<Subscription>> = _subscriptions.asStateFlow()
 
+    private val _themeMode = MutableStateFlow(AppThemeMode.SYSTEM)
+    val themeMode: StateFlow<AppThemeMode> = _themeMode
+
+    fun setThemeMode(mode: AppThemeMode) {
+        _themeMode.value = mode
+    }
     fun addSubscription(name: String, plan: String, priceText: String, billingCycle: String) {
         val parsedPrice = priceText.toDoubleOrNull() ?: 0.0
         val newSub = Subscription(
