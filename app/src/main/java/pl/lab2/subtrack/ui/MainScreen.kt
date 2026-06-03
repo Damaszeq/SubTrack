@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -27,7 +28,8 @@ fun MainScreen(
     viewModel: SubscriptionViewModel,
     onAddClick: () -> Unit,
     onDetailsClick: (String) -> Unit,
-    onNotificationsClick: () -> Unit
+    onNotificationsClick: () -> Unit,
+    onSettingsClick: () -> Unit = {} // Added default value to resolve signature mismatch
 ) {
     val subscriptions by viewModel.subscriptions.collectAsState()
 
@@ -43,10 +45,18 @@ fun MainScreen(
                 },
                 actions = {
                     IconButton(onClick = onNotificationsClick) {
-                        Icon(Icons.Default.Tune, contentDescription = "Powiadomienia")
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = "Powiadomienia"
+                        )
+                    }
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(
+                            imageVector = Icons.Default.Tune,
+                            contentDescription = "Ustawienia"
+                        )
                     }
                 },
-
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,

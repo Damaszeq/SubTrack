@@ -11,19 +11,22 @@ import androidx.compose.ui.text.font.FontWeight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NotificationsScreen(onBackClick: () -> Unit) {
+fun SettingsScreen(onBackClick: () -> Unit) {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "Powiadomienia", // Bezpieczny tekst zamiast stringResource
+                        text = "Ustawienia",
                         fontWeight = FontWeight.Bold
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Wstecz")
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Wstecz"
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -36,11 +39,13 @@ fun NotificationsScreen(onBackClick: () -> Unit) {
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Box(
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Tu będą powiadomienia.",
+                text = "Opcje aplikacji pojawią się tutaj wkrótce.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
             )
