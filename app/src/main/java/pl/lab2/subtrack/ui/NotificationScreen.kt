@@ -17,7 +17,7 @@ fun NotificationsScreen(onBackClick: () -> Unit) {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "Powiadomienia", // Bezpieczny tekst zamiast stringResource
+                        text = "Powiadomienia",
                         fontWeight = FontWeight.Bold
                     )
                 },

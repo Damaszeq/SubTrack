@@ -9,7 +9,7 @@ import pl.lab2.subtrack.ui.MainScreen
 import pl.lab2.subtrack.ui.AddSubscriptionScreen
 import pl.lab2.subtrack.ui.SubscriptionDetailsScreen
 import pl.lab2.subtrack.ui.NotificationsScreen
-import pl.lab2.subtrack.ui.SettingsScreen // Zaimportuj swój nowy ekran ustawień
+import pl.lab2.subtrack.ui.SettingsScreen
 import pl.lab2.subtrack.ui.SubscriptionViewModel
 
 @Composable
@@ -21,7 +21,6 @@ fun AppNavigation(subViewModel: SubscriptionViewModel = viewModel()) {
         startDestination = "main"
     ) {
         // 1. EKRAN GŁÓWNY
-// ... wewnątrz NavHost w MainActivity.kt lub osobnym pliku nawigacji:
         composable("main") {
             MainScreen(
                 viewModel = subViewModel,
