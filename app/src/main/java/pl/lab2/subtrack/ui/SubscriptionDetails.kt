@@ -2,7 +2,6 @@ package pl.lab2.subtrack.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -13,10 +12,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import pl.lab2.subtrack.R
+// IMPORT NASZEGO KOMPONENTU IKONY:
+import pl.lab2.subtrack.ui.components.SubscriptionIcon
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,7 +30,7 @@ fun SubscriptionDetailsScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(subscription?.name ?: "Szczegóły") },
+                title = { Text(subscription?.name ?: "Szczegóły", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Wstecz")
@@ -47,7 +46,11 @@ fun SubscriptionDetailsScreen(
                             onBackClick()
                         }
                     }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Usuń", tint = MaterialTheme.colorScheme.error)
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Usuń",
+                            tint = MaterialTheme.colorScheme.error
+                        )
                     }
                 }
             )
@@ -61,7 +64,10 @@ fun SubscriptionDetailsScreen(
         }
 
         LazyColumn(
-            modifier = Modifier.padding(innerPadding).fillMaxSize().padding(16.dp),
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             item {
@@ -74,27 +80,32 @@ fun SubscriptionDetailsScreen(
                         modifier = Modifier.padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Surface(
-                            modifier = Modifier.size(80.dp),
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AppShortcut,
-                                contentDescription = null,
-                                modifier = Modifier.padding(20.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
+                        SubscriptionIcon(
+                            serviceName = subscription.name,
+                            modifier = Modifier
+                                .size(80.dp)
+                                .padding(4.dp)
+                        )
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        Text(text = subscription.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                        Text(text = subscription.plan, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                        Text(
+                            text = subscription.name,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = subscription.plan,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
 
                         HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
 
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
                             InfoColumn(label = "Cena", value = "${subscription.price} PLN")
                             InfoColumn(label = "Cykl", value = subscription.billingCycle)
                         }

@@ -1,7 +1,6 @@
 package pl.lab2.subtrack.ui.components
 
 import android.util.Log
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -10,7 +9,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
@@ -22,38 +20,74 @@ fun SubscriptionIcon(
     serviceName: String,
     modifier: Modifier = Modifier
 ) {
-    // 1. SŁOWNIK WYJĄTKÓW - Tutaj wpisujesz usługi, które po wyczyszczeniu spacji dają złe domeny
-    val specialDomains = mapOf(
-        "disneyplus" to "disneyplus.com",
-        "disney+" to "disneyplus.com",
+    var cleanName = serviceName.lowercase().trim()
+        .replace(" ", "")
+        .replace("+", "")
+        .replace("!", "")
+
+    val suffixesToRemove = listOf("premium", "plus", "online", "go", "gold")
+    for (suffix in suffixesToRemove) {
+        if (cleanName.endsWith(suffix) && cleanName != suffix) {
+            cleanName = cleanName.removeSuffix(suffix)
+        }
+    }
+
+    val googleDomains = mapOf(
         "disney" to "disneyplus.com",
         "hbomax" to "max.com",
         "max" to "max.com",
-        "allegrosmart" to "allegro.pl",
-        "allegrosmart!" to "allegro.pl",
-        "allegro" to "allegro.pl",
-        "canal+online" to "canalplus.com",
-        "canal+" to "canalplus.com",
-        "polsatboxgo" to "polsatboxgo.pl",
-        "tvpvod" to "tvp.pl",
+        "sky" to "skyshowtime.com",
+        "skyshowtime" to "skyshowtime.com",
+        "amazonprimevideo" to "primevideo.com",
         "primevideo" to "primevideo.com",
-        "amazonprime" to "primevideo.com"
+        "player" to "player.pl",
+        "polsatbox" to "polsatboxgo.pl",
+        "canal" to "canalplus.com",
+        "tvp" to "tvp.pl",
+        "youtube" to "youtube.com",
+        "appletv" to "tv.apple.com",
+        "empik" to "empik.com",
+        "allegrosmart" to "allegro.pl",
+        "amazonprime" to "amazon.pl",
+        "nintendoswitch" to "nintendo.com",
+        "adobecreativecloud" to "adobe.com",
+        "chatgpt" to "openai.com",
+        "icloud" to "apple.com",
+        "linkedin" to "linkedin.com",
+        "newsweekpolska" to "newsweek.pl",
+        "onet" to "onet.pl",
+        "politykacyfrowa" to "polityka.pl",
+        "multisport" to "kartamultisport.pl",
+        "tinder" to "tinder.com",
+        "fitatu" to "fitatu.com",
+        "flo" to "flo.health"
     )
 
-    val cleanName = serviceName.lowercase().trim().replace(" ", "")
+    val duckDuckGoDomains = mapOf(
+        "glovo" to "glovoapp.com",
+        "ubisoft" to "ubisoft.com",
+        "xbox" to "xbox.com",
+        "ea" to "ea.com",
+        "duolingo" to "duolingo.com"
+    )
 
-    val domain = when {
-
-        specialDomains.containsKey(cleanName) -> specialDomains[cleanName]!!
-
-        // Jeśli użytkownik sam wpisał kropkę (np. "google.pl", "onet.pl"), bierzemy to co wpisał
-        cleanName.contains(".") -> cleanName
-
-        // W każdym innym przypadku domyślnie dodajemy .com
-        else -> "$cleanName.com"
+    val logoUrl = when {
+        duckDuckGoDomains.containsKey(cleanName) -> {
+            val domain = duckDuckGoDomains[cleanName]!!
+            "https://icons.duckduckgo.com/ip3/$domain.ico"
+        }
+        googleDomains.containsKey(cleanName) -> {
+            val domain = googleDomains[cleanName]!!
+            "https://www.google.com/s2/favicons?domain=$domain&sz=128"
+        }
+        // Obsługa sytuacji, gdy użytkownik wpisze ręcznie domenę z kropką
+        cleanName.contains(".") -> {
+        }
+        // Dynamiczne wyjście awaryjne
+        else -> {
+            "https://www.google.com/s2/favicons?domain=$cleanName.com&sz=128"
+        }
     }
-
-    val logoUrl = "https://www.google.com/s2/favicons?domain=$domain&sz=128"
 
     AsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
@@ -61,14 +95,6 @@ fun SubscriptionIcon(
             .crossfade(true)
             .diskCachePolicy(CachePolicy.ENABLED)
             .memoryCachePolicy(CachePolicy.ENABLED)
-            .listener(
-                onStart = { Log.d("SubTrackIcon", "Próba pobrania: $logoUrl") },
-                onSuccess = { _, _ -> Log.d("SubTrackIcon", "Sukces! Pobrano logo dla: $domain") },
-                onError = { _, result ->
-                    Log.e("SubTrackIcon", "Błąd dla $domain. Komunikat: ${result.throwable.message}")
-                    result.throwable.printStackTrace()
-                }
-            )
             .build(),
         contentDescription = "Logo $serviceName",
         placeholder = painterResource(R.drawable.ic_placeholder_sub),
@@ -78,22 +104,4 @@ fun SubscriptionIcon(
             .clip(RoundedCornerShape(8.dp)),
         contentScale = ContentScale.Fit
     )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun SubscriptionIconPreview() {
-    androidx.compose.foundation.layout.Column(
-        modifier = Modifier.padding(16.dp),
-        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-    ) {
-
-        SubscriptionIcon(serviceName = "Netflix")
-        SubscriptionIcon(serviceName = "disney+")
-        SubscriptionIcon(serviceName = "Disney Plus")
-        SubscriptionIcon(serviceName = "YouTube")
-        SubscriptionIcon(serviceName = "allegro")
-        SubscriptionIcon(serviceName = "wp.pl")
-        SubscriptionIcon(serviceName = "JakasNieistniejacaUsługa123")
-    }
 }
