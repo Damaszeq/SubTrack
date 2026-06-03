@@ -85,7 +85,7 @@ fun SettingsScreen(
 
                 // Opcja 3: Ciemny
                 ThemeOptionCard(
-                    label = "Astro",
+                    label = "Ciemny",
                     icon = Icons.Default.NightsStay, // Ikona księżyca z gwiazdą
                     selected = currentTheme == AppThemeMode.DARK,
                     onClick = { viewModel.setThemeMode(AppThemeMode.DARK) },
