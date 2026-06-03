@@ -81,9 +81,7 @@ fun AddSubscriptionScreen(
                     value = name,
                     onValueChange = { newValue ->
                         name = newValue
-                        isServiceDropdownExpanded = true // Automatycznie otwieraj menu podczas pisania
-
-                        // Jeśli użytkownik ręcznie zmaże tekst lub zmieni wpis, resetujemy powiązany obiekt
+                        isServiceDropdownExpanded = true
                         if (selectedService?.serviceName != newValue) {
                             selectedService = null
                             selectedPlan = null
@@ -91,7 +89,7 @@ fun AddSubscriptionScreen(
                             price = ""
                         }
                     },
-                    readOnly = false, // POPRAWIONE: Teraz użytkownik może pisać w tym polu!
+                    readOnly = false,
                     label = { Text("Wyszukaj lub wpisz usługę") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isServiceDropdownExpanded) },
                     leadingIcon = if (selectedService != null) {
