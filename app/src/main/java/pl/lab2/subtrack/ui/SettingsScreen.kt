@@ -1,5 +1,6 @@
 package pl.lab2.subtrack.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,6 +10,7 @@ import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.filled.Translate // Nowa ikona globusa/tłumaczenia
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -20,6 +22,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import pl.lab2.subtrack.ui.AppLanguage
+import pl.lab2.subtrack.ui.AppThemeMode
+import pl.lab2.subtrack.ui.SubscriptionViewModel
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,6 +34,8 @@ fun SettingsScreen(
     onBackClick: () -> Unit
 ) {
     val currentTheme by viewModel.themeMode.collectAsState()
+    // Założenie: ViewModel udostępnia stan dla języka
+    val currentLanguage by viewModel.language.collectAsState()
 
     Scaffold(
         topBar = {
@@ -51,54 +59,90 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp) // Równomierne odstępy między sekcjami
         ) {
-            Text(
-                text = "Wybierz motyw aplikacji",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Opcja 1: Systemowy
-                ThemeOptionCard(
-                    label = "System",
-                    icon = Icons.Default.Android, // Ikona systemu (możesz też użyć Icons.Default.SettingsSuggest)
-                    selected = currentTheme == AppThemeMode.SYSTEM,
-                    onClick = { viewModel.setThemeMode(AppThemeMode.SYSTEM) },
-                    modifier = Modifier.weight(1f)
+            // ================= SEKCA 1: WYBÓR MOTYWU =================
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Wybierz motyw aplikacji",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
 
-                // Opcja 2: Jasny
-                ThemeOptionCard(
-                    label = "Jasny",
-                    icon = Icons.Default.WbSunny, // Ikona słońca
-                    selected = currentTheme == AppThemeMode.LIGHT,
-                    onClick = { viewModel.setThemeMode(AppThemeMode.LIGHT) },
-                    modifier = Modifier.weight(1f)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SettingsOptionCard(
+                        label = "System",
+                        icon = Icons.Default.Android,
+                        selected = currentTheme == AppThemeMode.SYSTEM,
+                        onClick = { viewModel.setThemeMode(AppThemeMode.SYSTEM) },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    SettingsOptionCard(
+                        label = "Jasny",
+                        icon = Icons.Default.WbSunny,
+                        selected = currentTheme == AppThemeMode.LIGHT,
+                        onClick = { viewModel.setThemeMode(AppThemeMode.LIGHT) },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    SettingsOptionCard(
+                        label = "Ciemny",
+                        icon = Icons.Default.NightsStay,
+                        selected = currentTheme == AppThemeMode.DARK,
+                        onClick = { viewModel.setThemeMode(AppThemeMode.DARK) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.08f))
+
+            // ================= SEKCJA 2: WYBÓR JĘZYKA =================
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Wybierz język",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
 
-                // Opcja 3: Ciemny
-                ThemeOptionCard(
-                    label = "Ciemny",
-                    icon = Icons.Default.NightsStay, // Ikona księżyca z gwiazdą
-                    selected = currentTheme == AppThemeMode.DARK,
-                    onClick = { viewModel.setThemeMode(AppThemeMode.DARK) },
-                    modifier = Modifier.weight(1f)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SettingsOptionCard(
+                        label = "Polski",
+                        icon = Icons.Default.Translate,
+                        selected = currentLanguage == AppLanguage.POLISH,
+                        onClick = { viewModel.setLanguage(AppLanguage.POLISH) },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    SettingsOptionCard(
+                        label = "English",
+                        icon = Icons.Default.Translate,
+                        selected = currentLanguage == AppLanguage.ENGLISH,
+                        onClick = { viewModel.setLanguage(AppLanguage.ENGLISH) },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    // Puste miejsce (placeholder) wymuszające identyczną szerokość kafelków jak w motywie (3 kolumny)
+                    Spacer(modifier = Modifier.weight(1f))
+                }
             }
         }
     }
 }
 
-
 @Composable
-fun ThemeOptionCard(
+fun SettingsOptionCard(
     label: String,
     icon: ImageVector,
     selected: Boolean,
@@ -130,7 +174,6 @@ fun ThemeOptionCard(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-
         Icon(
             imageVector = icon,
             contentDescription = label,

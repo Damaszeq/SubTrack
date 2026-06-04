@@ -5,5 +5,6 @@ data class Subscription(
     val name: String,
     val plan: String,
     val price: Double,
-    val billingCycle: String
+    val billingCycle: String,
+    val tags: List<String> = emptyList()
 )

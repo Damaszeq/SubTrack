@@ -8,5 +8,6 @@ data class SubscriptionPlanPreset(
 
 data class ServicePreset(
     val serviceName: String,
-    val plans: List<SubscriptionPlanPreset>
+    val plans: List<SubscriptionPlanPreset>,
+    val tags: List<String> = emptyList()
 )
