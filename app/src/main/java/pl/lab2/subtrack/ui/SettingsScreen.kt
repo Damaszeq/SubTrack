@@ -60,7 +60,7 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp) // Równomierne odstępy między sekcjami
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
 
             // ================= SEKCA 1: WYBÓR MOTYWU =================
@@ -132,8 +132,6 @@ fun SettingsScreen(
                         onClick = { viewModel.setLanguage(AppLanguage.ENGLISH) },
                         modifier = Modifier.weight(1f)
                     )
-
-                    // Puste miejsce (placeholder) wymuszające identyczną szerokość kafelków jak w motywie (3 kolumny)
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }
