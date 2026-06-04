@@ -2,6 +2,7 @@ package pl.lab2.subtrack.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -9,13 +10,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember // DODANY IMPORT
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-// IMPORT NASZEGO KOMPONENTU IKONY:
+import java.util.Locale
 import pl.lab2.subtrack.ui.components.SubscriptionIcon
+
+data class PaymentHistoryMock(
+    val date: String,
+    val price: Double,
+    val status: String = "Opłacono"
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,6 +34,16 @@ fun SubscriptionDetailsScreen(
 ) {
     val subscriptions by viewModel.subscriptions.collectAsState()
     val subscription = subscriptions.find { it.id == subId }
+
+    val mockPayments = remember(subscription) {
+        if (subscription != null) {
+            listOf(
+                PaymentHistoryMock(date = "24 Maj 2026", price = subscription.price),
+                PaymentHistoryMock(date = "24 Kwiecień 2026", price = subscription.price),
+                PaymentHistoryMock(date = "24 Marzec 2026", price = subscription.price)
+            )
+        } else emptyList()
+    }
 
     Scaffold(
         topBar = {
@@ -67,10 +85,11 @@ fun SubscriptionDetailsScreen(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
+                Spacer(modifier = Modifier.height(16.dp))
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
@@ -112,6 +131,28 @@ fun SubscriptionDetailsScreen(
                     }
                 }
             }
+
+            item {
+                Column(modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Historia płatności",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+
+            // Dynamiczna lista wierszy płatności
+            items(mockPayments) { payment ->
+                PaymentHistoryItem(payment = payment)
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
         }
     }
 }
@@ -121,5 +162,55 @@ fun InfoColumn(label: String, value: String) {
     Column(horizontalAlignment = Alignment.Start) {
         Text(text = label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(text = value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@Composable
+fun PaymentHistoryItem(payment: PaymentHistoryMock) {
+    OutlinedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                modifier = Modifier.size(40.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CalendarToday,
+                    contentDescription = null,
+                    modifier = Modifier.padding(10.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = payment.date,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = payment.status,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF2C7B1E)
+                )
+            }
+
+            Text(
+                text = String.format(Locale.US, "-%.2f PLN", payment.price),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
     }
 }

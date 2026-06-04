@@ -29,7 +29,7 @@ fun MainScreen(
     onAddClick: () -> Unit,
     onDetailsClick: (String) -> Unit,
     onNotificationsClick: () -> Unit,
-    onSettingsClick: () -> Unit = {} // Added default value to resolve signature mismatch
+    onSettingsClick: () -> Unit = {}
 ) {
     val subscriptions by viewModel.subscriptions.collectAsState()
 
@@ -134,7 +134,13 @@ fun MainScreen(
 }
 
 @Composable
-fun SubscriptionItem(subscription: Subscription, onClick: () -> Unit) {
+fun SubscriptionItem(
+    subscription: Subscription,
+    // Tymczasowe parametry do testów UI, docelowo będą wyliczane z bazy danych
+    nextPaymentDate: String = "26.06.2026",
+    daysLeft: Int = 4,
+    onClick: () -> Unit
+) {
     OutlinedCard(
         onClick = onClick,
         modifier = Modifier
@@ -155,6 +161,7 @@ fun SubscriptionItem(subscription: Subscription, onClick: () -> Unit) {
 
             Spacer(modifier = Modifier.width(16.dp))
 
+            // Środek: Nazwa i Plan
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = subscription.name,
@@ -168,11 +175,42 @@ fun SubscriptionItem(subscription: Subscription, onClick: () -> Unit) {
                 )
             }
 
-            Text(
-                text = String.format(Locale.US, "%.2f PLN", subscription.price),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    text = String.format(Locale.US, "%.2f PLN", subscription.price),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                val paymentText = if (daysLeft <= 3) {
+                    when (daysLeft) {
+                        0 -> "Płatność dzisiaj!"
+                        1 -> "Płatność jutro"
+                        else -> "Płatność za $daysLeft dni"
+                    }
+                } else {
+                    "Płatność: $nextPaymentDate"
+                }
+
+                val paymentColor = if (daysLeft <= 3) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+
+                Text(
+                    text = paymentText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = paymentColor,
+                    fontWeight = if (daysLeft <= 3) FontWeight.SemiBold else FontWeight.Normal
+                )
+            }
         }
     }
 }
