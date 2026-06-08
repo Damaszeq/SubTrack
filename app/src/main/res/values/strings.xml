@@ -89,5 +89,42 @@
     <!-- Przycisk główny -->
     <string name="btn_save_subscription">Dodaj subskrypcję</string>
     <string name="en">en</string>
+    <string name="details">Szczegóły</string>
+    <string name="back">Wstecz</string>
+    <string name="edit">Edytuj</string>
+    <string name="delete">Usuń</string>
+    <string name="subscription_not_found">Nie znaleziono subskrypcji</string>
+    <string name="payment_history">Historia płatności</string>
+    <string name="status_paid">Opłacono</string>
+    <string name="status_unpaid">Nieopłacono</string>
+
+    <string name="price_format">%1$.2f PLN</string>
+    <string name="minus_price_format">-%1$.2f PLN</string>
+    <string name="settings_title">Ustawienia</string>
+    <string name="theme_section_title">Wybierz motyw aplikacji</string>
+    <string name="theme_system">Systemowy</string>
+    <string name="theme_light">Jasny</string>
+    <string name="theme_dark">Ciemny</string>
+    <string name="language_section_title">Wybierz język</string>
+    <string name="lang_polish">Polski</string>
+    <string name="lang_english">English</string>
+    <string name="payment_today">Płatność dzisiaj!</string>
+    <string name="payment_tomorrow">Płatność jutro</string>
+    <string name="payment_in_days">Płatność za %1$d dni</string>
+    <string name="payment_date_format">Płatność: %1$s</string>
+
+    <string name="choose_service_label">Wybierz usługę z listy:</string>
+    <string name="hint_select_service_first">Najpierw wybierz usługę powyżej</string>
+    <string name="hint_select_plan">Wybierz plan</string>
+    <string name="label_price_with_currency">Cena (PLN)</string>
+
+    <string name="cycle_week">Tydzień</string>
+    <string name="cycle_month">Miesiąc</string>
+    <string name="cycle_quarter">Kwartał</string>
+    <string name="cycle_year">Rok</string>
+
+    <string name="preset_plan_format">%1$s (%2$.2f PLN)</string>
+    <string name="btn_cancel">Anuluj</string>
+    <string name="btn_save">Zapisz</string>
 
 </resources>

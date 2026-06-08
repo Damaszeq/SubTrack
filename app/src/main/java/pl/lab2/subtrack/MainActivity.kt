@@ -1,13 +1,22 @@
 package pl.lab2.subtrack
 
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -19,24 +28,48 @@ import pl.lab2.subtrack.ui.NotificationsScreen
 import pl.lab2.subtrack.ui.SettingsScreen
 import pl.lab2.subtrack.ui.SubscriptionViewModel
 import pl.lab2.subtrack.ui.SubTrackTheme
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import pl.lab2.subtrack.ui.AppThemeMode
+import pl.lab2.subtrack.ui.AppLanguage
+import java.util.Locale
+
+@Composable
+fun LocalizationWrapper(
+    currentLanguage: AppLanguage,
+    content: @Composable () -> Unit
+) {
+    val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+
+    // Wymuszamy aktualizację konfiguracji przy każdej zmianie języka
+    val locale = Locale(currentLanguage.code)
+    Locale.setDefault(locale)
+    configuration.setLocale(locale)
+
+    val resources = context.resources
+    resources.updateConfiguration(configuration, resources.displayMetrics)
+
+    key(currentLanguage) {
+        content()
+    }
+}
 
 class MainActivity : ComponentActivity() {
+    private val viewModel: SubscriptionViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+            val currentTheme by viewModel.themeMode.collectAsState()
+            val currentLanguage by viewModel.language.collectAsState()
 
-            val viewModel: SubscriptionViewModel = viewModel()
-            val themeMode by viewModel.themeMode.collectAsState()
-
-            SubTrackTheme(themeMode = themeMode) {
+            SubTrackTheme(themeMode = currentTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    AppNavigation(subViewModel = viewModel)
+                    LocalizationWrapper(currentLanguage = currentLanguage) {
+                        AppNavigation(subViewModel = viewModel)
+                    }
                 }
             }
         }
@@ -87,7 +120,7 @@ fun AppNavigation(subViewModel: SubscriptionViewModel = viewModel()) {
             )
         }
 
-        // 5. NOWY EKRAN USTAWIEŃ
+        // 5. EKRAN USTAWIEŃ
         composable("settings") {
             SettingsScreen(
                 viewModel = subViewModel,

@@ -47,13 +47,13 @@ fun MainScreen(
                     IconButton(onClick = onNotificationsClick) {
                         Icon(
                             imageVector = Icons.Default.Notifications,
-                            contentDescription = "Powiadomienia"
+                            contentDescription = stringResource(id = R.string.notifications_title)
                         )
                     }
                     IconButton(onClick = onSettingsClick) {
                         Icon(
                             imageVector = Icons.Default.Tune,
-                            contentDescription = "Ustawienia"
+                            contentDescription = stringResource(id = R.string.settings_title)
                         )
                     }
                 },
@@ -136,7 +136,6 @@ fun MainScreen(
 @Composable
 fun SubscriptionItem(
     subscription: Subscription,
-    // Tymczasowe parametry do testów UI, docelowo będą wyliczane z bazy danych
     nextPaymentDate: String = "26.06.2026",
     daysLeft: Int = 4,
     onClick: () -> Unit
@@ -161,7 +160,6 @@ fun SubscriptionItem(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Środek: Nazwa i Plan
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = subscription.name,
@@ -188,14 +186,15 @@ fun SubscriptionItem(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
+                // Zlokalizowana logika określania tekstu płatności
                 val paymentText = if (daysLeft <= 3) {
                     when (daysLeft) {
-                        0 -> "Płatność dzisiaj!"
-                        1 -> "Płatność jutro"
-                        else -> "Płatność za $daysLeft dni"
+                        0 -> stringResource(id = R.string.payment_today)
+                        1 -> stringResource(id = R.string.payment_tomorrow)
+                        else -> stringResource(id = R.string.payment_in_days, daysLeft)
                     }
                 } else {
-                    "Płatność: $nextPaymentDate"
+                    stringResource(id = R.string.payment_date_format, nextPaymentDate)
                 }
 
                 val paymentColor = if (daysLeft <= 3) {

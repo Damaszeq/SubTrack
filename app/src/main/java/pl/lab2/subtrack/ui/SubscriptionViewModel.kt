@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import pl.lab2.subtrack.Subscription
+import androidx.compose.ui.platform.LocalContext
 
 enum class AppThemeMode {
     SYSTEM, LIGHT, DARK

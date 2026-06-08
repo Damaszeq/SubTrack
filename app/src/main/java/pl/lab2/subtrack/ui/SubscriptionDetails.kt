@@ -10,19 +10,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember // DODANY IMPORT
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import java.util.Locale
+import pl.lab2.subtrack.R
 import pl.lab2.subtrack.ui.components.SubscriptionIcon
 
 data class PaymentHistoryMock(
     val date: String,
     val price: Double,
-    val status: String = "Opłacono"
+    val isPaid: Boolean = true // Flaga do translacji statusu
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,12 +37,13 @@ fun SubscriptionDetailsScreen(
     val subscriptions by viewModel.subscriptions.collectAsState()
     val subscription = subscriptions.find { it.id == subId }
 
+    // Mockowane daty płatności (można je w przyszłości generować dynamicznie)
     val mockPayments = remember(subscription) {
         if (subscription != null) {
             listOf(
-                PaymentHistoryMock(date = "24 Maj 2026", price = subscription.price),
-                PaymentHistoryMock(date = "24 Kwiecień 2026", price = subscription.price),
-                PaymentHistoryMock(date = "24 Marzec 2026", price = subscription.price)
+                PaymentHistoryMock(date = "24.05.2026", price = subscription.price),
+                PaymentHistoryMock(date = "24.04.2026", price = subscription.price),
+                PaymentHistoryMock(date = "24.03.2026", price = subscription.price)
             )
         } else emptyList()
     }
@@ -48,15 +51,15 @@ fun SubscriptionDetailsScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(subscription?.name ?: "Szczegóły", fontWeight = FontWeight.Bold) },
+                title = { Text(subscription?.name ?: stringResource(id = R.string.details), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Wstecz")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
                 },
                 actions = {
                     IconButton(onClick = { /* TODO: Edycja */ }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edytuj")
+                        Icon(Icons.Default.Edit, contentDescription = stringResource(id = R.string.edit))
                     }
                     IconButton(onClick = {
                         if (subId != null) {
@@ -66,7 +69,7 @@ fun SubscriptionDetailsScreen(
                     }) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = "Usuń",
+                            contentDescription = stringResource(id = R.string.delete),
                             tint = MaterialTheme.colorScheme.error
                         )
                     }
@@ -76,7 +79,7 @@ fun SubscriptionDetailsScreen(
     ) { innerPadding ->
         if (subscription == null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Nie znaleziono subskrypcji")
+                Text(stringResource(id = R.string.subscription_not_found))
             }
             return@Scaffold
         }
@@ -125,8 +128,14 @@ fun SubscriptionDetailsScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            InfoColumn(label = "Cena", value = "${subscription.price} PLN")
-                            InfoColumn(label = "Cykl", value = subscription.billingCycle)
+                            InfoColumn(
+                                label = stringResource(id = R.string.label_price),
+                                value = stringResource(id = R.string.price_format, subscription.price)
+                            )
+                            InfoColumn(
+                                label = stringResource(id = R.string.label_cycle),
+                                value = subscription.billingCycle // Wartość cyklu rozliczeniowego powinna być tłumaczona w bazie lub ViewModelu
+                            )
                         }
                     }
                 }
@@ -137,7 +146,7 @@ fun SubscriptionDetailsScreen(
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Historia płatności",
+                        text = stringResource(id = R.string.payment_history),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -145,7 +154,6 @@ fun SubscriptionDetailsScreen(
                 }
             }
 
-            //lista wierszy płatności
             items(mockPayments) { payment ->
                 PaymentHistoryItem(payment = payment)
             }
@@ -199,14 +207,14 @@ fun PaymentHistoryItem(payment: PaymentHistoryMock) {
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = payment.status,
+                    text = if (payment.isPaid) stringResource(id = R.string.status_paid) else stringResource(id = R.string.status_unpaid),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFF2C7B1E)
                 )
             }
 
             Text(
-                text = String.format(Locale.US, "-%.2f PLN", payment.price),
+                text = stringResource(id = R.string.minus_price_format, payment.price),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.error

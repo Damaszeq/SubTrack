@@ -89,4 +89,42 @@
     <!-- Main Button -->
     <string name="btn_save_subscription">Add subscription</string>
     <string name="en">en</string>
+
+    <string name="details">Details</string>
+    <string name="back">Back</string>
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
+    <string name="subscription_not_found">Subscription not found</string>
+    <string name="payment_history">Payment history</string>
+    <string name="status_paid">Paid</string>
+    <string name="status_unpaid">Unpaid</string>
+
+    <string name="price_format">%1$.2f PLN</string>
+    <string name="minus_price_format">-%1$.2f PLN</string>
+    <string name="settings_title">Settings</string>
+    <string name="theme_section_title">Choose app theme</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="language_section_title">Choose language</string>
+    <string name="lang_polish">Polish</string>
+    <string name="lang_english">English</string>
+    <string name="payment_today">Payment today!</string>
+    <string name="payment_tomorrow">Payment tomorrow</string>
+    <string name="payment_in_days">Payment in %1$d days</string>
+    <string name="payment_date_format">Payment: %1$s</string>
+    <string name="choose_service_label">Select service from the list:</string>
+    <string name="hint_select_service_first">Select a service above first</string>
+    <string name="hint_select_plan">Select plan</string>
+    <string name="label_price_with_currency">Price (PLN)</string>
+
+    <string name="cycle_week">Week</string>
+    <string name="cycle_month">Month</string>
+    <string name="cycle_quarter">Quarter</string>
+    <string name="cycle_year">Year</string>
+
+    <string name="preset_plan_format">%1$s (%2$.2f PLN)</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_save">Save</string>
+
 </resources>

@@ -1,5 +1,6 @@
 package pl.lab2.subtrack.ui
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -24,6 +26,7 @@ import pl.lab2.subtrack.model.ServicePreset
 import pl.lab2.subtrack.model.SubscriptionPlanPreset
 import pl.lab2.subtrack.ui.components.SubscriptionIcon
 
+@SuppressLint("LocalContextGetResourceValueCall")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddSubscriptionScreen(
@@ -35,25 +38,29 @@ fun AddSubscriptionScreen(
     var selectedService by remember { mutableStateOf<ServicePreset?>(null) }
     var selectedPlan by remember { mutableStateOf<SubscriptionPlanPreset?>(null) }
 
-    // Główne stany pól formularza
     var name by remember { mutableStateOf("") }
     var plan by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
-    var billingCycle by remember { mutableStateOf("Miesiąc") }
 
-    // Stany rozwijania list Dropdown dla planu i cyklu
+    var billingCycleResId by remember { mutableStateOf(R.string.cycle_month) }
+
     var isPlanDropdownExpanded by remember { mutableStateOf(false) }
     var isBillingDropdownExpanded by remember { mutableStateOf(false) }
 
-    val billingOptions = listOf("Tydzień", "Miesiąc", "Kwartał", "Rok")
+    val billingOptions = listOf(
+        R.string.cycle_week,
+        R.string.cycle_month,
+        R.string.cycle_quarter,
+        R.string.cycle_year
+    )
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(text = stringResource(id = R.string.add_subscription)) },
+                title = { Text(text = stringResource(id = R.string.add_subscription), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Wstecz")
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
                 }
             )
@@ -68,9 +75,9 @@ fun AddSubscriptionScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
 
-// SECTION: NAGŁÓWEK WYBORU
+            // SECTION: NAGŁÓWEK WYBORU
             Text(
-                text = "Wybierz usługę z listy:",
+                text = stringResource(id = R.string.choose_service_label),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -158,7 +165,7 @@ fun AddSubscriptionScreen(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-            // 2. WYBÓR PLANU (Odblokowany dopiero po kliknięciu usługi)
+            // 2. WYBÓR PLANU
             ExposedDropdownMenuBox(
                 expanded = isPlanDropdownExpanded,
                 onExpandedChange = {
@@ -167,12 +174,18 @@ fun AddSubscriptionScreen(
                     }
                 }
             ) {
+                val labelText = if (selectedService == null) {
+                    stringResource(id = R.string.hint_select_service_first)
+                } else {
+                    stringResource(id = R.string.hint_select_plan)
+                }
+
                 OutlinedTextField(
                     value = plan,
                     onValueChange = {},
                     readOnly = true,
                     enabled = selectedService != null,
-                    label = { Text(if (selectedService == null) "Najpierw wybierz usługę powyżej" else "Wybierz plan") },
+                    label = { Text(labelText) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isPlanDropdownExpanded) },
                     modifier = Modifier.fillMaxWidth().menuAnchor()
                 )
@@ -182,12 +195,19 @@ fun AddSubscriptionScreen(
                 ) {
                     selectedService?.plans?.forEach { planPreset ->
                         DropdownMenuItem(
-                            text = { Text("${planPreset.planName} (${planPreset.price} PLN)") },
+                            text = { Text(stringResource(id = R.string.preset_plan_format, planPreset.planName, planPreset.price)) },
                             onClick = {
                                 selectedPlan = planPreset
                                 plan = planPreset.planName
                                 price = planPreset.price.toString()
-                                billingCycle = planPreset.billingCycle
+
+                                // Bezpieczne przypisywanie samego ID zasobu w lambdzie onClick
+                                billingCycleResId = when (planPreset.billingCycle.lowercase()) {
+                                    "tydzień", "week" -> R.string.cycle_week
+                                    "rok", "year" -> R.string.cycle_year
+                                    "kwartał", "quarter" -> R.string.cycle_quarter
+                                    else -> R.string.cycle_month
+                                }
                                 isPlanDropdownExpanded = false
                             }
                         )
@@ -199,7 +219,7 @@ fun AddSubscriptionScreen(
             OutlinedTextField(
                 value = price,
                 onValueChange = { price = it },
-                label = { Text("Cena (PLN)") },
+                label = { Text(stringResource(id = R.string.label_price_with_currency)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 enabled = selectedService != null,
@@ -216,11 +236,11 @@ fun AddSubscriptionScreen(
                 }
             ) {
                 OutlinedTextField(
-                    value = billingCycle,
+                    value = stringResource(id = billingCycleResId), // Pobieranie stringa z ID zasobu
                     onValueChange = {},
                     readOnly = true,
                     enabled = selectedService != null,
-                    label = { Text("Cykl rozliczeniowy") },
+                    label = { Text(stringResource(id = R.string.label_cycle)) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isBillingDropdownExpanded) },
                     modifier = Modifier.fillMaxWidth().menuAnchor()
                 )
@@ -228,11 +248,11 @@ fun AddSubscriptionScreen(
                     expanded = isBillingDropdownExpanded,
                     onDismissRequest = { isBillingDropdownExpanded = false }
                 ) {
-                    billingOptions.forEach { option ->
+                    billingOptions.forEach { resId ->
                         DropdownMenuItem(
-                            text = { Text(option) },
+                            text = { Text(stringResource(id = resId)) },
                             onClick = {
-                                billingCycle = option
+                                billingCycleResId = resId
                                 isBillingDropdownExpanded = false
                             }
                         )
@@ -248,19 +268,22 @@ fun AddSubscriptionScreen(
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 OutlinedButton(onClick = onBackClick, modifier = Modifier.weight(1f)) {
-                    Text(text = "Anuluj")
+                    Text(text = stringResource(id = R.string.btn_cancel))
                 }
-
+                val context = LocalContext.current
                 Button(
                     onClick = {
                         val currentTags = selectedService?.tags ?: emptyList()
-                        viewModel.addSubscription(name, plan, price, billingCycle, currentTags)
+
+                        val finalBillingCycleText = context.getString(billingCycleResId)
+
+                        viewModel.addSubscription(name, plan, price, finalBillingCycleText, currentTags)
                         onBackClick()
                     },
                     modifier = Modifier.weight(1f),
                     enabled = selectedService != null && price.isNotBlank()
                 ) {
-                    Text(text = "Zapisz")
+                    Text(text = stringResource(id = R.string.btn_save))
                 }
             }
         }
