@@ -47,10 +47,7 @@ fun LocalizationWrapper(
 
     val resources = context.resources
     resources.updateConfiguration(configuration, resources.displayMetrics)
-
-    key(currentLanguage) {
         content()
-    }
 }
 
 class MainActivity : ComponentActivity() {
@@ -68,7 +65,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     LocalizationWrapper(currentLanguage = currentLanguage) {
-                        AppNavigation(subViewModel = viewModel)
+                        AppNavigation(subViewModel = viewModel, currentLanguage = currentLanguage)
                     }
                 }
             }
@@ -77,7 +74,8 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AppNavigation(subViewModel: SubscriptionViewModel = viewModel()) {
+fun AppNavigation(subViewModel: SubscriptionViewModel = viewModel(),
+                  currentLanguage: AppLanguage) {
     val navController = rememberNavController()
 
     NavHost(
@@ -122,10 +120,12 @@ fun AppNavigation(subViewModel: SubscriptionViewModel = viewModel()) {
 
         // 5. EKRAN USTAWIEŃ
         composable("settings") {
-            SettingsScreen(
-                viewModel = subViewModel,
-                onBackClick = { navController.popBackStack() }
-            )
+            androidx.compose.runtime.key(currentLanguage) {
+                SettingsScreen(
+                    viewModel = subViewModel,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
         }
     }
 }
