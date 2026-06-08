@@ -28,6 +28,8 @@ import pl.lab2.subtrack.ui.NotificationsScreen
 import pl.lab2.subtrack.ui.SettingsScreen
 import pl.lab2.subtrack.ui.SubscriptionViewModel
 import pl.lab2.subtrack.ui.SubTrackTheme
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import pl.lab2.subtrack.ui.AppThemeMode
 import pl.lab2.subtrack.ui.AppLanguage
 import java.util.Locale
