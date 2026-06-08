@@ -126,5 +126,27 @@
     <string name="preset_plan_format">%1$s (%2$.2f PLN)</string>
     <string name="btn_cancel">Anuluj</string>
     <string name="btn_save">Zapisz</string>
+    <string name="notifications_empty">Brak nowych powiadomień.</string>
+    <string name="trigger_push_desc">Wywołaj Push</string>
+
+    <string name="system_channel_name">SubTrack Alerty</string>
+    <string name="system_channel_desc">Kanał powiadomień o odnowieniach subskrypcji</string>
+
+    <string name="time_today">Dzisiaj</string>
+    <string name="time_yesterday">Wczoraj</string>
+    <string name="time_2_days_ago">2 dni temu</string>
+    <string name="time_3_days_ago">3 dni temu</string>
+
+    <string name="mock_title_payment_tomorrow">Płatność dzisiaj lub jutro!</string>
+    <string name="mock_msg_netflix">Za 1 dzień zostanie pobrana opłata %1$s PLN za subskrypcję Netflix.</string>
+
+    <string name="mock_title_payment_approaching">Zbliża się płatność</string>
+    <string name="mock_msg_spotify">Za 3 dni zostanie pobrana opłata %1$s PLN za subskrypcję Spotify.</string>
+
+    <string name="mock_title_trial_ending">Koniec okresu próbnego!</string>
+    <string name="mock_msg_youtube">Twój darmowy okres próbny w YouTube Premium kończy się jutro.</string>
+
+    <string name="mock_title_price_update">Zaktualizowano cennik</string>
+    <string name="mock_msg_system">SubTrack wprowadza nowe funkcje synchronizacji w chmurze.</string>
 
 </resources>

@@ -13,7 +13,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -28,8 +27,6 @@ import pl.lab2.subtrack.ui.NotificationsScreen
 import pl.lab2.subtrack.ui.SettingsScreen
 import pl.lab2.subtrack.ui.SubscriptionViewModel
 import pl.lab2.subtrack.ui.SubTrackTheme
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import pl.lab2.subtrack.ui.AppThemeMode
 import pl.lab2.subtrack.ui.AppLanguage
 import java.util.Locale
@@ -42,14 +39,16 @@ fun LocalizationWrapper(
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
 
-    // Wymuszamy aktualizację konfiguracji przy każdej zmianie języka
+    // Aktualizujemy konfigurację zasobów w locie
     val locale = Locale(currentLanguage.code)
     Locale.setDefault(locale)
     configuration.setLocale(locale)
 
     val resources = context.resources
     resources.updateConfiguration(configuration, resources.displayMetrics)
-        content()
+
+    // Usunęliśmy stąd blok key(currentLanguage), dzięki czemu NavHost NIE JEST niszczony
+    content()
 }
 
 class MainActivity : ComponentActivity() {
@@ -76,8 +75,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AppNavigation(subViewModel: SubscriptionViewModel = viewModel(),
-                  currentLanguage: AppLanguage) {
+fun AppNavigation(
+    subViewModel: SubscriptionViewModel = viewModel(),
+    currentLanguage: AppLanguage // Przekazujemy język do nawigacji
+) {
     val navController = rememberNavController()
 
     NavHost(
@@ -122,6 +123,8 @@ fun AppNavigation(subViewModel: SubscriptionViewModel = viewModel(),
 
         // 5. EKRAN USTAWIEŃ
         composable("settings") {
+            // Przekazanie stanu języka jako argumentu lub klucza sprawia,
+            // że tylko ten konkretny ekran przerysuje swoje stringi po zmianie.
             androidx.compose.runtime.key(currentLanguage) {
                 SettingsScreen(
                     viewModel = subViewModel,
