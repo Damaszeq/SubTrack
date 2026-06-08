@@ -145,7 +145,7 @@ fun SubscriptionDetailsScreen(
                 }
             }
 
-            // Dynamiczna lista wierszy płatności
+            //lista wierszy płatności
             items(mockPayments) { payment ->
                 PaymentHistoryItem(payment = payment)
             }
