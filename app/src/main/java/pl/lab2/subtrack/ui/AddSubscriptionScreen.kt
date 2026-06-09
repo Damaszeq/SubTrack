@@ -33,6 +33,7 @@ fun AddSubscriptionScreen(
     viewModel: SubscriptionViewModel,
     onBackClick: () -> Unit
 ) {
+    val context = LocalContext.current // POPRAWIONE: Przeniesione do wewnątrz funkcji Composable
     val presets = SubscriptionPresetsData.availablePresets
 
     var selectedService by remember { mutableStateOf<ServicePreset?>(null) }
@@ -57,10 +58,18 @@ fun AddSubscriptionScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(text = stringResource(id = R.string.add_subscription), fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        text = stringResource(id = R.string.add_subscription),
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = stringResource(id = R.string.back))
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = stringResource(id = R.string.back)
+                        )
                     }
                 }
             )
@@ -195,13 +204,20 @@ fun AddSubscriptionScreen(
                 ) {
                     selectedService?.plans?.forEach { planPreset ->
                         DropdownMenuItem(
-                            text = { Text(stringResource(id = R.string.preset_plan_format, planPreset.planName, planPreset.price)) },
+                            text = {
+                                Text(
+                                    stringResource(
+                                        id = R.string.preset_plan_format,
+                                        planPreset.planName,
+                                        planPreset.price
+                                    )
+                                )
+                            },
                             onClick = {
                                 selectedPlan = planPreset
                                 plan = planPreset.planName
                                 price = planPreset.price.toString()
 
-                                // Bezpieczne przypisywanie samego ID zasobu w lambdzie onClick
                                 billingCycleResId = when (planPreset.billingCycle.lowercase()) {
                                     "tydzień", "week" -> R.string.cycle_week
                                     "rok", "year" -> R.string.cycle_year
@@ -236,7 +252,7 @@ fun AddSubscriptionScreen(
                 }
             ) {
                 OutlinedTextField(
-                    value = stringResource(id = billingCycleResId), // Pobieranie stringa z ID zasobu
+                    value = stringResource(id = billingCycleResId),
                     onValueChange = {},
                     readOnly = true,
                     enabled = selectedService != null,
@@ -270,14 +286,22 @@ fun AddSubscriptionScreen(
                 OutlinedButton(onClick = onBackClick, modifier = Modifier.weight(1f)) {
                     Text(text = stringResource(id = R.string.btn_cancel))
                 }
-                val context = LocalContext.current
                 Button(
                     onClick = {
                         val currentTags = selectedService?.tags ?: emptyList()
 
                         val finalBillingCycleText = context.getString(billingCycleResId)
 
-                        viewModel.addSubscription(name, plan, price, finalBillingCycleText, currentTags)
+                        // 2. Mapujemy parametry na realne stany tekstowe obecne w Twoim komponencie
+                        viewModel.addSubscription(
+                            name = selectedService?.serviceName
+                                ?: name, // Pobiera nazwę serwisu lub wpisaną ręcznie
+                            plan = selectedPlan?.planName
+                                ?: plan,       // Pobiera nazwę wybranego planu z obiektu lub pola tekstowego
+                            priceText = price,                           // Surowy ciąg znaków String prosto z pola formularza
+                            billingCycle = finalBillingCycleText,        // Przetłumaczona nazwa cyklu rozliczeniowego
+                            tags = currentTags                           // Lista tagów przypisana do subskrypcji
+                        )
                         onBackClick()
                     },
                     modifier = Modifier.weight(1f),

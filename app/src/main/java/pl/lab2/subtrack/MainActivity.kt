@@ -26,6 +26,7 @@ import pl.lab2.subtrack.ui.SubscriptionDetailsScreen
 import pl.lab2.subtrack.ui.NotificationsScreen
 import pl.lab2.subtrack.ui.SettingsScreen
 import pl.lab2.subtrack.ui.SubscriptionViewModel
+import pl.lab2.subtrack.ui.NotificationViewModel // DODANY IMPORT
 import pl.lab2.subtrack.ui.SubTrackTheme
 import pl.lab2.subtrack.ui.AppThemeMode
 import pl.lab2.subtrack.ui.AppLanguage
@@ -39,7 +40,6 @@ fun LocalizationWrapper(
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
 
-    // Aktualizujemy konfigurację zasobów w locie
     val locale = Locale(currentLanguage.code)
     Locale.setDefault(locale)
     configuration.setLocale(locale)
@@ -47,18 +47,18 @@ fun LocalizationWrapper(
     val resources = context.resources
     resources.updateConfiguration(configuration, resources.displayMetrics)
 
-    // Usunęliśmy stąd blok key(currentLanguage), dzięki czemu NavHost NIE JEST niszczony
     content()
 }
 
 class MainActivity : ComponentActivity() {
-    private val viewModel: SubscriptionViewModel by viewModels()
+    private val subscriptionViewModel: SubscriptionViewModel by viewModels()
+    private val notificationViewModel: NotificationViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val currentTheme by viewModel.themeMode.collectAsState()
-            val currentLanguage by viewModel.language.collectAsState()
+            val currentTheme by subscriptionViewModel.themeMode.collectAsState()
+            val currentLanguage by subscriptionViewModel.language.collectAsState()
 
             SubTrackTheme(themeMode = currentTheme) {
                 Surface(
@@ -66,7 +66,11 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     LocalizationWrapper(currentLanguage = currentLanguage) {
-                        AppNavigation(subViewModel = viewModel, currentLanguage = currentLanguage)
+                        AppNavigation(
+                            subViewModel = subscriptionViewModel,
+                            notifViewModel = notificationViewModel, // PRZEKAZANIE DO GRAFU
+                            currentLanguage = currentLanguage
+                        )
                     }
                 }
             }
@@ -77,7 +81,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation(
     subViewModel: SubscriptionViewModel = viewModel(),
-    currentLanguage: AppLanguage // Przekazujemy język do nawigacji
+    notifViewModel: NotificationViewModel = viewModel(),
+    currentLanguage: AppLanguage
 ) {
     val navController = rememberNavController()
 
@@ -117,14 +122,13 @@ fun AppNavigation(
         // 4. EKRAN POWIADOMIEŃ
         composable("notifications") {
             NotificationsScreen(
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                notificationViewModel = notifViewModel
             )
         }
 
         // 5. EKRAN USTAWIEŃ
         composable("settings") {
-            // Przekazanie stanu języka jako argumentu lub klucza sprawia,
-            // że tylko ten konkretny ekran przerysuje swoje stringi po zmianie.
             androidx.compose.runtime.key(currentLanguage) {
                 SettingsScreen(
                     viewModel = subViewModel,
