@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import pl.lab2.subtrack.R
 import java.util.UUID
 
-// MODELE DANYCH
 data class Subscription(
     val id: String = UUID.randomUUID().toString(),
     val name: String,
@@ -51,10 +50,10 @@ enum class NotificationType {
 
 data class NotificationItem(
     val id: String = UUID.randomUUID().toString(),
-    val titleResId: Int,       // Przejście na ID zasobów dla pełnej lokalizacji
-    val messageResId: Int,     // Przejście na ID zasobów
-    val formatArgs: Array<Any> = emptyArray(), // Opcjonalne argumenty do stringów (np. ceny)
-    val timestampResId: Int,   // Przejście na ID zasobów
+    val titleResId: Int,
+    val messageResId: Int,
+    val formatArgs: Array<Any> = emptyArray(),
+    val timestampResId: Int,
     val type: NotificationType,
     val isRead: Boolean = false,
     val subscription: Subscription? = null
@@ -132,9 +131,9 @@ fun NotificationsScreen(onBackClick: () -> Unit) {
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
@@ -191,46 +190,50 @@ fun NotificationItemRow(notification: NotificationItem) {
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = if (notification.isRead)
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
             else
-                MaterialTheme.colorScheme.surfaceVariant
+                MaterialTheme.colorScheme.surfaceContainerHighest
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (notification.isRead) 0.dp else 2.dp
+            defaultElevation = if (notification.isRead) 0.dp else 1.dp
         )
     ) {
         Row(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(12.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
 
-            // Logika ikon oparta na typie powiadomienia i flagach tekstowych
+            // Dynamiczny dobór ikon i kolorów na podstawie rozszerzeń z Theme.kt
             val (icon: ImageVector, backgroundColor: Color) = when {
                 messageText.contains("1 dzień", ignoreCase = true) ||
                         messageText.contains("1 day", ignoreCase = true) ||
                         titleText.contains("jutro", ignoreCase = true) ||
                         titleText.contains("tomorrow", ignoreCase = true) -> {
-                    Icons.Default.NotificationsActive to Color(0xFFE50914)
+                    Icons.Default.NotificationsActive to MaterialTheme.colorScheme.critical
                 }
                 messageText.contains("3 dni", ignoreCase = true) ||
                         messageText.contains("3 days", ignoreCase = true) -> {
-                    Icons.Default.Notifications to Color(0xFFFF9800)
+                    Icons.Default.Notifications to MaterialTheme.colorScheme.warning
                 }
                 notification.type == NotificationType.TRIAL_EXPIRING -> {
-                    Icons.Default.Error to Color(0xFFD32F2F)
+                    Icons.Default.Error to MaterialTheme.colorScheme.error
                 }
                 else -> {
-                    Icons.Default.Notifications to Color(0xFF2196F3)
+                    Icons.Default.Notifications to MaterialTheme.colorScheme.info
                 }
             }
 
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(32.dp)
                     .background(
-                        color = if (!notification.isRead) backgroundColor else Color.Gray.copy(alpha = 0.3f),
+                        color = if (!notification.isRead) {
+                            backgroundColor
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f)
+                        },
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
@@ -238,8 +241,12 @@ fun NotificationItemRow(notification: NotificationItem) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = if (!notification.isRead) Color.White else Color.Gray,
-                    modifier = Modifier.size(24.dp)
+                    tint = if (!notification.isRead) {
+                        if (backgroundColor == MaterialTheme.colorScheme.error) MaterialTheme.colorScheme.onError else Color.White
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    },
+                    modifier = Modifier.size(18.dp)
                 )
             }
 
@@ -255,7 +262,7 @@ fun NotificationItemRow(notification: NotificationItem) {
                         text = titleText,
                         fontWeight = if (!notification.isRead) FontWeight.Bold else FontWeight.Normal,
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (!notification.isRead) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                     Text(
                         text = stringResource(id = notification.timestampResId),
@@ -263,7 +270,7 @@ fun NotificationItemRow(notification: NotificationItem) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
                 }
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = messageText,
                     style = MaterialTheme.typography.bodyMedium,
@@ -289,7 +296,6 @@ fun showSystemNotification(context: Context, notificationItem: NotificationItem)
         notificationManager.createNotificationChannel(channel)
     }
 
-    // Wyciągamy teksty na podstawie ID zasobu przekazanego w obiekcie
     val titleText = context.getString(notificationItem.titleResId)
     val messageText = context.getString(notificationItem.messageResId, *notificationItem.formatArgs)
 

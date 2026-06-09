@@ -1,6 +1,7 @@
 package pl.lab2.subtrack.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -19,6 +20,10 @@ val PremiumRed = Color(0xFFEF4444)
 val CoolGray = Color(0xFF6B7280)
 val AppBackground = Color(0xFFF9FAFB)
 
+val LightCritical = Color(0xFFE50914)
+val LightWarning = Color(0xFFFF9800)
+val LightInfo = Color(0xFF2196F3)
+
 // ==========================================
 // PALETA KOLORÓW (Ciemny motyw)
 // ==========================================
@@ -28,6 +33,10 @@ val NeonCyan = Color(0xFF06B6D4)
 val CyberPink = Color(0xFFF43F5E)
 val GlassWhiteText = Color(0xFFE2E8F0)
 val MutedSlate = Color(0xFF94A3B8)
+
+val DarkCritical = Color(0xFFEF5350)
+val DarkWarning = Color(0xFFFFB74D)
+val DarkInfo = Color(0xFF64B5F6)
 
 // Konstrukcja motywu jasnego
 private val LightColorScheme = lightColorScheme(
@@ -51,26 +60,32 @@ private val LightColorScheme = lightColorScheme(
 private val DarkColorScheme = darkColorScheme(
     primary = SpaceBackground,
     onPrimary = White,
-
     primaryContainer = NebulaPurple,
     onPrimaryContainer = NeonCyan,
-
     secondary = NeonCyan,
     onSecondary = SpaceBackground,
-
     background = SpaceBackground,
     onBackground = White,
-
     surface = NebulaPurple,
     onSurface = White,
-
     surfaceVariant = SpaceBackground,
     onSurfaceVariant = MutedSlate,
-
     error = CyberPink,
     onError = White
 )
 
+// ==========================================
+// ROZSZERZENIA DLA KOLORÓW POWIADOMIEŃ
+// ==========================================
+
+val ColorScheme.critical: Color
+    @Composable get() = if (MaterialTheme.colorScheme.surface == NebulaPurple) DarkCritical else LightCritical
+
+val ColorScheme.warning: Color
+    @Composable get() = if (MaterialTheme.colorScheme.surface == NebulaPurple) DarkWarning else LightWarning
+
+val ColorScheme.info: Color
+    @Composable get() = if (MaterialTheme.colorScheme.surface == NebulaPurple) DarkInfo else LightInfo
 
 
 @Composable
