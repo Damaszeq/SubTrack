@@ -7,9 +7,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import pl.lab2.subtrack.Subscription
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 enum class AppThemeMode {
     SYSTEM, LIGHT, DARK
@@ -100,9 +102,22 @@ class SubscriptionViewModel : ViewModel() {
         billingCycle: String,
         tags: List<String>
     ) {
-        val parsedPrice = priceText.toDoubleOrNull() ?: 0.0
-        // Tutaj Twoja logika zapisu do bazy Room lub aktualizacji MutableStateFlow, np.:
-        // repository.update(Subscription(id, name, plan, parsedPrice, billingCycle, tags))
+        val parsedPrice = priceText.replace(",", ".").toDoubleOrNull() ?: 0.0
+
+        // Mapujemy starą listę na nową, podmieniając tylko edytowany element
+        _subscriptions.value = _subscriptions.value.map { currentSub ->
+            if (currentSub.id == id) {
+                currentSub.copy(
+                    name = name,
+                    plan = plan,
+                    price = parsedPrice,
+                    billingCycle = billingCycle,
+                    tags = tags
+                )
+            } else {
+                currentSub // resztę zostawiamy bez zmian
+            }
+        }
     }
 
 

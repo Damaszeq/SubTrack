@@ -33,6 +33,7 @@ fun MainScreen(
     onNotificationsClick: () -> Unit,
     onSettingsClick: () -> Unit = {}
 ) {
+
     val subscriptions by viewModel.subscriptions.collectAsState()
     val totalMonthlyCost by viewModel.totalMonthlyCost.collectAsState()
 

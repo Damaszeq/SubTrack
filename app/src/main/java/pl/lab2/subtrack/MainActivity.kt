@@ -119,7 +119,17 @@ fun AppNavigation(
         }
 
         // 3. EKRAN SZCZEGÓŁÓW
-        composable(route = "details/{subId}") { backStackEntry ->
+        composable(
+            route = "details/{subId}",
+            exitTransition = {
+                fadeOut(animationSpec = tween(250)) +
+                        scaleOut(targetScale = 0.95f, animationSpec = tween(250))
+            },
+            popEnterTransition = {
+                fadeIn(animationSpec = tween(300)) +
+                        scaleIn(initialScale = 0.95f, animationSpec = tween(300))
+            }
+        ) { backStackEntry ->
             val subId = backStackEntry.arguments?.getString("subId") ?: ""
             SubscriptionDetailsScreen(
                 subId = subId,
@@ -148,7 +158,7 @@ fun AppNavigation(
                 )
             }
         }
-
+        // 6. EKRAN EDYCJI
         composable(
             route = "edit_subscription/{subId}",
             arguments = listOf(navArgument("subId") { type = NavType.StringType }),

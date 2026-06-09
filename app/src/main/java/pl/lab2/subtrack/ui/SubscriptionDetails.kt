@@ -63,15 +63,14 @@ fun SubscriptionDetailsScreen(
                         Icon(Icons.Default.Edit, contentDescription = stringResource(id = R.string.edit))
                     }
                     IconButton(onClick = {
-                        if (subId != null) {
+                        onBackClick()
+                        subscription?.id?.let { subId ->
                             viewModel.deleteSubscription(subId)
-                            onBackClick()
                         }
                     }) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = stringResource(id = R.string.delete),
-                            tint = MaterialTheme.colorScheme.error
+                            contentDescription = stringResource(R.string.delete_desc)
                         )
                     }
                 }
