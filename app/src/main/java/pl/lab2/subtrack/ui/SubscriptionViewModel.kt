@@ -50,7 +50,7 @@ class SubscriptionViewModel : ViewModel() {
 
     // MOTYW APLIKACJI
     private val _themeMode = MutableStateFlow(AppThemeMode.SYSTEM)
-    val themeMode: StateFlow<AppThemeMode> = _themeMode.asStateFlow() // Poprawiono: bezpieczna ekspozycja
+    val themeMode: StateFlow<AppThemeMode> = _themeMode.asStateFlow()
 
     fun setThemeMode(mode: AppThemeMode) {
         _themeMode.value = mode
@@ -86,6 +86,23 @@ class SubscriptionViewModel : ViewModel() {
     // USYWANIE SUBSKRYPCJI
     fun deleteSubscription(id: String) {
         _subscriptions.value = _subscriptions.value.filterNot { it.id == id }
+    }
+
+    fun getSubscriptionById(id: String): Subscription? {
+        return _subscriptions.value.find { it.id == id }
+    }
+
+    fun updateSubscription(
+        id: String,
+        name: String,
+        plan: String,
+        priceText: String,
+        billingCycle: String,
+        tags: List<String>
+    ) {
+        val parsedPrice = priceText.toDoubleOrNull() ?: 0.0
+        // Tutaj Twoja logika zapisu do bazy Room lub aktualizacji MutableStateFlow, np.:
+        // repository.update(Subscription(id, name, plan, parsedPrice, billingCycle, tags))
     }
 
 

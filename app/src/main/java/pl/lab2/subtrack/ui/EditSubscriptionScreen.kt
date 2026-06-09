@@ -29,21 +29,25 @@ import pl.lab2.subtrack.ui.components.SubscriptionIcon
 @SuppressLint("LocalContextGetResourceValueCall")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddSubscriptionScreen(
+fun EditSubscriptionScreen(
+    subscriptionId: String,
     viewModel: SubscriptionViewModel,
     onBackClick: () -> Unit
 ) {
-    val context = LocalContext.current // POPRAWIONE: Przeniesione do wewnątrz funkcji Composable
+    val context = LocalContext.current
+    // Dedykowany stan scrolla dla siatki presetów usługi
+    val presetsScrollState = rememberScrollState()
     val presets = SubscriptionPresetsData.availablePresets
 
+    // Stany formularza
     var selectedService by remember { mutableStateOf<ServicePreset?>(null) }
     var selectedPlan by remember { mutableStateOf<SubscriptionPlanPreset?>(null) }
 
     var name by remember { mutableStateOf("") }
     var plan by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
-
     var billingCycleResId by remember { mutableStateOf(R.string.cycle_month) }
+    var currentTags by remember { mutableStateOf<List<String>>(emptyList()) }
 
     var isPlanDropdownExpanded by remember { mutableStateOf(false) }
     var isBillingDropdownExpanded by remember { mutableStateOf(false) }
@@ -55,21 +59,52 @@ fun AddSubscriptionScreen(
         R.string.cycle_year
     )
 
+    LaunchedEffect(subscriptionId) {
+        viewModel.getSubscriptionById(subscriptionId)?.let { sub ->
+            name = sub.name
+            plan = sub.plan
+            price = sub.price.toString()
+            currentTags = sub.tags
+
+            val foundService = presets.find { it.serviceName.equals(sub.name, ignoreCase = true) }
+            selectedService = foundService
+            selectedPlan = foundService?.plans?.find { it.planName.equals(sub.plan, ignoreCase = true) }
+
+            // --- AUTOMATYCZNY SCROLL DO ZAZNACZONEGO ELEMENTU ---
+            if (foundService != null) {
+                // Sortujemy tak samo jak przy wyświetlaniu i szukamy indeksu usługi
+                val sortedPresets = presets.sortedBy { it.serviceName }
+                val index = sortedPresets.indexOf(foundService)
+
+                if (index != -1) {
+                    val columns = 3
+                    val rowIndex = index / columns // Obliczamy, w którym rzędzie leży element
+
+                    // Szacowana wysokość jednego rzędu w pikselach (np. wysokość karty + padding)
+                    val rowHeightInPixels = 260
+
+                    // Płynne przewinięcie do wyliczonej pozycji w pikselach
+                    presetsScrollState.animateScrollTo(rowIndex * rowHeightInPixels)
+                }
+            }
+            // ------------------------------------------------------
+
+            billingCycleResId = when (sub.billingCycle.lowercase()) {
+                "tydzień", "week", context.getString(R.string.cycle_week).lowercase() -> R.string.cycle_week
+                "rok", "year", context.getString(R.string.cycle_year).lowercase() -> R.string.cycle_year
+                "kwartał", "quarter", context.getString(R.string.cycle_quarter).lowercase() -> R.string.cycle_quarter
+                else -> R.string.cycle_month
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(id = R.string.add_subscription),
-                        fontWeight = FontWeight.Bold
-                    )
-                },
+                title = { Text(text = stringResource(id = R.string.edit_desc), fontWeight = FontWeight.Bold) }, // Używamy "Edytuj"
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = stringResource(id = R.string.back)
-                        )
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
                 }
             )
@@ -84,25 +119,23 @@ fun AddSubscriptionScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
 
-            // SECTION: NAGŁÓWEK WYBORU
+            // RE-UŻYWALNA SIATKA PASUJĄCA DO DODAWANIA
             Text(
                 text = stringResource(id = R.string.choose_service_label),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
 
-            // 1. TRZYKOLUMNOWA SIATKA (GRID) Z OGRANICZONĄ WYSOKOŚCIĄ I SCROLLEM
             val columns = 3
             val chunkedPresets = remember(presets) {
                 presets.sortedBy { it.serviceName }.chunked(columns)
             }
-            val gridScrollState = rememberScrollState()
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 280.dp)
-                    .verticalScroll(gridScrollState)
+                    .verticalScroll(presetsScrollState)
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -131,27 +164,16 @@ fun AddSubscriptionScreen(
                                             .aspectRatio(1.75f),
                                         shape = RoundedCornerShape(12.dp),
                                         colors = CardDefaults.cardColors(
-                                            containerColor = if (isSelected) {
-                                                MaterialTheme.colorScheme.primaryContainer
-                                            } else {
-                                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                                            }
+                                            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                                         ),
-                                        border = if (isSelected) {
-                                            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-                                        } else null
+                                        border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
                                     ) {
                                         Column(
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .padding(6.dp),
+                                            modifier = Modifier.fillMaxSize().padding(6.dp),
                                             horizontalAlignment = Alignment.CenterHorizontally,
                                             verticalArrangement = Arrangement.Center
                                         ) {
-                                            SubscriptionIcon(
-                                                serviceName = preset.serviceName,
-                                                modifier = Modifier.size(32.dp)
-                                            )
+                                            SubscriptionIcon(serviceName = preset.serviceName, modifier = Modifier.size(32.dp))
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(
                                                 text = preset.serviceName,
@@ -174,27 +196,17 @@ fun AddSubscriptionScreen(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-            // 2. WYBÓR PLANU
+            // DROPDOWN PLANU
             ExposedDropdownMenuBox(
                 expanded = isPlanDropdownExpanded,
-                onExpandedChange = {
-                    if (selectedService != null) {
-                        isPlanDropdownExpanded = !isPlanDropdownExpanded
-                    }
-                }
+                onExpandedChange = { if (selectedService != null) isPlanDropdownExpanded = !isPlanDropdownExpanded }
             ) {
-                val labelText = if (selectedService == null) {
-                    stringResource(id = R.string.hint_select_service_first)
-                } else {
-                    stringResource(id = R.string.hint_select_plan)
-                }
-
                 OutlinedTextField(
                     value = plan,
                     onValueChange = {},
                     readOnly = true,
                     enabled = selectedService != null,
-                    label = { Text(labelText) },
+                    label = { Text(stringResource(id = R.string.hint_select_plan)) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isPlanDropdownExpanded) },
                     modifier = Modifier.fillMaxWidth().menuAnchor()
                 )
@@ -204,20 +216,11 @@ fun AddSubscriptionScreen(
                 ) {
                     selectedService?.plans?.forEach { planPreset ->
                         DropdownMenuItem(
-                            text = {
-                                Text(
-                                    stringResource(
-                                        id = R.string.preset_plan_format,
-                                        planPreset.planName,
-                                        planPreset.price
-                                    )
-                                )
-                            },
+                            text = { Text(stringResource(id = R.string.preset_plan_format, planPreset.planName, planPreset.price)) },
                             onClick = {
                                 selectedPlan = planPreset
                                 plan = planPreset.planName
                                 price = planPreset.price.toString()
-
                                 billingCycleResId = when (planPreset.billingCycle.lowercase()) {
                                     "tydzień", "week" -> R.string.cycle_week
                                     "rok", "year" -> R.string.cycle_year
@@ -231,31 +234,25 @@ fun AddSubscriptionScreen(
                 }
             }
 
-            // 3. CENA
+            // POLE CENA
             OutlinedTextField(
                 value = price,
                 onValueChange = { price = it },
                 label = { Text(stringResource(id = R.string.label_price_with_currency)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                enabled = selectedService != null,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
 
-            // 4. CYKL ROZLICZENIOWY
+            // POLE CYKL ROZLICZENIOWY
             ExposedDropdownMenuBox(
                 expanded = isBillingDropdownExpanded,
-                onExpandedChange = {
-                    if (selectedService != null) {
-                        isBillingDropdownExpanded = !isBillingDropdownExpanded
-                    }
-                }
+                onExpandedChange = { isBillingDropdownExpanded = !isBillingDropdownExpanded }
             ) {
                 OutlinedTextField(
                     value = stringResource(id = billingCycleResId),
                     onValueChange = {},
                     readOnly = true,
-                    enabled = selectedService != null,
                     label = { Text(stringResource(id = R.string.label_cycle)) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isBillingDropdownExpanded) },
                     modifier = Modifier.fillMaxWidth().menuAnchor()
@@ -278,7 +275,7 @@ fun AddSubscriptionScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // DOLNE PRZYCISKI
+            // PRZYCISKI DOLNE
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -288,22 +285,20 @@ fun AddSubscriptionScreen(
                 }
                 Button(
                     onClick = {
-                        val currentTags = selectedService?.tags ?: emptyList()
-
                         val finalBillingCycleText = context.getString(billingCycleResId)
 
-
-                        viewModel.addSubscription(
-                            name = selectedService?.serviceName ?: name,
-                            plan = selectedPlan?.planName ?: plan,
+                        viewModel.updateSubscription(
+                            id = subscriptionId,
+                            name = name,
+                            plan = plan,
                             priceText = price,
                             billingCycle = finalBillingCycleText,
-                            tags = currentTags
+                            tags = selectedService?.tags ?: currentTags
                         )
                         onBackClick()
                     },
                     modifier = Modifier.weight(1f),
-                    enabled = selectedService != null && price.isNotBlank()
+                    enabled = name.isNotBlank() && price.isNotBlank()
                 ) {
                     Text(text = stringResource(id = R.string.btn_save))
                 }

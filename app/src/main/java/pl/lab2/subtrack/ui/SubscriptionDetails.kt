@@ -24,7 +24,7 @@ import pl.lab2.subtrack.ui.components.SubscriptionIcon
 data class PaymentHistoryMock(
     val date: String,
     val price: Double,
-    val isPaid: Boolean = true // Flaga do translacji statusu
+    val isPaid: Boolean = true
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,7 +32,8 @@ data class PaymentHistoryMock(
 fun SubscriptionDetailsScreen(
     subId: String?,
     viewModel: SubscriptionViewModel,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onEditClick: (String) -> Unit
 ) {
     val subscriptions by viewModel.subscriptions.collectAsState()
     val subscription = subscriptions.find { it.id == subId }
@@ -58,7 +59,7 @@ fun SubscriptionDetailsScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* TODO: Edycja */ }) {
+                    IconButton(onClick = { subscription?.id?.let { onEditClick(it) } }) {
                         Icon(Icons.Default.Edit, contentDescription = stringResource(id = R.string.edit))
                     }
                     IconButton(onClick = {
@@ -134,7 +135,7 @@ fun SubscriptionDetailsScreen(
                             )
                             InfoColumn(
                                 label = stringResource(id = R.string.label_cycle),
-                                value = subscription.billingCycle // Wartość cyklu rozliczeniowego powinna być tłumaczona w bazie lub ViewModelu
+                                value = subscription.billingCycle
                             )
                         }
                     }

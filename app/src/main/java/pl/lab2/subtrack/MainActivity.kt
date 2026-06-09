@@ -1,10 +1,16 @@
 package pl.lab2.subtrack
 
+import android.R.attr.type
 import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -17,9 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import pl.lab2.subtrack.ui.MainScreen
 import pl.lab2.subtrack.ui.AddSubscriptionScreen
 import pl.lab2.subtrack.ui.SubscriptionDetailsScreen
@@ -30,6 +38,7 @@ import pl.lab2.subtrack.ui.NotificationViewModel // DODANY IMPORT
 import pl.lab2.subtrack.ui.SubTrackTheme
 import pl.lab2.subtrack.ui.AppThemeMode
 import pl.lab2.subtrack.ui.AppLanguage
+import pl.lab2.subtrack.ui.EditSubscriptionScreen
 import java.util.Locale
 
 @Composable
@@ -110,12 +119,15 @@ fun AppNavigation(
         }
 
         // 3. EKRAN SZCZEGÓŁÓW
-        composable("details/{subId}") { backStackEntry ->
-            val subId = backStackEntry.arguments?.getString("subId")
+        composable(route = "details/{subId}") { backStackEntry ->
+            val subId = backStackEntry.arguments?.getString("subId") ?: ""
             SubscriptionDetailsScreen(
                 subId = subId,
                 viewModel = subViewModel,
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                onEditClick = { id ->
+                    navController.navigate("edit_subscription/$id")
+                }
             )
         }
 
@@ -135,6 +147,32 @@ fun AppNavigation(
                     onBackClick = { navController.popBackStack() }
                 )
             }
+        }
+
+        composable(
+            route = "edit_subscription/{subId}",
+            arguments = listOf(navArgument("subId") { type = NavType.StringType }),
+            enterTransition = {
+                fadeIn(animationSpec = tween(300)) +
+                        scaleIn(initialScale = 0.95f, animationSpec = tween(300))
+            },
+            exitTransition = {
+                fadeOut(animationSpec = tween(250))
+            },
+            popEnterTransition = {
+                fadeIn(animationSpec = tween(300))
+            },
+            popExitTransition = {
+                fadeOut(animationSpec = tween(250)) +
+                        scaleOut(targetScale = 0.95f, animationSpec = tween(250))
+            }
+        ) { backStackEntry ->
+            val subId = backStackEntry.arguments?.getString("subId") ?: ""
+            EditSubscriptionScreen(
+                subscriptionId = subId,
+                viewModel = subViewModel,
+                onBackClick = { navController.popBackStack() }
+            )
         }
     }
 }
