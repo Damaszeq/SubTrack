@@ -148,5 +148,6 @@
 
     <string name="mock_title_price_update">Price catalog updated</string>
     <string name="mock_msg_system">SubTrack introduces new cloud synchronization features.</string>
+    <string name="total_monthly_expenses">Suma wydatków (miesięcznie)</string>
 
 </resources>

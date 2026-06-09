@@ -6,6 +6,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import pl.lab2.subtrack.Subscription
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
 enum class AppThemeMode {
     SYSTEM, LIGHT, DARK
@@ -84,8 +88,14 @@ class SubscriptionViewModel : ViewModel() {
         _subscriptions.value = _subscriptions.value.filterNot { it.id == id }
     }
 
-    // SUMOWANIE KOSZTÓW
-    fun getTotalSum(): Double {
-        return _subscriptions.value.sumOf { it.price }
-    }
+
+    val totalMonthlyCost: StateFlow<Double> = subscriptions
+        .map { list ->
+            list.sumOf { it.monthlyEquivalent }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0.0
+        )
 }

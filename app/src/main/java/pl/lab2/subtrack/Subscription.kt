@@ -7,4 +7,12 @@ data class Subscription(
     val price: Double,
     val billingCycle: String,
     val tags: List<String> = emptyList()
-)
+) {
+    val monthlyEquivalent: Double
+        get() = when (billingCycle.lowercase()) {
+            "tydzień", "week" -> price * 4.33 // średnia liczba tygodni w miesiącu
+            "kwartał", "quarter" -> price / 3.0
+            "rok", "year" -> price / 12.0
+            else -> price // domyślnie traktujemy jako miesięczny
+        }
+}

@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Tune
@@ -21,6 +22,7 @@ import pl.lab2.subtrack.R
 import pl.lab2.subtrack.Subscription
 import pl.lab2.subtrack.ui.components.SubscriptionIcon
 import java.util.Locale
+import androidx.compose.ui.platform.LocalLocale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +34,7 @@ fun MainScreen(
     onSettingsClick: () -> Unit = {}
 ) {
     val subscriptions by viewModel.subscriptions.collectAsState()
+    val totalMonthlyCost by viewModel.totalMonthlyCost.collectAsState()
 
     Scaffold(
         topBar = {
@@ -70,10 +73,11 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            // LISTA SUBSKRYPCJI (scrolluje się pod dolnym paskiem)
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = 90.dp)
+                    .padding(bottom = 80.dp)
                     .verticalScroll(rememberScrollState())
             ) {
                 subscriptions.forEach { sub ->
@@ -88,30 +92,37 @@ fun MainScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+
+
                 Card(
-                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .wrapContentWidth()
+                        .padding(vertical = 4.dp),
+                    shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Column(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = stringResource(id = R.string.total_sum_label).uppercase(),
+                            text = stringResource(R.string.total_monthly_expenses),
                             style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = String.format(Locale.US, "%.2f PLN", viewModel.getTotalSum()),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.ExtraBold,
+                            text = String.format(LocalLocale.current.platformLocale, "%.2f PLN", totalMonthlyCost),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
@@ -186,7 +197,7 @@ fun SubscriptionItem(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Zlokalizowana logika określania tekstu płatności
+                //logika określania tekstu płatności
                 val paymentText = if (daysLeft <= 3) {
                     when (daysLeft) {
                         0 -> stringResource(id = R.string.payment_today)
