@@ -17,8 +17,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import pl.lab2.subtrack.R
 import pl.lab2.subtrack.data.SubscriptionPresetsData
@@ -35,8 +33,6 @@ fun EditSubscriptionScreen(
     onBackClick: () -> Unit
 ) {
     val context = LocalContext.current
-    // Dedykowany stan scrolla dla siatki presetów usługi
-    val presetsScrollState = rememberScrollState()
     val presets = SubscriptionPresetsData.availablePresets
 
     // Stany formularza
@@ -66,12 +62,7 @@ fun EditSubscriptionScreen(
             price = sub.price.toString()
             currentTags = sub.tags
 
-            // --- SPYTNY MECHANIZM SZUKANIA USŁUGI ---
             val subNameLower = sub.name.lowercase().trim()
-
-            // Szukamy presetu, który najbardziej pasuje:
-            // Sprawdza czy nazwa z bazy zawiera się w presecie (np. "chatgpt" w "chatgpt plus")
-            // LUB czy nazwa z presetu zawiera się w bazie (np. "spotify" w "spotify premium")
             val foundService = presets.find { preset ->
                 val presetNameLower = preset.serviceName.lowercase().trim()
                 presetNameLower.contains(subNameLower) || subNameLower.contains(presetNameLower)
@@ -79,23 +70,6 @@ fun EditSubscriptionScreen(
 
             selectedService = foundService
             selectedPlan = foundService?.plans?.find { it.planName.equals(sub.plan, ignoreCase = true) }
-
-            // --- AUTOMATYCZNY SCROLL DO ZAZNACZONEGO ELEMENTU ---
-            if (foundService != null) {
-                val sortedPresets = presets.sortedBy { it.serviceName }
-
-                // Szukamy indeksu dokładnie tego obiektu, który wyżej sparowaliśmy
-                val index = sortedPresets.indexOf(foundService)
-
-                if (index != -1) {
-                    val columns = 3
-                    val rowIndex = index / columns
-
-                    val rowHeightInPixels = 260
-                    presetsScrollState.animateScrollTo(rowIndex * rowHeightInPixels)
-                }
-            }
-            // ------------------------------------------------------
 
             billingCycleResId = when (sub.billingCycle.lowercase()) {
                 "tydzień", "week", context.getString(R.string.cycle_week).lowercase() -> R.string.cycle_week
@@ -109,12 +83,17 @@ fun EditSubscriptionScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(text = stringResource(id = R.string.edit_desc), fontWeight = FontWeight.Bold) }, // Używamy "Edytuj"
+                title = { Text(text = stringResource(id = R.string.edit_desc), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(imageVector = Icons.Default.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             )
         }
     ) { innerPadding ->
@@ -124,85 +103,57 @@ fun EditSubscriptionScreen(
                 .padding(innerPadding)
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp) // Spójne odstępy
         ) {
 
-            // RE-UŻYWALNA SIATKA PASUJĄCA DO DODAWANIA
-            Text(
-                text = stringResource(id = R.string.choose_service_label),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            val columns = 3
-            val chunkedPresets = remember(presets) {
-                presets.sortedBy { it.serviceName }.chunked(columns)
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 280.dp)
-                    .verticalScroll(presetsScrollState)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp), // Taki sam promień jak OutlinedTextField
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
             ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    chunkedPresets.forEach { rowItems ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            for (i in 0 until columns) {
-                                if (i < rowItems.size) {
-                                    val preset = rowItems[i]
-                                    val isSelected = selectedService == preset
+                    Surface(
+                        modifier = Modifier.size(56.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            SubscriptionIcon(
+                                serviceName = name,
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
+                    }
 
-                                    Card(
-                                        onClick = {
-                                            selectedService = preset
-                                            name = preset.serviceName
-                                            selectedPlan = null
-                                            plan = ""
-                                            price = ""
-                                        },
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .aspectRatio(1.75f),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                                        ),
-                                        border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
-                                    ) {
-                                        Column(
-                                            modifier = Modifier.fillMaxSize().padding(6.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            verticalArrangement = Arrangement.Center
-                                        ) {
-                                            SubscriptionIcon(serviceName = preset.serviceName, modifier = Modifier.size(32.dp))
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = preset.serviceName,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                                textAlign = TextAlign.Center,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                        }
-                                    }
-                                } else {
-                                    Spacer(modifier = Modifier.weight(1f))
-                                }
-                            }
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column {
+                        Text(
+                            text = name,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        if (plan.isNotBlank()) {
+                            Text(
+                                text = plan,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }
             }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             // DROPDOWN PLANU
             ExposedDropdownMenuBox(
@@ -211,33 +162,44 @@ fun EditSubscriptionScreen(
             ) {
                 OutlinedTextField(
                     value = plan,
-                    onValueChange = {},
-                    readOnly = true,
-                    enabled = selectedService != null,
+                    onValueChange = { plan = it },
+                    readOnly = selectedService != null,
                     label = { Text(stringResource(id = R.string.hint_select_plan)) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isPlanDropdownExpanded) },
+                    trailingIcon = {
+                        if (selectedService != null) {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = isPlanDropdownExpanded)
+                        }
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
+                    ),
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth().menuAnchor()
                 )
-                ExposedDropdownMenu(
-                    expanded = isPlanDropdownExpanded,
-                    onDismissRequest = { isPlanDropdownExpanded = false }
-                ) {
-                    selectedService?.plans?.forEach { planPreset ->
-                        DropdownMenuItem(
-                            text = { Text(stringResource(id = R.string.preset_plan_format, planPreset.planName, planPreset.price)) },
-                            onClick = {
-                                selectedPlan = planPreset
-                                plan = planPreset.planName
-                                price = planPreset.price.toString()
-                                billingCycleResId = when (planPreset.billingCycle.lowercase()) {
-                                    "tydzień", "week" -> R.string.cycle_week
-                                    "rok", "year" -> R.string.cycle_year
-                                    "kwartał", "quarter" -> R.string.cycle_quarter
-                                    else -> R.string.cycle_month
+                if (selectedService != null) {
+                    ExposedDropdownMenu(
+                        expanded = isPlanDropdownExpanded,
+                        onDismissRequest = { isPlanDropdownExpanded = false }
+                    ) {
+                        selectedService?.plans?.forEach { planPreset ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(id = R.string.preset_plan_format, planPreset.planName, planPreset.price)) },
+                                onClick = {
+                                    selectedPlan = planPreset
+                                    plan = planPreset.planName
+                                    price = planPreset.price.toString()
+                                    billingCycleResId = when (planPreset.billingCycle.lowercase()) {
+                                        "tydzień", "week" -> R.string.cycle_week
+                                        "rok", "year" -> R.string.cycle_year
+                                        "kwartał", "quarter" -> R.string.cycle_quarter
+                                        else -> R.string.cycle_month
+                                    }
+                                    isPlanDropdownExpanded = false
                                 }
-                                isPlanDropdownExpanded = false
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }
@@ -249,6 +211,12 @@ fun EditSubscriptionScreen(
                 label = { Text(stringResource(id = R.string.label_price_with_currency)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
+                ),
+                shape = RoundedCornerShape(12.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
 
@@ -263,6 +231,12 @@ fun EditSubscriptionScreen(
                     readOnly = true,
                     label = { Text(stringResource(id = R.string.label_cycle)) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isBillingDropdownExpanded) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
+                    ),
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth().menuAnchor()
                 )
                 ExposedDropdownMenu(
@@ -283,13 +257,19 @@ fun EditSubscriptionScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // PRZYCISKI DOLNE
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                OutlinedButton(onClick = onBackClick, modifier = Modifier.weight(1f)) {
-                    Text(text = stringResource(id = R.string.btn_cancel))
+                OutlinedButton(
+                    onClick = onBackClick,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                    )
+                ) {
+                    Text(text = stringResource(id = R.string.btn_cancel), fontWeight = FontWeight.SemiBold)
                 }
                 Button(
                     onClick = {
@@ -306,9 +286,14 @@ fun EditSubscriptionScreen(
                         onBackClick()
                     },
                     modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
                     enabled = name.isNotBlank() && price.isNotBlank()
                 ) {
-                    Text(text = stringResource(id = R.string.btn_save))
+                    Text(text = stringResource(id = R.string.btn_save), fontWeight = FontWeight.Bold)
                 }
             }
         }
