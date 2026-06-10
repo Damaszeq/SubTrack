@@ -66,24 +66,32 @@ fun EditSubscriptionScreen(
             price = sub.price.toString()
             currentTags = sub.tags
 
-            val foundService = presets.find { it.serviceName.equals(sub.name, ignoreCase = true) }
+            // --- SPYTNY MECHANIZM SZUKANIA USŁUGI ---
+            val subNameLower = sub.name.lowercase().trim()
+
+            // Szukamy presetu, który najbardziej pasuje:
+            // Sprawdza czy nazwa z bazy zawiera się w presecie (np. "chatgpt" w "chatgpt plus")
+            // LUB czy nazwa z presetu zawiera się w bazie (np. "spotify" w "spotify premium")
+            val foundService = presets.find { preset ->
+                val presetNameLower = preset.serviceName.lowercase().trim()
+                presetNameLower.contains(subNameLower) || subNameLower.contains(presetNameLower)
+            }
+
             selectedService = foundService
             selectedPlan = foundService?.plans?.find { it.planName.equals(sub.plan, ignoreCase = true) }
 
             // --- AUTOMATYCZNY SCROLL DO ZAZNACZONEGO ELEMENTU ---
             if (foundService != null) {
-                // Sortujemy tak samo jak przy wyświetlaniu i szukamy indeksu usługi
                 val sortedPresets = presets.sortedBy { it.serviceName }
+
+                // Szukamy indeksu dokładnie tego obiektu, który wyżej sparowaliśmy
                 val index = sortedPresets.indexOf(foundService)
 
                 if (index != -1) {
                     val columns = 3
-                    val rowIndex = index / columns // Obliczamy, w którym rzędzie leży element
+                    val rowIndex = index / columns
 
-                    // Szacowana wysokość jednego rzędu w pikselach (np. wysokość karty + padding)
                     val rowHeightInPixels = 260
-
-                    // Płynne przewinięcie do wyliczonej pozycji w pikselach
                     presetsScrollState.animateScrollTo(rowIndex * rowHeightInPixels)
                 }
             }
