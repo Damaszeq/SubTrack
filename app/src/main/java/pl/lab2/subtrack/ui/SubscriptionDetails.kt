@@ -1,5 +1,7 @@
 package pl.lab2.subtrack.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,6 +19,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 import pl.lab2.subtrack.R
 import pl.lab2.subtrack.ui.components.SubscriptionIcon
@@ -37,14 +41,20 @@ fun SubscriptionDetailsScreen(
 ) {
     val subscriptions by viewModel.subscriptions.collectAsState()
     val subscription = subscriptions.find { it.id == subId }
+    val dateFormatter = remember { SimpleDateFormat("dd.MM.yyyy", Locale("pl", "PL")) }
 
-    // Mockowane daty płatności (można je w przyszłości generować dynamicznie)
-    val mockPayments = remember(subscription) {
+    //Lokalne mocki odzwierciedlające stany z ekranu dodawania, dopóki nie ma ich w bazie
+    val startDateMock = remember(subscription) { System.currentTimeMillis() }
+    val isTrialMock = remember(subscription) { true }
+    val trialOptionMock = remember(subscription) { "Pierwszy miesiąc za 0 zł, potem standard" }
+
+    val mockPayments = remember(subscription, startDateMock) {
         if (subscription != null) {
             listOf(
-                PaymentHistoryMock(date = "24.05.2026", price = subscription.price),
-                PaymentHistoryMock(date = "24.04.2026", price = subscription.price),
-                PaymentHistoryMock(date = "24.03.2026", price = subscription.price)
+                PaymentHistoryMock(date = dateFormatter.format(Date(startDateMock)), price = subscription.price),
+                PaymentHistoryMock(date = "10.05.2026", price = subscription.price),
+                PaymentHistoryMock(date = "10.05.2026", price = subscription.price),
+                PaymentHistoryMock(date = "10.04.2026", price = subscription.price)
             )
         } else emptyList()
     }
@@ -73,7 +83,13 @@ fun SubscriptionDetailsScreen(
                             contentDescription = stringResource(R.string.delete_desc)
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             )
         }
     ) { innerPadding ->
@@ -93,6 +109,8 @@ fun SubscriptionDetailsScreen(
         ) {
             item {
                 Spacer(modifier = Modifier.height(16.dp))
+
+                // GŁÓWNA KARTA SUBKRYPCJI
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
@@ -124,25 +142,90 @@ fun SubscriptionDetailsScreen(
 
                         HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
 
-                        Row(
+                        // NOWY UKŁAD: Siatka parametrów finansowo-czasowych
+                        Column(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            InfoColumn(
-                                label = stringResource(id = R.string.label_price),
-                                value = stringResource(id = R.string.price_format, subscription.price)
-                            )
-                            InfoColumn(
-                                label = stringResource(id = R.string.label_cycle),
-                                value = subscription.billingCycle
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                InfoColumn(
+                                    label = stringResource(id = R.string.label_price),
+                                    value = stringResource(id = R.string.price_format, subscription.price),
+                                    modifier = Modifier.weight(1f)
+                                )
+                                InfoColumn(
+                                    label = stringResource(id = R.string.label_cycle),
+                                    value = subscription.billingCycle,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                InfoColumn(
+                                    label = "Data rozpoczęcia",
+                                    value = dateFormatter.format(Date(startDateMock)),
+                                    modifier = Modifier.weight(1f)
+                                )
+                                InfoColumn(
+                                    label = "Powiadomienia",
+                                    value = "Wyłączone",
+                                    modifier = Modifier.weight(1f),
+                                    alpha = 0.4f
+                                )
+                            }
                         }
                     }
                 }
             }
 
+            // SEKCJA OKRESU PRÓBNEGO (Wyświetlana tylko jeśli subskrypcja to Trial)
             item {
-                Column(modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)) {
+                AnimatedVisibility(visible = isTrialMock) {
+                    OutlinedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.outlinedCardColors(
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
+                        ),
+                        border = BorderStroke(0.dp, Color.Transparent)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.padding(end = 12.dp)
+                            )
+                            Column {
+                                Text(
+                                    text = "Aktywny okres próbny (Trial)",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.tertiary
+                                )
+                                Text(
+                                    text = trialOptionMock,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // SEKCJA HISTORII PŁATNOŚCI
+            item {
+                Column(modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)) {
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
@@ -166,10 +249,27 @@ fun SubscriptionDetailsScreen(
 }
 
 @Composable
-fun InfoColumn(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.Start) {
-        Text(text = label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(text = value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+fun InfoColumn(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    alpha: Float = 1f
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.Start
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
+        )
     }
 }
 

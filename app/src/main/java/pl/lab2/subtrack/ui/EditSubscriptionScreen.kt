@@ -1,7 +1,9 @@
 package pl.lab2.subtrack.ui
 
 import android.annotation.SuppressLint
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,6 +11,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +27,8 @@ import pl.lab2.subtrack.data.SubscriptionPresetsData
 import pl.lab2.subtrack.model.ServicePreset
 import pl.lab2.subtrack.model.SubscriptionPlanPreset
 import pl.lab2.subtrack.ui.components.SubscriptionIcon
+import java.text.SimpleDateFormat
+import java.util.*
 
 @SuppressLint("LocalContextGetResourceValueCall")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,19 +40,27 @@ fun EditSubscriptionScreen(
 ) {
     val context = LocalContext.current
     val presets = SubscriptionPresetsData.availablePresets
+    val dateFormatter = remember { SimpleDateFormat("dd.MM.yyyy", Locale("pl", "PL")) }
 
-    // Stany formularza
+    // Podstawowe stany formularza
     var selectedService by remember { mutableStateOf<ServicePreset?>(null) }
     var selectedPlan by remember { mutableStateOf<SubscriptionPlanPreset?>(null) }
-
     var name by remember { mutableStateOf("") }
     var plan by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
     var billingCycleResId by remember { mutableStateOf(R.string.cycle_month) }
     var currentTags by remember { mutableStateOf<List<String>>(emptyList()) }
 
+    // NOWE STANY (Lokalne – gotowe pod przyszłą integrację z bazą)
+    var startDateLong by remember { mutableStateOf(System.currentTimeMillis()) }
+    var isTrialChecked by remember { mutableStateOf(false) }
+    var selectedTrialOption by remember { mutableStateOf("Pierwszy miesiąc za 0 zł, potem standard") }
+
+    // Stany UI dla widoczności dropdownów / kalendarza
     var isPlanDropdownExpanded by remember { mutableStateOf(false) }
     var isBillingDropdownExpanded by remember { mutableStateOf(false) }
+    var isTrialDropdownExpanded by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     val billingOptions = listOf(
         R.string.cycle_week,
@@ -55,12 +69,22 @@ fun EditSubscriptionScreen(
         R.string.cycle_year
     )
 
+    val trialOptions = listOf(
+        "Pierwszy miesiąc za 0 zł, potem standard",
+        "Pierwszy miesiąc za 50% ceny, potem standard",
+        "Własny trial (określona liczba dni wolnych)"
+    )
+
+    // Ładowanie danych istniejącej subskrypcji
     LaunchedEffect(subscriptionId) {
         viewModel.getSubscriptionById(subscriptionId)?.let { sub ->
             name = sub.name
             plan = sub.plan
             price = sub.price.toString()
             currentTags = sub.tags
+            // startDateLong = sub.startDate
+            // isTrialChecked = sub.isTrial
+            // selectedTrialOption = sub.trialOption
 
             val subNameLower = sub.name.lowercase().trim()
             val foundService = presets.find { preset ->
@@ -78,6 +102,23 @@ fun EditSubscriptionScreen(
                 else -> R.string.cycle_month
             }
         }
+    }
+
+    // SYSTEMOWY DATE PICKER DIALOG
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = startDateLong)
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { startDateLong = it }
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Anuluj") }
+            }
+        ) { DatePicker(state = datePickerState) }
     }
 
     Scaffold(
@@ -103,21 +144,18 @@ fun EditSubscriptionScreen(
                 .padding(innerPadding)
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp) // Spójne odstępy
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
+            // KARTA PODGLĄDU USŁUGI
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp), // Taki sam promień jak OutlinedTextField
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Surface(
@@ -126,10 +164,7 @@ fun EditSubscriptionScreen(
                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            SubscriptionIcon(
-                                serviceName = name,
-                                modifier = Modifier.size(36.dp)
-                            )
+                            SubscriptionIcon(serviceName = name, modifier = Modifier.size(36.dp))
                         }
                     }
 
@@ -155,7 +190,7 @@ fun EditSubscriptionScreen(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // DROPDOWN PLANU
+            // DROPDOWN PLANU (Full Width)
             ExposedDropdownMenuBox(
                 expanded = isPlanDropdownExpanded,
                 onExpandedChange = { if (selectedService != null) isPlanDropdownExpanded = !isPlanDropdownExpanded }
@@ -204,59 +239,158 @@ fun EditSubscriptionScreen(
                 }
             }
 
-            // POLE CENA
-            OutlinedTextField(
-                value = price,
-                onValueChange = { price = it },
-                label = { Text(stringResource(id = R.string.label_price_with_currency)) },
+            //Układ dwukolumnowy dla Ceny i Cyklu rozliczeniowego
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    focusedLabelColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
-                ),
-                shape = RoundedCornerShape(12.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
-
-            // POLE CYKL ROZLICZENIOWY
-            ExposedDropdownMenuBox(
-                expanded = isBillingDropdownExpanded,
-                onExpandedChange = { isBillingDropdownExpanded = !isBillingDropdownExpanded }
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 OutlinedTextField(
-                    value = stringResource(id = billingCycleResId),
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text(stringResource(id = R.string.label_cycle)) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isBillingDropdownExpanded) },
+                    value = price,
+                    onValueChange = { price = it },
+                    label = { Text(stringResource(id = R.string.label_price_with_currency)) },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         focusedLabelColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
                     ),
                     shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth().menuAnchor()
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
-                ExposedDropdownMenu(
+
+                ExposedDropdownMenuBox(
                     expanded = isBillingDropdownExpanded,
-                    onDismissRequest = { isBillingDropdownExpanded = false }
+                    onExpandedChange = { isBillingDropdownExpanded = !isBillingDropdownExpanded },
+                    modifier = Modifier.weight(1f)
                 ) {
-                    billingOptions.forEach { resId ->
-                        DropdownMenuItem(
-                            text = { Text(stringResource(id = resId)) },
-                            onClick = {
-                                billingCycleResId = resId
-                                isBillingDropdownExpanded = false
-                            }
+                    OutlinedTextField(
+                        value = stringResource(id = billingCycleResId),
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text(stringResource(id = R.string.label_cycle)) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isBillingDropdownExpanded) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = isBillingDropdownExpanded,
+                        onDismissRequest = { isBillingDropdownExpanded = false }
+                    ) {
+                        billingOptions.forEach { resId ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(id = resId)) },
+                                onClick = {
+                                    billingCycleResId = resId
+                                    isBillingDropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Daty rozpoczęcia oraz sekcji rezerwacji powiadomień
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // POLE DATA ROZPOCZĘCIA
+                OutlinedTextField(
+                    value = dateFormatter.format(Date(startDateLong)),
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Od (rozpoczęcie)") },
+                    trailingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = "Zmień datę",
+                            modifier = Modifier.clickable { showDatePicker = true }
                         )
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.weight(1f).clickable { showDatePicker = true }
+                )
+
+                // Wolna przestrzeń na planowane powiadomienia
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Text(
+                        text = "[ Powiadomienia wkrótce ]",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+            }
+
+            // CHECKBOX: OKRES PRÓBNY
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isTrialChecked = !isTrialChecked },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = isTrialChecked,
+                    onCheckedChange = { isTrialChecked = it }
+                )
+                Text(
+                    text = "Ta subskrypcja ma okres próbny (Trial)",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+
+            // ROZSZERZONY PANEL LOGIKI FINANSOWEJ TRIALU
+            AnimatedVisibility(visible = isTrialChecked) {
+                ExposedDropdownMenuBox(
+                    expanded = isTrialDropdownExpanded,
+                    onExpandedChange = { isTrialDropdownExpanded = !isTrialDropdownExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = selectedTrialOption,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Logika zmiany ceny po okresie próbnym") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isTrialDropdownExpanded) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = isTrialDropdownExpanded,
+                        onDismissRequest = { isTrialDropdownExpanded = false }
+                    ) {
+                        trialOptions.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option) },
+                                onClick = {
+                                    selectedTrialOption = option
+                                    isTrialDropdownExpanded = false
+                                }
+                            )
+                        }
                     }
                 }
             }
 
             Spacer(modifier = Modifier.weight(1f))
 
+            // PRZYCISKI AKCJI Dolnej
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -275,6 +409,7 @@ fun EditSubscriptionScreen(
                     onClick = {
                         val finalBillingCycleText = context.getString(billingCycleResId)
 
+                        // W przyszłości: startDateLong, isTrialChecked, selectedTrialOption do viewModelu
                         viewModel.updateSubscription(
                             id = subscriptionId,
                             name = name,
