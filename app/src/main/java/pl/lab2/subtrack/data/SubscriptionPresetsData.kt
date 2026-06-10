@@ -58,13 +58,13 @@ object SubscriptionPresetsData {
         ServicePreset(
             serviceName = "Polsat Box Go",
             plans = listOf(
-                SubscriptionPlanPreset("Premium", 30.00),
-                SubscriptionPlanPreset("Start", 30.00, "Rok")
+                SubscriptionPlanPreset("Start", 30.00, "Rok"),
+                SubscriptionPlanPreset("Premium", 30.00)
             ),
             tags = listOf("Rozrywka", "Streaming", "Wideo")
         ),
         ServicePreset(
-            serviceName = "Canal+",
+            serviceName = "Canal+ Online",
             plans = listOf(
                 SubscriptionPlanPreset("Filmy i Seriale", 29.00),
                 SubscriptionPlanPreset("Canal+ Super Sport", 69.00)
@@ -78,6 +78,14 @@ object SubscriptionPresetsData {
                 SubscriptionPlanPreset("Roczny Plus", 44.99, "Rok")
             ),
             tags = listOf("Rozrywka", "Streaming", "Wideo")
+        ),
+        ServicePreset(
+            serviceName = "Viaplay",
+            plans = listOf(
+                SubscriptionPlanPreset("Medium", 40.00),
+                SubscriptionPlanPreset("Total", 55.00)
+            ),
+            tags = listOf("Rozrywka", "Streaming", "Wideo", "Sport")
         ),
         ServicePreset(
             serviceName = "YouTube Premium",
@@ -96,6 +104,59 @@ object SubscriptionPresetsData {
             tags = listOf("Rozrywka", "Streaming", "Wideo")
         ),
         ServicePreset(
+            serviceName = "Spotify",
+            plans = listOf(
+                SubscriptionPlanPreset("Individual", 23.99),
+                SubscriptionPlanPreset("Student", 12.99),
+                SubscriptionPlanPreset("Duo", 30.99),
+                SubscriptionPlanPreset("Family", 37.99)
+            ),
+            tags = listOf("Rozrywka", "Streaming", "Muzyka")
+        ),
+        ServicePreset(
+            serviceName = "Tidal",
+            plans = listOf(
+                SubscriptionPlanPreset("HiFi", 21.99),
+                SubscriptionPlanPreset("Family", 34.99),
+                SubscriptionPlanPreset("Student", 10.99)
+            ),
+            tags = listOf("Rozrywka", "Streaming", "Muzyka")
+        ),
+        ServicePreset(
+            serviceName = "Apple Music",
+            plans = listOf(
+                SubscriptionPlanPreset("Miesięczny", 22.99),
+                SubscriptionPlanPreset("Studencki", 11.99),
+                SubscriptionPlanPreset("Rodzinny", 34.99)
+            ),
+            tags = listOf("Rozrywka", "Streaming", "Muzyka")
+        ),
+        ServicePreset(
+            serviceName = "Deezer",
+            plans = listOf(
+                SubscriptionPlanPreset("Premium", 24.99),
+                SubscriptionPlanPreset("Family", 41.99)
+            ),
+            tags = listOf("Rozrywka", "Streaming", "Muzyka")
+        ),
+        ServicePreset(
+            serviceName = "Audioteka",
+            plans = listOf(
+                SubscriptionPlanPreset("Klub Audioteki", 19.90),
+                SubscriptionPlanPreset("Klub Optymalny", 34.90)
+            ),
+            tags = listOf("Rozrywka", "Książki", "Audiobooki")
+        ),
+        ServicePreset(
+            serviceName = "Storytel",
+            plans = listOf(
+                SubscriptionPlanPreset("Basic", 22.90),
+                SubscriptionPlanPreset("Premium", 44.90),
+                SubscriptionPlanPreset("Family", 54.90)
+            ),
+            tags = listOf("Rozrywka", "Książki", "Audiobooki")
+        ),
+        ServicePreset(
             serviceName = "Empik Go",
             plans = listOf(
                 SubscriptionPlanPreset("Go Lektury", 14.99),
@@ -105,15 +166,23 @@ object SubscriptionPresetsData {
             tags = listOf("Rozrywka", "Książki", "Audiobooki")
         ),
         ServicePreset(
-            serviceName = "Empik Premium",
+            serviceName = "Legimi",
             plans = listOf(
-                SubscriptionPlanPreset("Miesięczny", 12.99),
-                SubscriptionPlanPreset("Roczny", 59.99, "Rok")
+                SubscriptionPlanPreset("Bez limitu", 49.99),
+                SubscriptionPlanPreset("Bez limitu + E-ink", 54.99)
             ),
-            tags = listOf("Zakupy", "Rozrywka", "Kultura")
+            tags = listOf("Rozrywka", "Książki", "Ebooki")
         ),
         ServicePreset(
-            serviceName = "Allegro Smart",
+            serviceName = "Marvel Unlimited",
+            plans = listOf(
+                SubscriptionPlanPreset("Miesięczny", 45.00),
+                SubscriptionPlanPreset("Roczny", 325.00, "Rok")
+            ),
+            tags = listOf("Rozrywka", "Komiksy", "Kultura")
+        ),
+        ServicePreset(
+            serviceName = "Allegro Smart!",
             plans = listOf(
                 SubscriptionPlanPreset("Miesięczny", 14.99),
                 SubscriptionPlanPreset("Roczny", 59.90, "Rok")
@@ -129,11 +198,42 @@ object SubscriptionPresetsData {
             tags = listOf("Zakupy", "Dostawa", "Rozrywka")
         ),
         ServicePreset(
+            serviceName = "Empik Premium",
+            plans = listOf(
+                SubscriptionPlanPreset("Miesięczny", 12.99),
+                SubscriptionPlanPreset("Roczny", 59.99, "Rok")
+            ),
+            tags = listOf("Zakupy", "Rozrywka", "Kultura")
+        ),
+        ServicePreset(
+            serviceName = "InPost Fresh",
+            plans = listOf(
+                SubscriptionPlanPreset("Darmowa Dostawa", 0.00)
+            ),
+            tags = listOf("Zakupy", "Jedzenie", "Dostawa")
+        ),
+        ServicePreset(
             serviceName = "Glovo Prime",
             plans = listOf(
                 SubscriptionPlanPreset("Miesięczny", 14.99)
             ),
             tags = listOf("Zakupy", "Jedzenie", "Dostawa")
+        ),
+        ServicePreset(
+            serviceName = "Uber One",
+            plans = listOf(
+                SubscriptionPlanPreset("Miesięczny", 12.99),
+                SubscriptionPlanPreset("Roczny", 129.99, "Rok")
+            ),
+            tags = listOf("Zakupy", "Dostawa", "Transport")
+        ),
+        ServicePreset(
+            serviceName = "Xbox Game Pass",
+            plans = listOf(
+                SubscriptionPlanPreset("Core", 34.99),
+                SubscriptionPlanPreset("Ultimate", 62.99)
+            ),
+            tags = listOf("Gaming", "Rozrywka", "Konsola", "PC")
         ),
         ServicePreset(
             serviceName = "PlayStation Plus",
@@ -143,14 +243,6 @@ object SubscriptionPresetsData {
                 SubscriptionPlanPreset("Premium", 70.00)
             ),
             tags = listOf("Gaming", "Rozrywka", "Konsola")
-        ),
-        ServicePreset(
-            serviceName = "Xbox Game Pass",
-            plans = listOf(
-                SubscriptionPlanPreset("Core (dawny Gold)", 34.99),
-                SubscriptionPlanPreset("Ultimate", 62.99)
-            ),
-            tags = listOf("Gaming", "Rozrywka", "Konsola", "PC")
         ),
         ServicePreset(
             serviceName = "EA Play",
@@ -172,26 +264,82 @@ object SubscriptionPresetsData {
             serviceName = "Nintendo Switch Online",
             plans = listOf(
                 SubscriptionPlanPreset("Indywidualny", 16.00),
-                SubscriptionPlanPreset("Indywidualny + Expansion Pack", 170.00, "Rok"),
+                SubscriptionPlanPreset("Indywidualny + Expansion", 170.00, "Rok"),
                 SubscriptionPlanPreset("Rodzinny", 120.00, "Rok")
             ),
             tags = listOf("Gaming", "Rozrywka", "Konsola")
         ),
         ServicePreset(
+            serviceName = "GeForce NOW",
+            plans = listOf(
+                SubscriptionPlanPreset("Priority", 49.00),
+                SubscriptionPlanPreset("Ultimate", 99.00)
+            ),
+            tags = listOf("Gaming", "Chmura", "Rozrywka")
+        ),
+        ServicePreset(
+            serviceName = "Microsoft 365",
+            plans = listOf(
+                SubscriptionPlanPreset("Personal", 29.99),
+                SubscriptionPlanPreset("Family", 42.99)
+            ),
+            tags = listOf("Produktywność", "Praca", "Biuro")
+        ),
+        ServicePreset(
+            serviceName = "Google One",
+            plans = listOf(
+                SubscriptionPlanPreset("100 GB", 8.99),
+                SubscriptionPlanPreset("200 GB", 13.99),
+                SubscriptionPlanPreset("2 TB Premium", 46.99)
+            ),
+            tags = listOf("Produktywność", "Chmura", "Dane")
+        ),
+        ServicePreset(
             serviceName = "Adobe Creative Cloud",
             plans = listOf(
-                SubscriptionPlanPreset("Plan fotograficzny (20GB)", 53.99),
+                SubscriptionPlanPreset("Plan fotograficzny", 53.99),
                 SubscriptionPlanPreset("Pojedyncza aplikacja", 114.99),
                 SubscriptionPlanPreset("Wszystkie aplikacje", 284.99)
             ),
             tags = listOf("Produktywność", "Praca", "Grafika")
         ),
         ServicePreset(
-            serviceName = "ChatGPT",
+            serviceName = "Canva Pro",
+            plans = listOf(
+                SubscriptionPlanPreset("Dla jednej osoby", 49.99),
+                SubscriptionPlanPreset("Dla zespołu", 119.00)
+            ),
+            tags = listOf("Produktywność", "Grafika", "Narzędzia")
+        ),
+        ServicePreset(
+            serviceName = "ChatGPT Plus",
             plans = listOf(
                 SubscriptionPlanPreset("Plus", 85.00)
             ),
             tags = listOf("Produktywność", "Sztuczna Inteligencja", "Narzędzia")
+        ),
+        ServicePreset(
+            serviceName = "Midjourney",
+            plans = listOf(
+                SubscriptionPlanPreset("Basic Plan", 42.00),
+                SubscriptionPlanPreset("Standard Plan", 125.00)
+            ),
+            tags = listOf("Produktywność", "Sztuczna Inteligencja", "Grafika")
+        ),
+        ServicePreset(
+            serviceName = "GitHub Copilot",
+            plans = listOf(
+                SubscriptionPlanPreset("Copilot Individual", 42.00)
+            ),
+            tags = listOf("Produktywność", "Programowanie", "Narzędzia")
+        ),
+        ServicePreset(
+            serviceName = "Notion",
+            plans = listOf(
+                SubscriptionPlanPreset("Plus", 42.00),
+                SubscriptionPlanPreset("Notion AI", 34.00)
+            ),
+            tags = listOf("Produktywność", "Notatki", "Organizacja")
         ),
         ServicePreset(
             serviceName = "iCloud+",
@@ -211,12 +359,20 @@ object SubscriptionPresetsData {
             tags = listOf("Produktywność", "Praca", "Kariera")
         ),
         ServicePreset(
-            serviceName = "Duolingo",
+            serviceName = "Duolingo Plus",
             plans = listOf(
-                SubscriptionPlanPreset("Super Duolingo (Indywidualny)", 34.99),
-                SubscriptionPlanPreset("Super Duolingo (Rodzinny)", 52.99)
+                SubscriptionPlanPreset("Super (Indywidualny)", 34.99),
+                SubscriptionPlanPreset("Super (Rodzinny)", 52.99)
             ),
             tags = listOf("Edukacja", "Języki")
+        ),
+        ServicePreset(
+            serviceName = "Wyborcza.pl",
+            plans = listOf(
+                SubscriptionPlanPreset("Podstawowy", 19.90),
+                SubscriptionPlanPreset("Premium", 29.90)
+            ),
+            tags = listOf("Informacje", "Wiadomości", "Prasa")
         ),
         ServicePreset(
             serviceName = "Newsweek Polska",
@@ -245,13 +401,29 @@ object SubscriptionPresetsData {
         ServicePreset(
             serviceName = "MultiSport",
             plans = listOf(
-                SubscriptionPlanPreset("Plus", 120.00),
-                SubscriptionPlanPreset("Light", 80.00)
+                SubscriptionPlanPreset("Light", 80.00),
+                SubscriptionPlanPreset("Plus", 120.00)
             ),
             tags = listOf("Sport", "Zdrowie", "Karnet")
         ),
         ServicePreset(
-            serviceName = "Tinder",
+            serviceName = "Medicover Sport",
+            plans = listOf(
+                SubscriptionPlanPreset("Fit & Gym", 99.00),
+                SubscriptionPlanPreset("Aqua & Gym Plus", 139.00)
+            ),
+            tags = listOf("Sport", "Zdrowie", "Karnet")
+        ),
+        ServicePreset(
+            serviceName = "Strava",
+            plans = listOf(
+                SubscriptionPlanPreset("Premium Miesięczny", 49.99),
+                SubscriptionPlanPreset("Premium Roczny", 289.99, "Rok")
+            ),
+            tags = listOf("Sport", "Zdrowie", "Bieganie")
+        ),
+        ServicePreset(
+            serviceName = "Tinder Gold",
             plans = listOf(
                 SubscriptionPlanPreset("Plus", 32.99),
                 SubscriptionPlanPreset("Gold", 49.99),
@@ -260,17 +432,7 @@ object SubscriptionPresetsData {
             tags = listOf("Social", "Rozmowy")
         ),
         ServicePreset(
-            serviceName = "Spotify",
-            plans = listOf(
-                SubscriptionPlanPreset("Individual", 23.99),
-                SubscriptionPlanPreset("Duo", 30.99),
-                SubscriptionPlanPreset("Family", 37.99),
-                SubscriptionPlanPreset("Student", 12.99)
-            ),
-            tags = listOf("Rozrywka", "Streaming", "Muzyka")
-        ),
-        ServicePreset(
-            serviceName = "Fitatu",
+            serviceName = "Fitatu Premium",
             plans = listOf(
                 SubscriptionPlanPreset("Premium Miesięczny", 24.99),
                 SubscriptionPlanPreset("Premium Roczny", 149.99, "Rok")
@@ -278,7 +440,15 @@ object SubscriptionPresetsData {
             tags = listOf("Zdrowie", "Dieta", "Sport")
         ),
         ServicePreset(
-            serviceName = "Flo",
+            serviceName = "Headspace",
+            plans = listOf(
+                SubscriptionPlanPreset("Miesięczny", 51.99),
+                SubscriptionPlanPreset("Roczny", 289.99, "Rok")
+            ),
+            tags = listOf("Zdrowie", "Relaks", "Uważność")
+        ),
+        ServicePreset(
+            serviceName = "Flo Premium",
             plans = listOf(
                 SubscriptionPlanPreset("Premium Miesięczny", 19.99),
                 SubscriptionPlanPreset("Premium Roczny", 129.99, "Rok")
