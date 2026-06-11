@@ -6,7 +6,12 @@ data class Subscription(
     val plan: String,
     val price: Double,
     val billingCycle: String,
-    val tags: List<String> = emptyList()
+    val tags: List<String> = emptyList(),
+
+    val startDate: Long = System.currentTimeMillis(),
+    val isTrial: Boolean = false,
+    val trialOption: String = "",
+    val notificationSetting: String = "Brak"
 ) {
     val monthlyEquivalent: Double
         get() = when (billingCycle.lowercase()) {

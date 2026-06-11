@@ -95,14 +95,14 @@ fun MainScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Bottom
             ) {
 
 
                 Card(
                     modifier = Modifier
                         .wrapContentWidth()
-                        .padding(vertical = 4.dp),
+                        .padding(bottom = 4.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,

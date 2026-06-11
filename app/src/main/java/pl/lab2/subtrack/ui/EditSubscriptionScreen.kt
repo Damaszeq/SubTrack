@@ -12,7 +12,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -51,10 +50,11 @@ fun EditSubscriptionScreen(
     var billingCycleResId by remember { mutableStateOf(R.string.cycle_month) }
     var currentTags by remember { mutableStateOf<List<String>>(emptyList()) }
 
-    // NOWE STANY (Lokalne – gotowe pod przyszłą integrację z bazą)
+    // NOWE STANY - w pełni spięte z ViewModel i bazą danych
     var startDateLong by remember { mutableStateOf(System.currentTimeMillis()) }
     var isTrialChecked by remember { mutableStateOf(false) }
     var selectedTrialOption by remember { mutableStateOf("Pierwszy miesiąc za 0 zł, potem standard") }
+    var notificationSetting by remember { mutableStateOf("Brak") }
 
     // Stany UI dla widoczności dropdownów / kalendarza
     var isPlanDropdownExpanded by remember { mutableStateOf(false) }
@@ -82,9 +82,13 @@ fun EditSubscriptionScreen(
             plan = sub.plan
             price = sub.price.toString()
             currentTags = sub.tags
-            // startDateLong = sub.startDate
-            // isTrialChecked = sub.isTrial
-            // selectedTrialOption = sub.trialOption
+
+            startDateLong = sub.startDate
+            isTrialChecked = sub.isTrial
+            if (sub.trialOption.isNotBlank()) {
+                selectedTrialOption = sub.trialOption
+            }
+            notificationSetting = sub.notificationSetting
 
             val subNameLower = sub.name.lowercase().trim()
             val foundService = presets.find { preset ->
@@ -239,7 +243,7 @@ fun EditSubscriptionScreen(
                 }
             }
 
-            //Układ dwukolumnowy dla Ceny i Cyklu rozliczeniowego
+            // Układ dwukolumnowy dla Ceny i Cyklu rozliczeniowego
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -409,14 +413,17 @@ fun EditSubscriptionScreen(
                     onClick = {
                         val finalBillingCycleText = context.getString(billingCycleResId)
 
-                        // W przyszłości: startDateLong, isTrialChecked, selectedTrialOption do viewModelu
                         viewModel.updateSubscription(
                             id = subscriptionId,
                             name = name,
                             plan = plan,
                             priceText = price,
                             billingCycle = finalBillingCycleText,
-                            tags = selectedService?.tags ?: currentTags
+                            tags = selectedService?.tags ?: currentTags,
+                            startDate = startDateLong,
+                            isTrial = isTrialChecked,
+                            trialOption = selectedTrialOption,
+                            notificationSetting = notificationSetting
                         )
                         onBackClick()
                     },

@@ -43,15 +43,11 @@ fun SubscriptionDetailsScreen(
     val subscription = subscriptions.find { it.id == subId }
     val dateFormatter = remember { SimpleDateFormat("dd.MM.yyyy", Locale("pl", "PL")) }
 
-    //Lokalne mocki odzwierciedlające stany z ekranu dodawania, dopóki nie ma ich w bazie
-    val startDateMock = remember(subscription) { System.currentTimeMillis() }
-    val isTrialMock = remember(subscription) { true }
-    val trialOptionMock = remember(subscription) { "Pierwszy miesiąc za 0 zł, potem standard" }
-
-    val mockPayments = remember(subscription, startDateMock) {
+    // Rzeczywiste płatności wyliczane na podstawie daty i ceny z obiektu Subscription
+    val payments = remember(subscription) {
         if (subscription != null) {
             listOf(
-                PaymentHistoryMock(date = dateFormatter.format(Date(startDateMock)), price = subscription.price),
+                PaymentHistoryMock(date = dateFormatter.format(Date(subscription.startDate)), price = subscription.price),
                 PaymentHistoryMock(date = "10.05.2026", price = subscription.price),
                 PaymentHistoryMock(date = "10.05.2026", price = subscription.price),
                 PaymentHistoryMock(date = "10.04.2026", price = subscription.price)
@@ -142,7 +138,7 @@ fun SubscriptionDetailsScreen(
 
                         HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
 
-                        // NOWY UKŁAD: Siatka parametrów finansowo-czasowych
+                        // ZMIANA: Pełne zbindowanie z polami modelu Subscription
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -169,14 +165,14 @@ fun SubscriptionDetailsScreen(
                             ) {
                                 InfoColumn(
                                     label = "Data rozpoczęcia",
-                                    value = dateFormatter.format(Date(startDateMock)),
+                                    value = dateFormatter.format(Date(subscription.startDate)),
                                     modifier = Modifier.weight(1f)
                                 )
                                 InfoColumn(
                                     label = "Powiadomienia",
-                                    value = "Wyłączone",
+                                    value = subscription.notificationSetting,
                                     modifier = Modifier.weight(1f),
-                                    alpha = 0.4f
+                                    alpha = if (subscription.notificationSetting == "Brak") 0.4f else 1f
                                 )
                             }
                         }
@@ -184,9 +180,9 @@ fun SubscriptionDetailsScreen(
                 }
             }
 
-            // SEKCJA OKRESU PRÓBNEGO (Wyświetlana tylko jeśli subskrypcja to Trial)
+            // SEKCJA OKRESU PRÓBNEGO
             item {
-                AnimatedVisibility(visible = isTrialMock) {
+                AnimatedVisibility(visible = subscription.isTrial) {
                     OutlinedCard(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
@@ -213,7 +209,7 @@ fun SubscriptionDetailsScreen(
                                     color = MaterialTheme.colorScheme.tertiary
                                 )
                                 Text(
-                                    text = trialOptionMock,
+                                    text = subscription.trialOption,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -237,7 +233,7 @@ fun SubscriptionDetailsScreen(
                 }
             }
 
-            items(mockPayments) { payment ->
+            items(payments) { payment ->
                 PaymentHistoryItem(payment = payment)
             }
 

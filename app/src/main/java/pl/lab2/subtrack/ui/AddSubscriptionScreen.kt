@@ -52,10 +52,11 @@ fun AddSubscriptionScreen(
     var price by remember { mutableStateOf("") }
     var billingCycleResId by remember { mutableStateOf(R.string.cycle_month) }
 
-    // NOWE STANY (Lokalne na ten moment)
+    // NOWE STANY
     var startDateLong by remember { mutableStateOf(System.currentTimeMillis()) }
     var isTrialChecked by remember { mutableStateOf(false) }
     var selectedTrialOption by remember { mutableStateOf("Pierwszy miesiąc za 0 zł, potem standard") }
+    var notificationSetting by remember { mutableStateOf("Brak") }
 
     // Stany UI dla Dropdownów i Dialogów
     var isPlanDropdownExpanded by remember { mutableStateOf(false) }
@@ -125,7 +126,6 @@ fun AddSubscriptionScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            // Zwiększona wysokość sekcji presetów (max = 380.dp) dla wygodniejszego scrollowania
             Text(
                 text = stringResource(id = R.string.choose_service_label),
                 style = MaterialTheme.typography.titleMedium,
@@ -291,7 +291,7 @@ fun AddSubscriptionScreen(
                 }
             }
 
-            //  Układ dwukolumnowy dla Daty oraz Miejsca na przyszłe Powiadomienia
+            // Układ dwukolumnowy dla Daty oraz Miejsca na przyszłe Powiadomienia
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -347,7 +347,7 @@ fun AddSubscriptionScreen(
                 )
             }
 
-            //  ROZSZERZONY DROPDOWN POKAZYWANY ANIMOWANIE
+            // ROZSZERZONY DROPDOWN POKAZYWANY ANIMOWANIE
             AnimatedVisibility(visible = isTrialChecked && selectedService != null) {
                 ExposedDropdownMenuBox(
                     expanded = isTrialDropdownExpanded,
@@ -398,13 +398,16 @@ fun AddSubscriptionScreen(
                         val currentTags = selectedService?.tags ?: emptyList()
                         val finalBillingCycleText = context.getString(billingCycleResId)
 
-                        // startDateLong, isTrialChecked, selectedTrialOption w przyszłości
                         viewModel.addSubscription(
                             name = selectedService?.serviceName ?: name,
                             plan = selectedPlan?.planName ?: plan,
                             priceText = price,
                             billingCycle = finalBillingCycleText,
-                            tags = currentTags
+                            tags = currentTags,
+                            startDate = startDateLong,
+                            isTrial = isTrialChecked,
+                            trialOption = selectedTrialOption,
+                            notificationSetting = notificationSetting
                         )
                         onBackClick()
                     },
