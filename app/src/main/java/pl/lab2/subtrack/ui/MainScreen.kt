@@ -1,5 +1,6 @@
 package pl.lab2.subtrack.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -152,12 +153,28 @@ fun SubscriptionItem(
     daysLeft: Int = 4,
     onClick: () -> Unit
 ) {
+    val cardColors = if (subscription.isTrial) {
+        CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.12f)
+        )
+    } else {
+        CardDefaults.outlinedCardColors()
+    }
+
+    val cardBorder = if (subscription.isTrial) {
+        BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f))
+    } else {
+        CardDefaults.outlinedCardBorder()
+    }
+
     OutlinedCard(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = cardColors,
+        border = cardBorder
     ) {
         Row(
             modifier = Modifier
@@ -173,15 +190,35 @@ fun SubscriptionItem(
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = subscription.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = subscription.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+
+                    if (subscription.isTrial) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.tertiary,
+                            contentColor = MaterialTheme.colorScheme.onTertiary,
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = "TRIAL",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.ExtraBold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
+                            )
+                        }
+                    }
+                }
                 Text(
                     text = subscription.plan,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
                 )
             }
 
@@ -193,13 +230,20 @@ fun SubscriptionItem(
                 Text(
                     text = String.format(Locale.US, "%.2f PLN", subscription.price),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (subscription.isTrial) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                //logika określania tekstu płatności
-                val paymentText = if (daysLeft <= 3) {
+                // Logika krótkiego tekstu dolnego
+                val paymentText = if (subscription.isTrial) {
+                    when (daysLeft) {
+                        0 -> "Koniec dzisiaj"
+                        1 -> "Koniec jutro"
+                        else -> "Koniec za $daysLeft dni"
+                    }
+                } else if (daysLeft <= 3) {
                     when (daysLeft) {
                         0 -> stringResource(id = R.string.payment_today)
                         1 -> stringResource(id = R.string.payment_tomorrow)
@@ -209,7 +253,9 @@ fun SubscriptionItem(
                     stringResource(id = R.string.payment_date_format, nextPaymentDate)
                 }
 
-                val paymentColor = if (daysLeft <= 3) {
+                val paymentColor = if (subscription.isTrial) {
+                    MaterialTheme.colorScheme.tertiary
+                } else if (daysLeft <= 3) {
                     MaterialTheme.colorScheme.error
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
@@ -219,7 +265,8 @@ fun SubscriptionItem(
                     text = paymentText,
                     style = MaterialTheme.typography.labelSmall,
                     color = paymentColor,
-                    fontWeight = if (daysLeft <= 3) FontWeight.SemiBold else FontWeight.Normal
+                    fontWeight = if (daysLeft <= 3 || subscription.isTrial) FontWeight.SemiBold else FontWeight.Normal,
+                    maxLines = 1
                 )
             }
         }
