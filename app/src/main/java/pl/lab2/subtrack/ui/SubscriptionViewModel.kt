@@ -1,14 +1,22 @@
 package pl.lab2.subtrack.ui
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import pl.lab2.subtrack.Subscription
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import pl.lab2.subtrack.Subscription
+import pl.lab2.subtrack.data.local.entities.SubscriptionTagCrossRef
+import pl.lab2.subtrack.data.local.entities.Tag
+import pl.lab2.subtrack.data.local.repositories.SubscriptionRepository
+import pl.lab2.subtrack.data.local.repositories.TagRepository
+import pl.lab2.subtrack.toSubscription
+import pl.lab2.subtrack.toUserSubscription
 
 enum class AppThemeMode {
     SYSTEM, LIGHT, DARK
@@ -19,123 +27,19 @@ enum class AppLanguage(val code: String) {
     ENGLISH("en")
 }
 
-class SubscriptionViewModel : ViewModel() {
+class SubscriptionViewModel(
+    private val subscriptionRepository: SubscriptionRepository,
+    private val tagRepository: TagRepository,
+    private val tagDao: pl.lab2.subtrack.data.local.dao.TagDao
+) : ViewModel() {
 
-    private val _subscriptions = MutableStateFlow<List<Subscription>>(
-        listOf(
-            Subscription(
-                name = "Microsoft 365",
-                plan = "Family",
-                price = 42.99,
-                billingCycle = "Miesiąc",
-                tags = listOf("Produktywność", "Biuro", "Chmura"),
-                startDate = System.currentTimeMillis(),
-                isTrial = false,
-                trialOption = "xxx",
-                notificationSetting = "Brak",
-            ),
-            Subscription(
-                name = "PlayStation Plus",
-                plan = "Extra",
-                price = 52.00,
-                billingCycle = "Miesiąc",
-                tags = listOf("Rozrywka", "Gaming", "Konsola"),
-                startDate = System.currentTimeMillis(),
-                isTrial = false,
-                trialOption = "",
-                notificationSetting = "Brak",
-            ),
-            Subscription(
-                name = "Xbox Game Pass",
-                plan = "Ultimate",
-                price = 62.99,
-                billingCycle = "Miesiąc",
-                tags = listOf("Rozrywka", "Gaming", "PC", "Konsola"),
-                startDate = System.currentTimeMillis(),
-                isTrial = false,
-                trialOption = "",
-                notificationSetting = "Brak",
-            ),
-            Subscription(
-                name = "GeForce NOW",
-                plan = "Priority",
-                price = 49.00,
-                billingCycle = "Miesiąc",
-                tags = listOf("Rozrywka", "Gaming", "Chmura"),
-                startDate = System.currentTimeMillis(),
-                isTrial = false,
-                trialOption = "",
-                notificationSetting = "Brak",
-            ),
-            Subscription(
-                name = "Audible",
-                plan = "Premium Plus",
-                price = 39.99,
-                billingCycle = "Miesiąc",
-                tags = listOf("Rozrywka", "Audiobooki", "Książki"),
-                startDate = System.currentTimeMillis(),
-                isTrial = false,
-                trialOption = "",
-                notificationSetting = "Brak",
-            ),
-            Subscription(
-                name = "Storytel",
-                plan = "Premium",
-                price = 44.90,
-                billingCycle = "Miesiąc",
-                tags = listOf("Rozrywka", "Audiobooki", "Książki"),
-                startDate = System.currentTimeMillis(),
-                isTrial = false,
-                trialOption = "",
-                notificationSetting = "Brak",
-            ),
-            Subscription(
-                name = "Adobe Creative Cloud",
-                plan = "Fotografia (20GB)",
-                price = 53.00,
-                billingCycle = "Miesiąc",
-                tags = listOf("Narzędzia", "Grafika", "Foto"),
-                startDate = System.currentTimeMillis(),
-                isTrial = false,
-                trialOption = "",
-                notificationSetting = "Brak",
-            ),
-            Subscription(
-                name = "GitHub Copilot",
-                plan = "Individual",
-                price = 40.00,
-                billingCycle = "Miesiąc",
-                tags = listOf("Produktywność", "Narzędzia", "Programowanie"),
-                startDate = System.currentTimeMillis(),
-                isTrial = false,
-                trialOption = "",
-                notificationSetting = "Brak",
-            ),
-            Subscription(
-                name = "Allegro Smart!",
-                plan = "Roczny",
-                price = 59.90,
-                billingCycle = "Rok",
-                tags = listOf("Zakupy", "Dostawa"),
-                startDate = System.currentTimeMillis(),
-                isTrial = false,
-                trialOption = "",
-                notificationSetting = "Brak",
-            ),
-            Subscription(
-                name = "Pyszne.pl Premium",
-                plan = "Smart Foodies",
-                price = 14.99,
-                billingCycle = "Miesiąc",
-                tags = listOf("Jedzenie", "Dostawa"),
-                startDate = System.currentTimeMillis(),
-                isTrial = false,
-                trialOption = "",
-                notificationSetting = "Brak",
-            )
+    val subscriptions: StateFlow<List<Subscription>> = subscriptionRepository.getActiveSubscriptionsWithTagsStream()
+        .map { list -> list.map { it.toSubscription() } }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
         )
-    )
-    val subscriptions: StateFlow<List<Subscription>> = _subscriptions.asStateFlow()
 
     // MOTYW APLIKACJI
     private val _themeMode = MutableStateFlow(AppThemeMode.SYSTEM)
@@ -166,27 +70,39 @@ class SubscriptionViewModel : ViewModel() {
         notificationSetting: String
     ) {
         val parsedPrice = priceText.replace(",", ".").trim().toDoubleOrNull() ?: 0.0
-        val newSub = Subscription(
-            name = name,
-            plan = plan,
-            price = parsedPrice,
-            billingCycle = billingCycle,
-            tags = tags,
-            startDate = startDate,
-            isTrial = isTrial,
-            trialOption = trialOption,
-            notificationSetting = notificationSetting
-        )
-        _subscriptions.value += newSub
+        
+        viewModelScope.launch {
+            val entity = pl.lab2.subtrack.data.local.entities.UserSubscription(
+                id = 0,
+                name = name,
+                planName = plan,
+                price = parsedPrice,
+                billingCycle = billingCycle,
+                startDate = startDate,
+                nextPaymentDate = System.currentTimeMillis(),
+                status = pl.lab2.subtrack.data.local.entities.SubscriptionStatus.ACTIVE
+            )
+            
+            val tagEntities = tags.map { Tag(name = it) }
+            subscriptionRepository.insertSubscriptionWithTags(entity, tagEntities, tagDao)
+        }
     }
 
     // USUWANIE SUBSKRYPCJI
     fun deleteSubscription(id: String) {
-        _subscriptions.value = _subscriptions.value.filterNot { it.id == id }
+        val numericId = id.toLongOrNull() ?: return
+        viewModelScope.launch {
+            // 1. First, fetch to ensure it exists
+            val subWithTags = subscriptionRepository.getSubscriptionWithTagsStream(numericId).first()
+            subWithTags?.subscription?.let {
+                // 2. Room CASCADE should handle tags, but we'll be explicit if needed
+                subscriptionRepository.deleteSubscription(it)
+            }
+        }
     }
 
     fun getSubscriptionById(id: String): Subscription? {
-        return _subscriptions.value.find { it.id == id }
+        return subscriptions.value.find { it.id == id }
     }
 
     // EDYCJA SUBSKRYPCJI
@@ -203,23 +119,22 @@ class SubscriptionViewModel : ViewModel() {
         notificationSetting: String
     ) {
         val parsedPrice = priceText.replace(",", ".").trim().toDoubleOrNull() ?: 0.0
+        val subscriptionId = id.toLongOrNull() ?: return
 
-        _subscriptions.value = _subscriptions.value.map { currentSub ->
-            if (currentSub.id == id) {
-                currentSub.copy(
-                    name = name,
-                    plan = plan,
-                    price = parsedPrice,
-                    billingCycle = billingCycle,
-                    tags = tags,
-                    startDate = startDate,
-                    isTrial = isTrial,
-                    trialOption = trialOption,
-                    notificationSetting = notificationSetting
-                )
-            } else {
-                currentSub
-            }
+        viewModelScope.launch {
+            val updatedEntity = pl.lab2.subtrack.data.local.entities.UserSubscription(
+                id = subscriptionId,
+                name = name,
+                planName = plan,
+                price = parsedPrice,
+                billingCycle = billingCycle,
+                startDate = startDate,
+                nextPaymentDate = System.currentTimeMillis(),
+                status = pl.lab2.subtrack.data.local.entities.SubscriptionStatus.ACTIVE
+            )
+            
+            val tagEntities = tags.map { Tag(name = it) }
+            subscriptionRepository.updateSubscriptionWithTags(updatedEntity, tagEntities, tagDao)
         }
     }
 

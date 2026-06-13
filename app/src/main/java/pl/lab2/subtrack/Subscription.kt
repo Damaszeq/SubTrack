@@ -21,3 +21,32 @@ data class Subscription(
             else -> price // domyślnie traktujemy jako miesięczny
         }
 }
+
+fun pl.lab2.subtrack.data.local.entities.SubscriptionWithTags.toSubscription(): Subscription {
+    return Subscription(
+        id = subscription.id.toString(),
+        name = subscription.name,
+        plan = subscription.planName,
+        price = subscription.price,
+        billingCycle = subscription.billingCycle,
+        tags = tags.map { it.name },
+        startDate = subscription.startDate,
+        isTrial = false,
+        trialOption = "",
+        notificationSetting = "Brak"
+    )
+}
+
+fun Subscription.toUserSubscription(): pl.lab2.subtrack.data.local.entities.UserSubscription {
+    val numericId = id.toLongOrNull() ?: 0L
+    return pl.lab2.subtrack.data.local.entities.UserSubscription(
+        id = numericId,
+        name = name,
+        planName = plan,
+        price = price,
+        billingCycle = billingCycle,
+        startDate = startDate,
+        nextPaymentDate = System.currentTimeMillis(),
+        status = pl.lab2.subtrack.data.local.entities.SubscriptionStatus.ACTIVE
+    )
+}

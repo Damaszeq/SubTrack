@@ -39,6 +39,7 @@ import pl.lab2.subtrack.ui.SubTrackTheme
 import pl.lab2.subtrack.ui.AppThemeMode
 import pl.lab2.subtrack.ui.AppLanguage
 import pl.lab2.subtrack.ui.EditSubscriptionScreen
+import pl.lab2.subtrack.ui.AppViewModelProvider
 import java.util.Locale
 
 @Composable
@@ -60,7 +61,7 @@ fun LocalizationWrapper(
 }
 
 class MainActivity : ComponentActivity() {
-    private val subscriptionViewModel: SubscriptionViewModel by viewModels()
+    private val subscriptionViewModel: SubscriptionViewModel by viewModels { AppViewModelProvider.Factory }
     private val notificationViewModel: NotificationViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,7 +90,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppNavigation(
-    subViewModel: SubscriptionViewModel = viewModel(),
+    subViewModel: SubscriptionViewModel = viewModel(factory = AppViewModelProvider.Factory),
     notifViewModel: NotificationViewModel = viewModel(),
     currentLanguage: AppLanguage
 ) {
