@@ -80,7 +80,9 @@ class SubscriptionViewModel(
                 billingCycle = billingCycle,
                 startDate = startDate,
                 nextPaymentDate = System.currentTimeMillis(),
-                status = pl.lab2.subtrack.data.local.entities.SubscriptionStatus.ACTIVE
+                status = pl.lab2.subtrack.data.local.entities.SubscriptionStatus.ACTIVE,
+                isTrial = isTrial,
+                trialOption = trialOption
             )
             
             val tagEntities = tags.map { Tag(name = it) }
@@ -130,7 +132,9 @@ class SubscriptionViewModel(
                 billingCycle = billingCycle,
                 startDate = startDate,
                 nextPaymentDate = System.currentTimeMillis(),
-                status = pl.lab2.subtrack.data.local.entities.SubscriptionStatus.ACTIVE
+                status = pl.lab2.subtrack.data.local.entities.SubscriptionStatus.ACTIVE,
+                isTrial = isTrial,
+                trialOption = trialOption
             )
             
             val tagEntities = tags.map { Tag(name = it) }

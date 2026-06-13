@@ -17,5 +17,7 @@ data class UserSubscription(
     val billingCycle: String,
     val startDate: Long,
     val nextPaymentDate: Long, // Timestamp
-    val status: SubscriptionStatus
+    val status: SubscriptionStatus,
+    val isTrial: Boolean = false,
+    val trialOption: String = ""
 )

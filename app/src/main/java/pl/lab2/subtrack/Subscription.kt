@@ -31,8 +31,8 @@ fun pl.lab2.subtrack.data.local.entities.SubscriptionWithTags.toSubscription(): 
         billingCycle = subscription.billingCycle,
         tags = tags.map { it.name },
         startDate = subscription.startDate,
-        isTrial = false,
-        trialOption = "",
+        isTrial = subscription.isTrial,
+        trialOption = subscription.trialOption,
         notificationSetting = "Brak"
     )
 }
@@ -47,6 +47,8 @@ fun Subscription.toUserSubscription(): pl.lab2.subtrack.data.local.entities.User
         billingCycle = billingCycle,
         startDate = startDate,
         nextPaymentDate = System.currentTimeMillis(),
-        status = pl.lab2.subtrack.data.local.entities.SubscriptionStatus.ACTIVE
+        status = pl.lab2.subtrack.data.local.entities.SubscriptionStatus.ACTIVE,
+        isTrial = isTrial,
+        trialOption = trialOption
     )
 }

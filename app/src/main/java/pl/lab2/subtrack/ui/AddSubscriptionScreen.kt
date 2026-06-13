@@ -398,6 +398,11 @@ fun AddSubscriptionScreen(
                         val currentTags = selectedService?.tags ?: emptyList()
                         val finalBillingCycleText = context.getString(billingCycleResId)
 
+                        android.util.Log.d(
+                            "SubTrackDebug",
+                            "KLIKNIĘTO ZAPIS -> Nazwa: ${selectedService?.serviceName ?: name}, Czy trial: $isTrialChecked, Opcja: $selectedTrialOption"
+                        )
+
                         viewModel.addSubscription(
                             name = selectedService?.serviceName ?: name,
                             plan = selectedPlan?.planName ?: plan,
