@@ -176,98 +176,102 @@ fun SubscriptionItem(
         colors = cardColors,
         border = cardBorder
     ) {
-        Row(
+        Column(
             modifier = Modifier
+                .fillMaxWidth()
                 .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
         ) {
-            SubscriptionIcon(
-                serviceName = subscription.name,
-                modifier = Modifier.size(44.dp)
-            )
+            if (subscription.isTrial) {
+                Surface(
+                    color = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.onTertiary,
+                    shape = RoundedCornerShape(6.dp),
+                    modifier = Modifier.padding(bottom = 12.dp)
+                ) {
+                    Text(
+                        text = "OKRES PRÓBNY (TRIAL)",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                    )
+                }
+            }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SubscriptionIcon(
+                    serviceName = subscription.name,
+                    modifier = Modifier.size(44.dp)
+                )
 
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // Kolumna z nazwą i planem
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = subscription.name,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1
                     )
+                    Text(
+                        text = subscription.plan,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                }
 
-                    if (subscription.isTrial) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Surface(
-                            color = MaterialTheme.colorScheme.tertiary,
-                            contentColor = MaterialTheme.colorScheme.onTertiary,
-                            shape = RoundedCornerShape(6.dp)
-                        ) {
-                            Text(
-                                text = "TRIAL",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.ExtraBold,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
-                            )
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // Prawa kolumna: Cena oraz status płatności/końca triala
+                Column(
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        text = String.format(Locale.US, "%.2f PLN", subscription.price),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (subscription.isTrial) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Logika krótkiego tekstu dolnego
+                    val paymentText = if (subscription.isTrial) {
+                        when (daysLeft) {
+                            0 -> "Koniec dzisiaj"
+                            1 -> "Koniec jutro"
+                            else -> "Koniec za $daysLeft dni"
                         }
+                    } else if (daysLeft <= 3) {
+                        when (daysLeft) {
+                            0 -> stringResource(id = R.string.payment_today)
+                            1 -> stringResource(id = R.string.payment_tomorrow)
+                            else -> stringResource(id = R.string.payment_in_days, daysLeft)
+                        }
+                    } else {
+                        stringResource(id = R.string.payment_date_format, nextPaymentDate)
                     }
-                }
-                Text(
-                    text = subscription.plan,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1
-                )
-            }
 
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(
-                horizontalAlignment = Alignment.End
-            ) {
-                Text(
-                    text = String.format(Locale.US, "%.2f PLN", subscription.price),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (subscription.isTrial) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Logika krótkiego tekstu dolnego
-                val paymentText = if (subscription.isTrial) {
-                    when (daysLeft) {
-                        0 -> "Koniec dzisiaj"
-                        1 -> "Koniec jutro"
-                        else -> "Koniec za $daysLeft dni"
+                    val paymentColor = if (subscription.isTrial) {
+                        MaterialTheme.colorScheme.tertiary
+                    } else if (daysLeft <= 3) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
                     }
-                } else if (daysLeft <= 3) {
-                    when (daysLeft) {
-                        0 -> stringResource(id = R.string.payment_today)
-                        1 -> stringResource(id = R.string.payment_tomorrow)
-                        else -> stringResource(id = R.string.payment_in_days, daysLeft)
-                    }
-                } else {
-                    stringResource(id = R.string.payment_date_format, nextPaymentDate)
-                }
 
-                val paymentColor = if (subscription.isTrial) {
-                    MaterialTheme.colorScheme.tertiary
-                } else if (daysLeft <= 3) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                    Text(
+                        text = paymentText,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = paymentColor,
+                        fontWeight = if (daysLeft <= 3 || subscription.isTrial) FontWeight.SemiBold else FontWeight.Normal,
+                        maxLines = 1
+                    )
                 }
-
-                Text(
-                    text = paymentText,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = paymentColor,
-                    fontWeight = if (daysLeft <= 3 || subscription.isTrial) FontWeight.SemiBold else FontWeight.Normal,
-                    maxLines = 1
-                )
             }
         }
     }
