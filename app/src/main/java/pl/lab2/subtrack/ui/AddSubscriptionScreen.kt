@@ -11,7 +11,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -51,12 +53,20 @@ fun AddSubscriptionScreen(
     var plan by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
     var billingCycleResId by remember { mutableStateOf(R.string.cycle_month) }
-
-    // NOWE STANY
     var startDateLong by remember { mutableStateOf(System.currentTimeMillis()) }
     var isTrialChecked by remember { mutableStateOf(false) }
     var selectedTrialOption by remember { mutableStateOf("Pierwszy miesiąc za 0 zł, potem standard") }
     var notificationSetting by remember { mutableStateOf("Brak") }
+
+    // STAN WYSZUKIWANIA I FILTROWANIA PO TAGACH
+    var presetSearchQuery by remember { mutableStateOf("") }
+    var selectedTag by remember { mutableStateOf<String?>(null) } // null oznacza "Wszystkie"
+    var isFilterMenuExpanded by remember { mutableStateOf(false) }
+
+    // Automatyczne wyciągnięcie unikalnych tagów z dostępnych presetów
+    val allAvailableTags = remember(presets) {
+        presets.flatMap { it.tags }.distinct().sorted()
+    }
 
     // Stany UI dla Dropdownów i Dialogów
     var isPlanDropdownExpanded by remember { mutableStateOf(false) }
@@ -126,15 +136,107 @@ fun AddSubscriptionScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
+            // Nagłówek sekcji wyboru serwisu
             Text(
                 text = stringResource(id = R.string.choose_service_label),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
 
+            // Wiersz wyszukiwarki z lekiem filtrowania
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = presetSearchQuery,
+                    onValueChange = { presetSearchQuery = it },
+                    placeholder = {
+                        Text(
+                            text = if (selectedTag != null) "Szukaj w: $selectedTag..." else "Szukaj usługi..."
+                        )
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Menu z ikoną lejka
+                Box {
+                    IconButton(onClick = { isFilterMenuExpanded = true }) {
+                        Icon(
+                            imageVector = Icons.Default.FilterList,
+                            contentDescription = "Filtruj po kategoriach",
+                            tint = if (selectedTag != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = isFilterMenuExpanded,
+                        onDismissRequest = { isFilterMenuExpanded = false }
+                    ) {
+                        // Opcja resetu filtra ("Wszystkie")
+                        DropdownMenuItem(
+                            text = { Text("Wszystkie kategorie", fontWeight = if (selectedTag == null) FontWeight.Bold else FontWeight.Normal) },
+                            onClick = {
+                                selectedTag = null
+                                isFilterMenuExpanded = false
+                            },
+                            leadingIcon = {
+                                if (selectedTag == null) {
+                                    Icon(imageVector = Icons.Default.Check, contentDescription = "Wybrane")
+                                }
+                            }
+                        )
+
+                        HorizontalDivider()
+
+                        // Dynamiczna lista tagów
+                        allAvailableTags.forEach { tag ->
+                            DropdownMenuItem(
+                                text = { Text(tag, fontWeight = if (selectedTag == tag) FontWeight.Bold else FontWeight.Normal) },
+                                onClick = {
+                                    selectedTag = tag
+                                    isFilterMenuExpanded = false
+                                },
+                                leadingIcon = {
+                                    if (selectedTag == tag) {
+                                        Icon(imageVector = Icons.Default.Check, contentDescription = "Wybrane")
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Informacja o aktywnym filtrze kategorii
+            if (selectedTag != null) {
+                InputChip(
+                    selected = true,
+                    onClick = { selectedTag = null },
+                    label = { Text("Kategoria: $selectedTag") },
+                    trailingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Usuń filtr",
+                            modifier = Modifier.size(16.dp).padding(2.dp)
+                        )
+                    }
+                )
+            }
+
+            // Dynamiczne filtrowanie
             val columns = 3
-            val chunkedPresets = remember(presets) {
-                presets.sortedBy { it.serviceName }.chunked(columns)
+            val processedPresets = remember(presets, presetSearchQuery, selectedTag) {
+                var filtered = presets.filter { preset ->
+                    val matchesSearch = preset.serviceName.contains(presetSearchQuery, ignoreCase = true)
+                    val matchesTag = selectedTag == null || preset.tags.contains(selectedTag)
+                    matchesSearch && matchesTag
+                }.sortedBy { it.serviceName }
+
+                filtered.chunked(columns)
             }
 
             Box(
@@ -143,56 +245,69 @@ fun AddSubscriptionScreen(
                     .heightIn(max = 380.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    chunkedPresets.forEach { rowItems ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            for (i in 0 until columns) {
-                                if (i < rowItems.size) {
-                                    val preset = rowItems[i]
-                                    val isSelected = selectedService == preset
+                if (processedPresets.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Brak usług spełniających kryteria",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        processedPresets.forEach { rowItems ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                for (i in 0 until columns) {
+                                    if (i < rowItems.size) {
+                                        val preset = rowItems[i]
+                                        val isSelected = selectedService == preset
 
-                                    Card(
-                                        onClick = {
-                                            selectedService = preset
-                                            name = preset.serviceName
-                                            selectedPlan = null
-                                            plan = ""
-                                            price = ""
-                                        },
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .aspectRatio(1.7f),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                                        ),
-                                        border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
-                                    ) {
-                                        Column(
-                                            modifier = Modifier.fillMaxSize().padding(4.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            verticalArrangement = Arrangement.Center
+                                        Card(
+                                            onClick = {
+                                                selectedService = preset
+                                                name = preset.serviceName
+                                                selectedPlan = null
+                                                plan = ""
+                                                price = ""
+                                            },
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .aspectRatio(1.7f),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                            ),
+                                            border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
                                         ) {
-                                            SubscriptionIcon(serviceName = preset.serviceName, modifier = Modifier.size(34.dp))
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = preset.serviceName,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                                textAlign = TextAlign.Center,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
+                                            Column(
+                                                modifier = Modifier.fillMaxSize().padding(4.dp),
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.Center
+                                            ) {
+                                                SubscriptionIcon(serviceName = preset.serviceName, modifier = Modifier.size(34.dp))
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = preset.serviceName,
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                    textAlign = TextAlign.Center,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                            }
                                         }
+                                    } else {
+                                        Spacer(modifier = Modifier.weight(1f))
                                     }
-                                } else {
-                                    Spacer(modifier = Modifier.weight(1f))
                                 }
                             }
                         }
