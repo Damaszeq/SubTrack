@@ -20,11 +20,20 @@ fun SubscriptionIcon(
     serviceName: String,
     modifier: Modifier = Modifier
 ) {
+
+    // 0. Odcięcie dopisków w nawiasach (np. "CD-Action (Geek Week)" -> "CD-Action")
+    val baseName = if (serviceName.contains("(")) {
+        serviceName.substringBefore("(").trim()
+    } else {
+        serviceName
+    }
+
     // 1. Standaryzacja nazwy wpisanej przez użytkownika
-    var cleanName = serviceName.lowercase().trim()
+    var cleanName = baseName.lowercase().trim()
         .replace(" ", "")
         .replace("+", "")
         .replace("!", "")
+        .replace("-", "")
 
     // 2. Usuwanie popularnych sufiksów (kolejność ma znaczenie)
     val suffixesToRemove = listOf("premium", "plus", "online", "go", "gold", "vod")
@@ -64,6 +73,7 @@ fun SubscriptionIcon(
         "ubisoft" to "ubisoft.com",
         "xbox" to "xbox.com",
         "ea" to "ea.com",
+        "cdaction" to "cdaction.pl",
 
         // Kultura & Produktywność
         "marvel" to "marvel.com",
@@ -74,6 +84,7 @@ fun SubscriptionIcon(
         "chatgpt" to "openai.com",
         "icloud" to "apple.com",
         "linkedin" to "linkedin.com",
+        "carly" to "mycarly.com",
 
         // Prasa & Informacje
         "wyborcza" to "wyborcza.pl",

@@ -454,6 +454,57 @@ object SubscriptionPresetsData {
                 SubscriptionPlanPreset("Premium Roczny", 129.99, "Rok")
             ),
             tags = listOf("Zdrowie", "Kalendarz")
+        ),
+
+        ServicePreset(
+            serviceName = "Crunchyroll",
+            plans = listOf(
+                SubscriptionPlanPreset("Fan", 25.00),
+                SubscriptionPlanPreset("Mega Fan", 30.00)
+            ),
+            tags = listOf("Rozrywka", "Streaming", "Wideo", "Anime")
+        ),
+        ServicePreset(
+            serviceName = "CD-Action (Geek Week)",
+            plans = listOf(
+                SubscriptionPlanPreset("Miesięczny Premium", 15.00),
+                SubscriptionPlanPreset("Roczny Premium", 149.00, "Rok")
+            ),
+            tags = listOf("Gaming", "Informacje", "Czytanie", "Prasa")
+        ),
+        ServicePreset(
+            serviceName = "Pyszne.pl Premium",
+            plans = listOf(
+                SubscriptionPlanPreset("Darmowe Dostawy", 12.99)
+            ),
+            tags = listOf("Zakupy", "Jedzenie", "Dostawa")
+        ),
+        ServicePreset(
+            serviceName = "Carly (Premium App)",
+            plans = listOf(
+                SubscriptionPlanPreset("Dla jednej marki", 39.99, "Rok"),
+                SubscriptionPlanPreset("Wszystkie marki", 79.99, "Rok")
+            ),
+            tags = listOf("Produktywność", "Narzędzia", "Motoryzacja")
+        ),
+        ServicePreset(
+            serviceName = "SoundCloud Go+",
+            plans = listOf(
+                SubscriptionPlanPreset("Go+ Standard", 25.00),
+                SubscriptionPlanPreset("Go+ Student", 12.50)
+            ),
+            tags = listOf("Rozrywka", "Streaming", "Muzyka")
+        ),
+        ServicePreset(
+            serviceName = "HelloChinese",
+            plans = listOf(
+                SubscriptionPlanPreset("Premium Miesięczny", 42.99),
+                SubscriptionPlanPreset("Premium Roczny", 259.99, "Rok"),
+                SubscriptionPlanPreset("Premium Plus Miesięczny", 89.99),
+                SubscriptionPlanPreset("Premium Plus Roczny", 519.99, "Rok")
+            ),
+            tags = listOf("Edukacja", "Języki", "Nauka")
         )
+
     )
 }
