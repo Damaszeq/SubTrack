@@ -19,5 +19,7 @@ data class UserSubscription(
     val nextPaymentDate: Long, // Timestamp
     val status: SubscriptionStatus,
     val isTrial: Boolean = false,
-    val trialOption: String = ""
+    val trialOption: String = "",
+    val hasCustomReminders: Boolean = false,
+    val reminderHoursBefore: List<Int> = emptyList()
 )
