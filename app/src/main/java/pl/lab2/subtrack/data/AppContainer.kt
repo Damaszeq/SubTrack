@@ -2,12 +2,7 @@ package pl.lab2.subtrack.data
 
 import android.content.Context
 import pl.lab2.subtrack.data.local.AppDatabase
-import pl.lab2.subtrack.data.local.repositories.OfflinePaymentRepository
-import pl.lab2.subtrack.data.local.repositories.OfflineSubscriptionRepository
-import pl.lab2.subtrack.data.local.repositories.OfflineTagRepository
-import pl.lab2.subtrack.data.local.repositories.PaymentRepository
-import pl.lab2.subtrack.data.local.repositories.SubscriptionRepository
-import pl.lab2.subtrack.data.local.repositories.TagRepository
+import pl.lab2.subtrack.data.local.repositories.*
 
 /**
  * App container for Dependency injection.
@@ -16,6 +11,7 @@ interface AppContainer {
     val subscriptionRepository: SubscriptionRepository
     val paymentRepository: PaymentRepository
     val tagRepository: TagRepository
+    val notificationSettingsRepository: NotificationSettingsRepository // NOWE
     val database: AppDatabase
 }
 
@@ -47,5 +43,12 @@ class AppDataContainer(private val context: Context) : AppContainer {
      */
     override val tagRepository: TagRepository by lazy {
         OfflineTagRepository(database.tagDao())
+    }
+
+    /**
+     * Implementation for [NotificationSettingsRepository]
+     */
+    override val notificationSettingsRepository: NotificationSettingsRepository by lazy {
+        OfflineNotificationSettingsRepository(context)
     }
 }
