@@ -44,6 +44,13 @@
     <string name="notify_24h_title">24 godziny przed</string>
     <string name="notify_24h_sub">Ostatnie ostrzeżenie przed płatnością</string>
 
+    <!-- Powiadomienia -->
+    <string name="dynamic_msg_payment">Za %1$d dzień zostanie pobrana opłata %2$s za subskrypcję %3$s.</string>
+    <string name="dynamic_msg_trial">Twój darmowy okres próbny w %1$s kończy się jutro.</string>
+    <string name="subscription_notifications_label">Powiadomienia o płatnościach</string>
+    <string name="yes">TAK</string>
+    <string name="no">NIE</string>
+
     <!-- Niestandardowe -->
     <string name="custom_settings_title">Niestandardowe ustawienia</string>
     <string name="custom_settings_sub">Dodaj własne terminy przypomnień</string>

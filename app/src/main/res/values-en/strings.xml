@@ -44,6 +44,13 @@
     <string name="notify_24h_title">24 hours before</string>
     <string name="notify_24h_sub">Final payment warning</string>
 
+    <!-- Notifications -->
+    <string name="dynamic_msg_payment">In %1$d days, a payment of %2$s will be charged for your %3$s subscription.</string>
+    <string name="dynamic_msg_trial">Your free trial period for %1$s ends soon.</string>
+    <string name="subscription_notifications_label">Payment Notifications</string>
+    <string name="yes">YES</string>
+    <string name="no">NO</string>
+
     <!-- Custom -->
     <string name="custom_settings_title">Custom settings</string>
     <string name="custom_settings_sub">Add your own reminder dates</string>

@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsActive
@@ -43,7 +44,9 @@ import pl.lab2.subtrack.models.NotificationType
 @Composable
 fun NotificationsScreen(
     onBackClick: () -> Unit,
-    notificationViewModel: NotificationViewModel = viewModel()
+    notificationViewModel: NotificationViewModel = viewModel(),
+    // POPRAWKA 1: Przekazujemy SubscriptionViewModel jako parametr (tak jak na innych ekranach)
+    subscriptionViewModel: SubscriptionViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
     val notifications by notificationViewModel.notifications.collectAsState()
     val context = LocalContext.current
@@ -58,6 +61,7 @@ fun NotificationsScreen(
                 permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
+        notificationViewModel.checkAndGenerateNotifications(context, subscriptionViewModel)
     }
 
     Scaffold(
@@ -116,10 +120,49 @@ fun NotificationsScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(notifications, key = { it.id }) { notification ->
-                    NotificationItemRow(
-                        notification = notification,
-                        onRowClick = { notificationViewModel.markAsRead(notification.id) }
+                items(
+                    items = notifications,
+                    // POPRAWKA 2: Bezpieczny klucz uniemożliwiający błędy stanów przy przeładowaniu listy
+                    key = { it.subscriptionName + "_" + it.daysLeft + "_" + it.timestamp }
+                ) { notification ->
+
+                    val dismissState = rememberSwipeToDismissBoxState(
+                        confirmValueChange = { dismissValue ->
+                            if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
+                                notificationViewModel.deleteNotification(notification.id)
+                                true
+                            } else {
+                                false
+                            }
+                        },
+                        positionalThreshold = { distance -> distance * 0.4f }
+                    )
+
+                    SwipeToDismissBox(
+                        state = dismissState,
+                        enableDismissFromStartToEnd = false,
+                        enableDismissFromEndToStart = true,
+                        backgroundContent = {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color(0xFFE53935), shape = CardDefaults.shape)
+                                    .padding(horizontal = 20.dp),
+                                contentAlignment = Alignment.CenterEnd
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = stringResource(id = R.string.delete),
+                                    tint = Color.White
+                                )
+                            }
+                        },
+                        content = {
+                            NotificationItemRow(
+                                notification = notification,
+                                onRowClick = { notificationViewModel.markAsRead(notification.id) }
+                            )
+                        }
                     )
                 }
             }
@@ -133,31 +176,44 @@ fun NotificationItemRow(
     notification: NotificationItem,
     onRowClick: () -> Unit
 ) {
-    // 1. Dynamiczne mapowanie tekstów na podstawie właściwości surowego modelu danych
+    val subName = notification.subscriptionName ?: stringResource(id = R.string.placeholder_service_name)
+    val priceValue = notification.priceTriggered ?: 0.0
+
     val titleText = when (notification.type) {
-        NotificationType.PAYMENT_REMINDER -> if (notification.daysLeft == 1)
-            stringResource(R.string.mock_title_payment_tomorrow)
-        else
-            stringResource(R.string.mock_title_payment_approaching)
-        NotificationType.TRIAL_EXPIRING -> stringResource(R.string.mock_title_trial_ending)
-        NotificationType.SYSTEM_ALERT -> stringResource(R.string.mock_title_price_update)
+        NotificationType.PAYMENT_REMINDER -> {
+            when (notification.daysLeft) {
+                0 -> stringResource(id = R.string.payment_today)
+                1 -> stringResource(id = R.string.payment_tomorrow)
+                else -> stringResource(id = R.string.mock_title_payment_approaching)
+            }
+        }
+        NotificationType.TRIAL_EXPIRING -> stringResource(id = R.string.mock_title_trial_ending)
+        NotificationType.SYSTEM_ALERT -> stringResource(id = R.string.mock_title_price_update)
     }
 
     val messageText = when (notification.type) {
-        NotificationType.PAYMENT_REMINDER -> stringResource(R.string.mock_msg_netflix, notification.priceTriggered ?: 0.0)
-        NotificationType.TRIAL_EXPIRING -> stringResource(R.string.mock_msg_youtube)
-        NotificationType.SYSTEM_ALERT -> stringResource(R.string.mock_msg_system)
+        NotificationType.PAYMENT_REMINDER -> {
+            val days = notification.daysLeft ?: 1
+            val formattedPrice = stringResource(id = R.string.price_format, priceValue)
+            stringResource(id = R.string.dynamic_msg_payment, days, formattedPrice, subName)
+        }
+        NotificationType.TRIAL_EXPIRING -> {
+            stringResource(id = R.string.dynamic_msg_trial, subName)
+        }
+        NotificationType.SYSTEM_ALERT -> {
+            stringResource(id = R.string.mock_msg_system)
+        }
     }
 
-    // Prosta symulacja etykiet czasu (docelowo sformatowana data z system.currentTimeMillis)
     val timestampText = when {
-        System.currentTimeMillis() - notification.timestamp < 60 * 60 * 1000 -> stringResource(R.string.time_today)
-        System.currentTimeMillis() - notification.timestamp < 30 * 60 * 60 * 1000 -> stringResource(R.string.time_yesterday)
-        else -> stringResource(R.string.time_3_days_ago)
+        System.currentTimeMillis() - notification.timestamp < 60 * 60 * 1000 -> stringResource(id = R.string.time_today)
+        System.currentTimeMillis() - notification.timestamp < 30 * 60 * 60 * 1000 -> stringResource(id = R.string.time_yesterday)
+        System.currentTimeMillis() - notification.timestamp < 54 * 60 * 60 * 1000 -> stringResource(id = R.string.time_2_days_ago)
+        else -> stringResource(id = R.string.time_3_days_ago)
     }
 
     Card(
-        onClick = onRowClick, // Kliknięcie oznacza jako przeczytane
+        onClick = onRowClick,
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = if (notification.isRead)
@@ -171,21 +227,20 @@ fun NotificationItemRow(
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 12.dp, vertical = 10.dp) // Zachowane kompaktowe wymiary
+                .padding(horizontal = 12.dp, vertical = 10.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-
             val (icon: ImageVector, backgroundColor: Color) = when (notification.type) {
                 NotificationType.PAYMENT_REMINDER -> {
-                    if (notification.daysLeft == 1) {
-                        Icons.Default.NotificationsActive to MaterialTheme.colorScheme.critical
+                    if ((notification.daysLeft ?: 1) <= 1) {
+                        Icons.Default.NotificationsActive to Color(0xFFE53935)
                     } else {
-                        Icons.Default.Notifications to MaterialTheme.colorScheme.warning
+                        Icons.Default.Notifications to Color(0xFFFF9800)
                     }
                 }
-                NotificationType.TRIAL_EXPIRING -> Icons.Default.Error to MaterialTheme.colorScheme.error
-                NotificationType.SYSTEM_ALERT -> Icons.Default.Notifications to MaterialTheme.colorScheme.info
+                NotificationType.TRIAL_EXPIRING -> Icons.Default.Error to Color(0xFFE53935)
+                NotificationType.SYSTEM_ALERT -> Icons.Default.Notifications to MaterialTheme.colorScheme.secondary
             }
 
             Box(
@@ -200,11 +255,7 @@ fun NotificationItemRow(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = if (!notification.isRead) {
-                        if (backgroundColor == MaterialTheme.colorScheme.error) MaterialTheme.colorScheme.onError else Color.White
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                    },
+                    tint = if (!notification.isRead) Color.White else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -255,12 +306,30 @@ fun showSystemNotification(context: Context, notificationItem: NotificationItem)
         notificationManager.createNotificationChannel(channel)
     }
 
-    // Logika wyciągania tekstów dla powiadomienia systemowego
-    val titleText = context.getString(R.string.mock_title_payment_tomorrow)
-    val messageText = context.getString(
-        R.string.mock_msg_netflix,
-        (notificationItem.priceTriggered ?: 0.0).toString()
-    )
+    val subName = notificationItem.subscriptionName ?: context.getString(R.string.placeholder_service_name)
+    val priceValue = notificationItem.priceTriggered ?: 0.0
+
+    val titleText = when (notificationItem.type) {
+        NotificationType.PAYMENT_REMINDER -> {
+            when (notificationItem.daysLeft) {
+                0 -> context.getString(R.string.payment_today)
+                1 -> context.getString(R.string.payment_tomorrow)
+                else -> context.getString(R.string.mock_title_payment_approaching)
+            }
+        }
+        NotificationType.TRIAL_EXPIRING -> context.getString(R.string.mock_title_trial_ending)
+        NotificationType.SYSTEM_ALERT -> context.getString(R.string.mock_title_price_update)
+    }
+
+    val messageText = when (notificationItem.type) {
+        NotificationType.PAYMENT_REMINDER -> {
+            val days = notificationItem.daysLeft ?: 1
+            val formattedPrice = context.getString(R.string.price_format, priceValue)
+            context.getString(R.string.dynamic_msg_payment, days, formattedPrice, subName)
+        }
+        NotificationType.TRIAL_EXPIRING -> context.getString(R.string.dynamic_msg_trial, subName)
+        NotificationType.SYSTEM_ALERT -> context.getString(R.string.mock_msg_system)
+    }
 
     val builder = NotificationCompat.Builder(context, channelId)
         .setSmallIcon(android.R.drawable.ic_dialog_info)

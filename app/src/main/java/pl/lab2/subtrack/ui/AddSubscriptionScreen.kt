@@ -32,6 +32,8 @@ import pl.lab2.subtrack.model.SubscriptionPlanPreset
 import pl.lab2.subtrack.ui.components.SubscriptionIcon
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 
 @SuppressLint("LocalContextGetResourceValueCall")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,6 +56,7 @@ fun AddSubscriptionScreen(
     var price by remember { mutableStateOf("") }
     var billingCycleResId by remember { mutableStateOf(R.string.cycle_month) }
     var startDateLong by remember { mutableStateOf(System.currentTimeMillis()) }
+    var isNotificationEnabled by remember { mutableStateOf(true) }
     var isTrialChecked by remember { mutableStateOf(false) }
     var selectedTrialOption by remember { mutableStateOf("Pierwszy miesiąc za 0 zł, potem standard") }
     var notificationSetting by remember { mutableStateOf("Brak") }
@@ -409,7 +412,8 @@ fun AddSubscriptionScreen(
             // Układ dwukolumnowy dla Daty oraz Miejsca na przyszłe Powiadomienia
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically // Wyśrodkuje komponenty w pionie
             ) {
                 // DATA ROZPOCZĘCIA
                 OutlinedTextField(
@@ -429,16 +433,38 @@ fun AddSubscriptionScreen(
                     modifier = Modifier.weight(1f).clickable(enabled = selectedService != null) { showDatePicker = true }
                 )
 
-                Box(
-                    modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.CenterStart
+                // PRZEŁĄCZNIK POWIADOMIEŃ
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Tutaj wleci pole powiadomień o zakończeniu
-                    Text(
-                        text = "[ Powiadomienia wkrótce ]",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                        modifier = Modifier.padding(start = 8.dp)
+                    Column {
+                        Text(
+                            text = stringResource(id = R.string.subscription_notifications_label),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = if (isNotificationEnabled) stringResource(id = R.string.yes) else stringResource(id = R.string.no),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (isNotificationEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Switch(
+                        checked = isNotificationEnabled,
+                        onCheckedChange = { isNotificationEnabled = it },
+                        enabled = selectedService != null,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                            uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        )
                     )
                 }
             }
@@ -494,7 +520,8 @@ fun AddSubscriptionScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            // POPRAWKA: Zmiana z Modifier.weight(1f) na bezpieczny stały odstęp w scrollowanym kontenerze
+            Spacer(modifier = Modifier.height(24.dp))
 
             // DOLNE PRZYCISKI
             Row(
@@ -521,6 +548,7 @@ fun AddSubscriptionScreen(
                         val rawPrice = price.replace(",", ".").trim().toDoubleOrNull() ?: 0.0
                         val formattedPriceText = String.format(java.util.Locale.US, "%.2f", rawPrice)
 
+                        // POPRAWKA: Przekazujemy stan przełącznika skonwertowany na String
                         viewModel.addSubscription(
                             name = selectedService?.serviceName ?: name,
                             plan = selectedPlan?.planName ?: plan,
@@ -530,7 +558,7 @@ fun AddSubscriptionScreen(
                             startDate = startDateLong,
                             isTrial = isTrialChecked,
                             trialOption = selectedTrialOption,
-                            notificationSetting = notificationSetting
+                            notificationSetting = isNotificationEnabled.toString()
                         )
                         onBackClick()
                     },
