@@ -518,10 +518,13 @@ fun AddSubscriptionScreen(
                             "KLIKNIĘTO ZAPIS -> Nazwa: ${selectedService?.serviceName ?: name}, Czy trial: $isTrialChecked, Opcja: $selectedTrialOption"
                         )
 
+                        val rawPrice = price.replace(",", ".").trim().toDoubleOrNull() ?: 0.0
+                        val formattedPriceText = String.format(java.util.Locale.US, "%.2f", rawPrice)
+
                         viewModel.addSubscription(
                             name = selectedService?.serviceName ?: name,
                             plan = selectedPlan?.planName ?: plan,
-                            priceText = price,
+                            priceText = formattedPriceText,
                             billingCycle = finalBillingCycleText,
                             tags = currentTags,
                             startDate = startDateLong,
