@@ -58,17 +58,17 @@ private val LightColorScheme = lightColorScheme(
 
 // Konstrukcja motywu ciemnego
 private val DarkColorScheme = darkColorScheme(
-    primary = SpaceBackground,
-    onPrimary = White,
+    primary = NeonCyan,
+    onPrimary = SpaceBackground,
     primaryContainer = NebulaPurple,
-    onPrimaryContainer = NeonCyan,
+    onPrimaryContainer = GlassWhiteText,
     secondary = NeonCyan,
     onSecondary = SpaceBackground,
     background = SpaceBackground,
-    onBackground = White,
-    surface = NebulaPurple,
-    onSurface = White,
-    surfaceVariant = SpaceBackground,
+    onBackground = GlassWhiteText,
+    surface = Color(0xFF111827),
+    onSurface = GlassWhiteText,
+    surfaceVariant = Color(0xFF1E293B),
     onSurfaceVariant = MutedSlate,
     error = CyberPink,
     onError = White
