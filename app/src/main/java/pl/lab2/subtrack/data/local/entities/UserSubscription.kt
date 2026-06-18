@@ -21,5 +21,5 @@ data class UserSubscription(
     val isTrial: Boolean = false,
     val trialOption: String = "",
     val hasCustomReminders: Boolean = false,
-    val reminderHoursBefore: List<Int> = emptyList()
+    val notificationSetting: String = "true"
 )

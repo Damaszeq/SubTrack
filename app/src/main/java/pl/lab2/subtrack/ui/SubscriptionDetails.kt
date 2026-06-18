@@ -123,7 +123,7 @@ fun SubscriptionDetailsScreen(
             item {
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // GŁÓWNA KARTA SUBKRYPCJI
+                // GŁÓWNA KARTA SUBSKRYPCJI
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
@@ -155,7 +155,10 @@ fun SubscriptionDetailsScreen(
 
                         HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
 
-                        // ZMIANA: Pełne zbindowanie z polami modelu Subscription
+                        // Wyciągnięcie i przetłumaczenie flagi powiadomień ("true"/"false" -> "Tak"/"Nie")
+                        val isNotifEnabled = subscription.notificationSetting == "true"
+                        val notificationsText = if (isNotifEnabled) "Tak" else "Nie"
+
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -187,9 +190,10 @@ fun SubscriptionDetailsScreen(
                                 )
                                 InfoColumn(
                                     label = "Powiadomienia",
-                                    value = subscription.notificationSetting,
+                                    value = notificationsText,
                                     modifier = Modifier.weight(1f),
-                                    alpha = if (subscription.notificationSetting == "Brak") 0.4f else 1f
+                                    // Wyblakły tekst, gdy powiadomienia są na "Nie"
+                                    alpha = if (!isNotifEnabled) 0.4f else 1f
                                 )
                             }
                         }

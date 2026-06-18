@@ -41,6 +41,7 @@ private fun calculateNextPaymentDate(startDate: Long, billingCycle: String): Lon
     }
     return calendar.timeInMillis
 }
+
 class SubscriptionViewModel(
     private val subscriptionRepository: SubscriptionRepository,
     private val tagRepository: TagRepository,
@@ -51,8 +52,7 @@ class SubscriptionViewModel(
         .map { list ->
             list.map { entity ->
                 val sub = entity.toSubscription()
-                // Logowanie danych, które już są przetworzone
-                android.util.Log.d("DEBUG_VIEW", "Ładowanie suba: ${sub.name}, nextPayment: ${sub.nextPaymentDate}")
+                android.util.Log.d("DEBUG_VIEW", "Ładowanie suba: ${sub.name}, nextPayment: ${sub.nextPaymentDate}, notif: ${sub.notificationSetting}")
                 sub
             }
         }
@@ -88,10 +88,10 @@ class SubscriptionViewModel(
         startDate: Long,
         isTrial: Boolean,
         trialOption: String,
-        notificationSetting: String
+        notificationSetting: String // "true" lub "false" przekazane z UI
     ) {
         val parsedPrice = priceText.replace(",", ".").trim().toDoubleOrNull() ?: 0.0
-        
+
         viewModelScope.launch {
             val nextDate = calculateNextPaymentDate(startDate, billingCycle)
             val entity = pl.lab2.subtrack.data.local.entities.UserSubscription(
@@ -104,9 +104,10 @@ class SubscriptionViewModel(
                 nextPaymentDate = nextDate,
                 status = pl.lab2.subtrack.data.local.entities.SubscriptionStatus.ACTIVE,
                 isTrial = isTrial,
-                trialOption = trialOption
+                trialOption = trialOption,
+                notificationSetting = notificationSetting // <--- POPRAWKA: Przekazujemy stan do bazy!
             )
-            
+
             val tagEntities = tags.map { Tag(name = it) }
             subscriptionRepository.insertSubscriptionWithTags(entity, tagEntities, tagDao)
         }
@@ -116,10 +117,8 @@ class SubscriptionViewModel(
     fun deleteSubscription(id: String) {
         val numericId = id.toLongOrNull() ?: return
         viewModelScope.launch {
-            // 1. First, fetch to ensure it exists
             val subWithTags = subscriptionRepository.getSubscriptionWithTagsStream(numericId).first()
             subWithTags?.subscription?.let {
-                // 2. Room CASCADE should handle tags, but we'll be explicit if needed
                 subscriptionRepository.deleteSubscription(it)
             }
         }
@@ -140,12 +139,15 @@ class SubscriptionViewModel(
         startDate: Long,
         isTrial: Boolean,
         trialOption: String,
-        notificationSetting: String
+        notificationSetting: String // "true" lub "false"
     ) {
         val parsedPrice = priceText.replace(",", ".").trim().toDoubleOrNull() ?: 0.0
         val subscriptionId = id.toLongOrNull() ?: return
 
         viewModelScope.launch {
+            // POPRAWKA: Wyliczamy prawidłową następną datę płatności przy aktualizacji zamiast System.currentTimeMillis()
+            val nextDate = calculateNextPaymentDate(startDate, billingCycle)
+
             val updatedEntity = pl.lab2.subtrack.data.local.entities.UserSubscription(
                 id = subscriptionId,
                 name = name,
@@ -153,12 +155,13 @@ class SubscriptionViewModel(
                 price = parsedPrice,
                 billingCycle = billingCycle,
                 startDate = startDate,
-                nextPaymentDate = System.currentTimeMillis(),
+                nextPaymentDate = nextDate,
                 status = pl.lab2.subtrack.data.local.entities.SubscriptionStatus.ACTIVE,
                 isTrial = isTrial,
-                trialOption = trialOption
+                trialOption = trialOption,
+                notificationSetting = notificationSetting
             )
-            
+
             val tagEntities = tags.map { Tag(name = it) }
             subscriptionRepository.updateSubscriptionWithTags(updatedEntity, tagEntities, tagDao)
         }
