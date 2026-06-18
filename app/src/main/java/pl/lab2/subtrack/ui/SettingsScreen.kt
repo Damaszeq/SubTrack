@@ -1,20 +1,24 @@
 package pl.lab2.subtrack.ui
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,9 +28,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import pl.lab2.subtrack.R
-import pl.lab2.subtrack.ui.AppLanguage
-import pl.lab2.subtrack.ui.AppThemeMode
-import pl.lab2.subtrack.ui.SubscriptionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,6 +37,10 @@ fun SettingsScreen(
 ) {
     val currentTheme by viewModel.themeMode.collectAsState()
     val currentLanguage by viewModel.language.collectAsState()
+
+    // LOKALNE STANY DLA UI POWIADOMIEŃ (Do późniejszego podpięcia pod ViewModel/DataStore)
+    var isNotificationsEnabled by remember { mutableStateOf(true) }
+    var globalReminderHours by remember { mutableStateOf(setOf(24)) }
 
     Scaffold(
         topBar = {
@@ -47,9 +52,9 @@ fun SettingsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
         },
@@ -59,7 +64,8 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp),
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
 
@@ -135,6 +141,78 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.08f))
+
+            // ================= SEKCJA 3: POWIADOMIENIA GLOBALNE (NOWOŚĆ) =================
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Domyślne powiadomienia",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SettingsOptionCard(
+                        label = "Wyłączone",
+                        icon = Icons.Default.NotificationsOff,
+                        selected = !isNotificationsEnabled,
+                        onClick = { isNotificationsEnabled = false },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    SettingsOptionCard(
+                        label = "Włączone",
+                        icon = Icons.Default.NotificationsActive,
+                        selected = isNotificationsEnabled,
+                        onClick = { isNotificationsEnabled = true },
+                        modifier = Modifier.weight(1f)
+                    )
+
+
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+
+                // Dynamiczne kafelki szczegółowego czasu pokazywane tylko, gdy powiadomienia są aktywne
+                AnimatedVisibility(visible = isNotificationsEnabled) {
+                    Column(
+                        modifier = Modifier.padding(top = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(
+                            text = "Kiedy chcesz otrzymać domyślne przypomnienie?",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            listOf(24, 48, 72).forEach { hour ->
+                                val isSelected = globalReminderHours.contains(hour)
+                                SettingsOptionCard(
+                                    label = if (hour < 24) "$hour godz." else "${hour / 24} dni przed",
+                                    icon = Icons.Default.Notifications,
+                                    selected = isSelected,
+                                    onClick = {
+                                        globalReminderHours = if (isSelected) {
+                                            if (globalReminderHours.size > 1) globalReminderHours - hour else globalReminderHours
+                                        } else {
+                                            globalReminderHours + hour
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -148,13 +226,13 @@ fun SettingsOptionCard(
     modifier: Modifier = Modifier
 ) {
     val strokeColor = if (selected) {
-        MaterialTheme.colorScheme.secondary
+        MaterialTheme.colorScheme.primary
     } else {
         MaterialTheme.colorScheme.onBackground.copy(alpha = 0.15f)
     }
 
     val contentColor = if (selected) {
-        MaterialTheme.colorScheme.secondary
+        MaterialTheme.colorScheme.primary
     } else {
         MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
     }
@@ -185,7 +263,7 @@ fun SettingsOptionCard(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-            color = if (selected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onBackground,
+            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
     }
