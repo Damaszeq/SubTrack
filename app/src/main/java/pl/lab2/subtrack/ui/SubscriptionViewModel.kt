@@ -78,6 +78,22 @@ class SubscriptionViewModel(
         _language.value = lang
     }
 
+    // --- SEKCJA USTAWIEŃ GLOBALNYCH POWIADOMIEŃ ---
+    private val _isNotificationsEnabledGlobal = MutableStateFlow(true)
+    val isNotificationsEnabledGlobal: StateFlow<Boolean> = _isNotificationsEnabledGlobal.asStateFlow()
+
+    private val _globalReminderHours = MutableStateFlow(setOf(24))
+    val globalReminderHours: StateFlow<Set<Int>> = _globalReminderHours.asStateFlow()
+
+    fun setGlobalNotificationsEnabled(enabled: Boolean) {
+        _isNotificationsEnabledGlobal.value = enabled
+    }
+
+    fun setGlobalReminderHours(hours: Set<Int>) {
+        _globalReminderHours.value = hours
+    }
+    // ----------------------------------------------
+
     // DODAWANIE NOWEJ SUBSKRYPCJI
     fun addSubscription(
         name: String,
@@ -88,7 +104,7 @@ class SubscriptionViewModel(
         startDate: Long,
         isTrial: Boolean,
         trialOption: String,
-        notificationSetting: String // "true" lub "false" przekazane z UI
+        notificationSetting: String
     ) {
         val parsedPrice = priceText.replace(",", ".").trim().toDoubleOrNull() ?: 0.0
 
@@ -105,7 +121,7 @@ class SubscriptionViewModel(
                 status = pl.lab2.subtrack.data.local.entities.SubscriptionStatus.ACTIVE,
                 isTrial = isTrial,
                 trialOption = trialOption,
-                notificationSetting = notificationSetting // <--- POPRAWKA: Przekazujemy stan do bazy!
+                notificationSetting = notificationSetting
             )
 
             val tagEntities = tags.map { Tag(name = it) }
@@ -139,13 +155,12 @@ class SubscriptionViewModel(
         startDate: Long,
         isTrial: Boolean,
         trialOption: String,
-        notificationSetting: String // "true" lub "false"
+        notificationSetting: String
     ) {
         val parsedPrice = priceText.replace(",", ".").trim().toDoubleOrNull() ?: 0.0
         val subscriptionId = id.toLongOrNull() ?: return
 
         viewModelScope.launch {
-            // POPRAWKA: Wyliczamy prawidłową następną datę płatności przy aktualizacji zamiast System.currentTimeMillis()
             val nextDate = calculateNextPaymentDate(startDate, billingCycle)
 
             val updatedEntity = pl.lab2.subtrack.data.local.entities.UserSubscription(

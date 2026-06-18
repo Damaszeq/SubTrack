@@ -38,9 +38,8 @@ fun SettingsScreen(
     val currentTheme by viewModel.themeMode.collectAsState()
     val currentLanguage by viewModel.language.collectAsState()
 
-    // LOKALNE STANY DLA UI POWIADOMIEŃ (Do późniejszego podpięcia pod ViewModel/DataStore)
-    var isNotificationsEnabled by remember { mutableStateOf(true) }
-    var globalReminderHours by remember { mutableStateOf(setOf(24)) }
+    val isNotificationsEnabled by viewModel.isNotificationsEnabledGlobal.collectAsState()
+    val globalReminderHours by viewModel.globalReminderHours.collectAsState()
 
     Scaffold(
         topBar = {
@@ -144,7 +143,7 @@ fun SettingsScreen(
 
             HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.08f))
 
-            // ================= SEKCJA 3: POWIADOMIENIA GLOBALNE (NOWOŚĆ) =================
+            // ================= SEKCJA 3: POWIADOMIENIA GLOBALNE =================
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = "Domyślne powiadomienia",
@@ -161,7 +160,7 @@ fun SettingsScreen(
                         label = "Wyłączone",
                         icon = Icons.Default.NotificationsOff,
                         selected = !isNotificationsEnabled,
-                        onClick = { isNotificationsEnabled = false },
+                        onClick = { viewModel.setGlobalNotificationsEnabled(false) },
                         modifier = Modifier.weight(1f)
                     )
 
@@ -169,10 +168,9 @@ fun SettingsScreen(
                         label = "Włączone",
                         icon = Icons.Default.NotificationsActive,
                         selected = isNotificationsEnabled,
-                        onClick = { isNotificationsEnabled = true },
+                        onClick = { viewModel.setGlobalNotificationsEnabled(true) },
                         modifier = Modifier.weight(1f)
                     )
-
 
                     Spacer(modifier = Modifier.weight(1f))
                 }
@@ -200,11 +198,13 @@ fun SettingsScreen(
                                     icon = Icons.Default.Notifications,
                                     selected = isSelected,
                                     onClick = {
-                                        globalReminderHours = if (isSelected) {
+                                        // ZMIANA: Aktualizacja zbioru godzin przypomnień bezpośrednio w ViewModelu
+                                        val newHours = if (isSelected) {
                                             if (globalReminderHours.size > 1) globalReminderHours - hour else globalReminderHours
                                         } else {
                                             globalReminderHours + hour
                                         }
+                                        viewModel.setGlobalReminderHours(newHours)
                                     },
                                     modifier = Modifier.weight(1f)
                                 )

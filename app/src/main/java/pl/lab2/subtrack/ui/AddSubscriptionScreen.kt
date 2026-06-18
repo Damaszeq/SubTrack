@@ -45,6 +45,8 @@ fun AddSubscriptionScreen(
     val context = LocalContext.current
     val presets = SubscriptionPresetsData.availablePresets
 
+    val globalNotifSetting by viewModel.isNotificationsEnabledGlobal.collectAsState()
+
     // Formatowanie daty (polski format)
     val dateFormatter = remember { SimpleDateFormat("dd.MM.yyyy", Locale("pl", "PL")) }
 
@@ -56,7 +58,7 @@ fun AddSubscriptionScreen(
     var price by remember { mutableStateOf("") }
     var billingCycleResId by remember { mutableStateOf(R.string.cycle_month) }
     var startDateLong by remember { mutableStateOf(System.currentTimeMillis()) }
-    var isNotificationEnabled by remember { mutableStateOf(true) }
+    var isNotificationEnabled by remember(globalNotifSetting) { mutableStateOf(globalNotifSetting) }
     var isTrialChecked by remember { mutableStateOf(false) }
     var selectedTrialOption by remember { mutableStateOf("Pierwszy miesiąc za 0 zł, potem standard") }
     var notificationSetting by remember { mutableStateOf("Brak") }
@@ -548,7 +550,6 @@ fun AddSubscriptionScreen(
                         val rawPrice = price.replace(",", ".").trim().toDoubleOrNull() ?: 0.0
                         val formattedPriceText = String.format(java.util.Locale.US, "%.2f", rawPrice)
 
-                        // POPRAWKA: Przekazujemy stan przełącznika skonwertowany na String
                         viewModel.addSubscription(
                             name = selectedService?.serviceName ?: name,
                             plan = selectedPlan?.planName ?: plan,
