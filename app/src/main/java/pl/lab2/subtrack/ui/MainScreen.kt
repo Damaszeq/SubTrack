@@ -152,13 +152,32 @@ fun SubscriptionItem(
     subscription: Subscription,
     onClick: () -> Unit
 ) {
+    val now = System.currentTimeMillis()
+    val calendar = remember(subscription.nextPaymentDate) {
+        java.util.Calendar.getInstance().apply {
+            timeInMillis = subscription.nextPaymentDate
+
+            // Pętla korygująca: przesuwaj datę do przodu, aż będzie w przyszłości
+            while (timeInMillis < now) {
+                when (subscription.billingCycle.lowercase()) {
+                    "tydzień", "week" -> add(java.util.Calendar.WEEK_OF_YEAR, 1)
+                    "kwartał", "quarter" -> add(java.util.Calendar.MONTH, 3)
+                    "rok", "year" -> add(java.util.Calendar.YEAR, 1)
+                    else -> add(java.util.Calendar.MONTH, 1)
+                }
+            }
+        }
+    }
+
+    val nextFutureDate = calendar.timeInMillis
     val dateFormatter = remember { java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()) }
-    val formattedDate = dateFormatter.format(java.util.Date(subscription.nextPaymentDate))
-    val daysLeft = ((subscription.nextPaymentDate - System.currentTimeMillis()) / (1000 * 60 * 60 * 24)).toInt()
+    val formattedDate = dateFormatter.format(java.util.Date(nextFutureDate))
+
+    // Obliczamy dni do przyszłej płatności
+    val daysLeft = ((nextFutureDate - now) / (1000 * 60 * 60 * 24)).toInt()
+
     val cardColors = if (subscription.isTrial) {
-        CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.12f)
-        )
+        CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.12f))
     } else {
         CardDefaults.outlinedCardColors()
     }
@@ -178,11 +197,7 @@ fun SubscriptionItem(
         colors = cardColors,
         border = cardBorder
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             if (subscription.isTrial) {
                 Surface(
                     color = MaterialTheme.colorScheme.tertiary,
@@ -199,39 +214,18 @@ fun SubscriptionItem(
                 }
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                SubscriptionIcon(
-                    serviceName = subscription.name,
-                    modifier = Modifier.size(44.dp)
-                )
-
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                SubscriptionIcon(serviceName = subscription.name, modifier = Modifier.size(44.dp))
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // Kolumna z nazwą i planem
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = subscription.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
-                    Text(
-                        text = subscription.plan,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1
-                    )
+                    Text(text = subscription.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1)
+                    Text(text = subscription.plan, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                 }
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // Prawa kolumna: Cena oraz status płatności/końca triala
-                Column(
-                    horizontalAlignment = Alignment.End
-                ) {
+                Column(horizontalAlignment = Alignment.End) {
                     Text(
                         text = String.format(Locale.US, "%.2f PLN", subscription.price),
                         style = MaterialTheme.typography.titleMedium,
@@ -241,7 +235,6 @@ fun SubscriptionItem(
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    // Logika krótkiego tekstu dolnego
                     val paymentText = if (subscription.isTrial) {
                         when (daysLeft) {
                             0 -> "Koniec dzisiaj"

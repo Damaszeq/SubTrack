@@ -46,12 +46,29 @@ fun SubscriptionDetailsScreen(
     // Rzeczywiste płatności wyliczane na podstawie daty i ceny z obiektu Subscription
     val payments = remember(subscription) {
         if (subscription != null) {
-            listOf(
-                PaymentHistoryMock(date = dateFormatter.format(Date(subscription.startDate)), price = subscription.price),
-                PaymentHistoryMock(date = "10.05.2026", price = subscription.price),
-                PaymentHistoryMock(date = "10.05.2026", price = subscription.price),
-                PaymentHistoryMock(date = "10.04.2026", price = subscription.price)
-            )
+            val history = mutableListOf<PaymentHistoryMock>()
+            val calendar = java.util.Calendar.getInstance()
+
+            // Zaczynamy od daty startu
+            calendar.timeInMillis = subscription.startDate
+            val now = System.currentTimeMillis()
+
+            // Generujemy historyczne daty, dopóki nie dojdziemy do dzisiaj
+            while (calendar.timeInMillis <= now) {
+                history.add(0, PaymentHistoryMock(
+                    date = dateFormatter.format(calendar.time),
+                    price = subscription.price
+                ))
+
+                // Przesuwamy o jeden cykl w przód
+                when (subscription.billingCycle.lowercase()) {
+                    "tydzień", "week" -> calendar.add(java.util.Calendar.WEEK_OF_YEAR, 1)
+                    "kwartał", "quarter" -> calendar.add(java.util.Calendar.MONTH, 3)
+                    "rok", "year" -> calendar.add(java.util.Calendar.YEAR, 1)
+                    else -> calendar.add(java.util.Calendar.MONTH, 1) // domyślnie miesiąc
+                }
+            }
+            history
         } else emptyList()
     }
 
