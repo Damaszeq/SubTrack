@@ -37,6 +37,7 @@ val MutedSlate = Color(0xFF94A3B8)
 val DarkCritical = Color(0xFFEF5350)
 val DarkWarning = Color(0xFFFFB74D)
 val DarkInfo = Color(0xFF64B5F6)
+val LightIndigo = Color(0xFF818CF8)
 
 // Konstrukcja motywu jasnego
 private val LightColorScheme = lightColorScheme(
@@ -58,7 +59,7 @@ private val LightColorScheme = lightColorScheme(
 
 // Konstrukcja motywu ciemnego
 private val DarkColorScheme = darkColorScheme(
-    primary = NeonCyan,
+    primary = LightIndigo,
     onPrimary = SpaceBackground,
     primaryContainer = NebulaPurple,
     onPrimaryContainer = GlassWhiteText,
@@ -66,7 +67,7 @@ private val DarkColorScheme = darkColorScheme(
     onSecondary = SpaceBackground,
     background = SpaceBackground,
     onBackground = GlassWhiteText,
-    surface = Color(0xFF111827),
+    surface = Color(0xFF0B0F19),
     onSurface = GlassWhiteText,
     surfaceVariant = Color(0xFF1E293B),
     onSurfaceVariant = MutedSlate,
