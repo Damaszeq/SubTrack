@@ -9,6 +9,7 @@ data class Subscription(
     val tags: List<String> = emptyList(),
 
     val startDate: Long = System.currentTimeMillis(),
+    val nextPaymentDate: Long = System.currentTimeMillis(),
     val isTrial: Boolean = false,
     val trialOption: String = "",
     val notificationSetting: String = "Brak"
@@ -31,6 +32,7 @@ fun pl.lab2.subtrack.data.local.entities.SubscriptionWithTags.toSubscription(): 
         billingCycle = subscription.billingCycle,
         tags = tags.map { it.name },
         startDate = subscription.startDate,
+        nextPaymentDate = subscription.nextPaymentDate,
         isTrial = subscription.isTrial,
         trialOption = subscription.trialOption,
         notificationSetting = "Brak"
@@ -46,7 +48,7 @@ fun Subscription.toUserSubscription(): pl.lab2.subtrack.data.local.entities.User
         price = price,
         billingCycle = billingCycle,
         startDate = startDate,
-        nextPaymentDate = System.currentTimeMillis(),
+        nextPaymentDate = nextPaymentDate,
         status = pl.lab2.subtrack.data.local.entities.SubscriptionStatus.ACTIVE,
         isTrial = isTrial,
         trialOption = trialOption

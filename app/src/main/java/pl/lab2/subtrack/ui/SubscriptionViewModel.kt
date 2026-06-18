@@ -17,6 +17,8 @@ import pl.lab2.subtrack.data.local.repositories.SubscriptionRepository
 import pl.lab2.subtrack.data.local.repositories.TagRepository
 import pl.lab2.subtrack.toSubscription
 import pl.lab2.subtrack.toUserSubscription
+import java.util.Calendar
+import java.util.Locale
 
 enum class AppThemeMode {
     SYSTEM, LIGHT, DARK
@@ -27,6 +29,18 @@ enum class AppLanguage(val code: String) {
     ENGLISH("en")
 }
 
+private fun calculateNextPaymentDate(startDate: Long, billingCycle: String): Long {
+    val calendar = Calendar.getInstance()
+    calendar.timeInMillis = startDate
+
+    when (billingCycle.lowercase(Locale.ROOT)) {
+        "tydzień", "week" -> calendar.add(Calendar.WEEK_OF_YEAR, 1)
+        "kwartał", "quarter" -> calendar.add(Calendar.MONTH, 3)
+        "rok", "year" -> calendar.add(Calendar.YEAR, 1)
+        else -> calendar.add(Calendar.MONTH, 1) // domyślnie miesiąc
+    }
+    return calendar.timeInMillis
+}
 class SubscriptionViewModel(
     private val subscriptionRepository: SubscriptionRepository,
     private val tagRepository: TagRepository,
@@ -34,7 +48,14 @@ class SubscriptionViewModel(
 ) : ViewModel() {
 
     val subscriptions: StateFlow<List<Subscription>> = subscriptionRepository.getActiveSubscriptionsWithTagsStream()
-        .map { list -> list.map { it.toSubscription() } }
+        .map { list ->
+            list.map { entity ->
+                val sub = entity.toSubscription()
+                // Logowanie danych, które już są przetworzone
+                android.util.Log.d("DEBUG_VIEW", "Ładowanie suba: ${sub.name}, nextPayment: ${sub.nextPaymentDate}")
+                sub
+            }
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -72,6 +93,7 @@ class SubscriptionViewModel(
         val parsedPrice = priceText.replace(",", ".").trim().toDoubleOrNull() ?: 0.0
         
         viewModelScope.launch {
+            val nextDate = calculateNextPaymentDate(startDate, billingCycle)
             val entity = pl.lab2.subtrack.data.local.entities.UserSubscription(
                 id = 0,
                 name = name,
@@ -79,7 +101,7 @@ class SubscriptionViewModel(
                 price = parsedPrice,
                 billingCycle = billingCycle,
                 startDate = startDate,
-                nextPaymentDate = System.currentTimeMillis(),
+                nextPaymentDate = nextDate,
                 status = pl.lab2.subtrack.data.local.entities.SubscriptionStatus.ACTIVE,
                 isTrial = isTrial,
                 trialOption = trialOption

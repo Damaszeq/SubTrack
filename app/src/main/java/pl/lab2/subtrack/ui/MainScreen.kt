@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -149,10 +150,11 @@ fun MainScreen(
 @Composable
 fun SubscriptionItem(
     subscription: Subscription,
-    nextPaymentDate: String = "26.06.2026",
-    daysLeft: Int = 4,
     onClick: () -> Unit
 ) {
+    val dateFormatter = remember { java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()) }
+    val formattedDate = dateFormatter.format(java.util.Date(subscription.nextPaymentDate))
+    val daysLeft = ((subscription.nextPaymentDate - System.currentTimeMillis()) / (1000 * 60 * 60 * 24)).toInt()
     val cardColors = if (subscription.isTrial) {
         CardDefaults.outlinedCardColors(
             containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.12f)
@@ -253,7 +255,7 @@ fun SubscriptionItem(
                             else -> stringResource(id = R.string.payment_in_days, daysLeft)
                         }
                     } else {
-                        stringResource(id = R.string.payment_date_format, nextPaymentDate)
+                        stringResource(id = R.string.payment_date_format, formattedDate)
                     }
 
                     val paymentColor = if (subscription.isTrial) {
