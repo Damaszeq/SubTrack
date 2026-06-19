@@ -54,7 +54,7 @@ fun EditSubscriptionScreen(
     var startDateLong by remember { mutableStateOf(System.currentTimeMillis()) }
     var isTrialChecked by remember { mutableStateOf(false) }
     var selectedTrialOption by remember { mutableStateOf("Pierwszy miesiąc za 0 zł, potem standard") }
-    var notificationSetting by remember { mutableStateOf("Brak") }
+    var notificationSetting by remember { mutableStateOf("false") }
 
     // Stany UI dla widoczności dropdownów / kalendarza
     var isPlanDropdownExpanded by remember { mutableStateOf(false) }
@@ -299,10 +299,11 @@ fun EditSubscriptionScreen(
                 }
             }
 
-            // Daty rozpoczęcia oraz sekcji rezerwacji powiadomień
+            // Daty rozpoczęcia oraz sekcji suwaka powiadomień
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 // POLE DATA ROZPOCZĘCIA
                 OutlinedTextField(
@@ -325,16 +326,31 @@ fun EditSubscriptionScreen(
                     modifier = Modifier.weight(1f).clickable { showDatePicker = true }
                 )
 
-                // Wolna przestrzeń na planowane powiadomienia
-                Box(
-                    modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.CenterStart
+                // POWIĄZANY SUWAK POWIADOMIEŃ (Identyczny z Add)
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = "[ Powiadomienia wkrótce ]",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                        modifier = Modifier.padding(start = 8.dp)
+                    Column {
+                        Text(
+                            text = "Powiadomienia",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = if (notificationSetting == "true") "Włączone" else "Wyłączone",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = notificationSetting == "true",
+                        onCheckedChange = { isChecked ->
+                            notificationSetting = isChecked.toString()
+                        }
                     )
                 }
             }
