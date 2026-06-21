@@ -1,7 +1,7 @@
 package pl.lab2.subtrack.model
 
 data class SubscriptionPlanPreset(
-    val planName: String,
+    val planNameRes: Int,
     val price: Double,
     val billingCycle: String = "Miesiąc"
 )
@@ -9,5 +9,5 @@ data class SubscriptionPlanPreset(
 data class ServicePreset(
     val serviceName: String,
     val plans: List<SubscriptionPlanPreset>,
-    val tags: List<String> = emptyList()
+    val tagsRes: List<Int>
 )

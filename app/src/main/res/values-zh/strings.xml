@@ -157,4 +157,34 @@
     <string name="mock_title_price_update">价格已更新</string>
     <string name="mock_msg_system">SubTrack 正在推出全新的云同步功能。</string>
     <string name="total_monthly_expenses">总支出 (每月)</string>
+    <string name="lang_chinesse">汉语</string>
+
+    <!-- Kategorie (Tags) -->
+    <string name="tag_entertainment">娱乐</string>
+    <string name="tag_productivity">效率工具</string>
+    <string name="tag_gaming">游戏</string>
+    <string name="tag_shopping">购物与配送</string>
+    <string name="tag_education">教育</string>
+    <string name="tag_news">新闻资讯</string>
+    <string name="tag_health">运动健康</string>
+    <string name="tag_automotive">汽车车载</string>
+
+    <!-- Nazwy Planów -->
+    <string name="plan_basic">基础套餐</string>
+    <string name="plan_standard">标准套餐</string>
+    <string name="plan_premium">高级套餐</string>
+    <string name="plan_premium_4k">4K超高清专家版</string>
+    <string name="plan_with_ads">含广告版</string>
+    <string name="plan_no_ads">无广告版</string>
+    <string name="plan_monthly">月费版</string>
+    <string name="plan_yearly">年费版</string>
+    <string name="plan_individual">个人版</string>
+    <string name="plan_student">学生优惠版</string>
+    <string name="plan_family">家庭共享版</string>
+    <string name="plan_free_delivery">免运费专享</string>
+
+    <string name="trial_badge">免费试用期</string>
+    <string name="trial_ends_today">今天结束</string>
+    <string name="trial_ends_tomorrow">明天结束</string>
+    <string name="trial_ends_in_days">%1$d 天后结束</string>
 </resources>

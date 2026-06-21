@@ -61,16 +61,15 @@ fun AddSubscriptionScreen(
     var isNotificationEnabled by remember(globalNotifSetting) { mutableStateOf(globalNotifSetting) }
     var isTrialChecked by remember { mutableStateOf(false) }
     var selectedTrialOption by remember { mutableStateOf("Pierwszy miesiąc za 0 zł, potem standard") }
-    var notificationSetting by remember { mutableStateOf("Brak") }
 
-    // STAN WYSZUKIWANIA I FILTROWANIA PO TAGACH
+    // STAN WYSZUKIWANIA I FILTROWANIA PO TAGACH (Poprawka: przechowujemy ID zasobu jako Int? zamiast String?)
     var presetSearchQuery by remember { mutableStateOf("") }
-    var selectedTag by remember { mutableStateOf<String?>(null) } // null oznacza "Wszystkie"
+    var selectedTagResId by remember { mutableStateOf<Int?>(null) } // null oznacza "Wszystkie"
     var isFilterMenuExpanded by remember { mutableStateOf(false) }
 
-    // Automatyczne wyciągnięcie unikalnych tagów z dostępnych presetów
+    // Automatyczne wyciągnięcie unikalnych identyfikatorów tagów z dostępnych presetów
     val allAvailableTags = remember(presets) {
-        presets.flatMap { it.tags }.distinct().sorted()
+        presets.flatMap { it.tagsRes }.distinct().sorted()
     }
 
     // Stany UI dla Dropdownów i Dialogów
@@ -148,18 +147,19 @@ fun AddSubscriptionScreen(
                 fontWeight = FontWeight.Bold
             )
 
-            // Wiersz wyszukiwarki z lekiem filtrowania
+            // Wiersz wyszukiwarki z filtrowaniem zlokalizowanym
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val activeTagName = selectedTagResId?.let { stringResource(id = it) }
                 OutlinedTextField(
                     value = presetSearchQuery,
                     onValueChange = { presetSearchQuery = it },
                     placeholder = {
                         Text(
-                            text = if (selectedTag != null) "Szukaj w: $selectedTag..." else "Szukaj usługi..."
+                            text = if (activeTagName != null) "Szukaj w: $activeTagName..." else "Szukaj usługi..."
                         )
                     },
                     singleLine = true,
@@ -173,7 +173,7 @@ fun AddSubscriptionScreen(
                         Icon(
                             imageVector = Icons.Default.FilterList,
                             contentDescription = "Filtruj po kategoriach",
-                            tint = if (selectedTag != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = if (selectedTagResId != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -183,13 +183,13 @@ fun AddSubscriptionScreen(
                     ) {
                         // Opcja resetu filtra ("Wszystkie")
                         DropdownMenuItem(
-                            text = { Text("Wszystkie kategorie", fontWeight = if (selectedTag == null) FontWeight.Bold else FontWeight.Normal) },
+                            text = { Text("Wszystkie kategorie", fontWeight = if (selectedTagResId == null) FontWeight.Bold else FontWeight.Normal) },
                             onClick = {
-                                selectedTag = null
+                                selectedTagResId = null
                                 isFilterMenuExpanded = false
                             },
                             leadingIcon = {
-                                if (selectedTag == null) {
+                                if (selectedTagResId == null) {
                                     Icon(imageVector = Icons.Default.Check, contentDescription = "Wybrane")
                                 }
                             }
@@ -197,16 +197,16 @@ fun AddSubscriptionScreen(
 
                         HorizontalDivider()
 
-                        // Dynamiczna lista tagów
-                        allAvailableTags.forEach { tag ->
+                        // Dynamiczna zlokalizowana lista tagów
+                        allAvailableTags.forEach { tagRes ->
                             DropdownMenuItem(
-                                text = { Text(tag, fontWeight = if (selectedTag == tag) FontWeight.Bold else FontWeight.Normal) },
+                                text = { Text(text = stringResource(id = tagRes), fontWeight = if (selectedTagResId == tagRes) FontWeight.Bold else FontWeight.Normal) },
                                 onClick = {
-                                    selectedTag = tag
+                                    selectedTagResId = tagRes
                                     isFilterMenuExpanded = false
                                 },
                                 leadingIcon = {
-                                    if (selectedTag == tag) {
+                                    if (selectedTagResId == tagRes) {
                                         Icon(imageVector = Icons.Default.Check, contentDescription = "Wybrane")
                                     }
                                 }
@@ -216,12 +216,12 @@ fun AddSubscriptionScreen(
                 }
             }
 
-            // Informacja o aktywnym filtrze kategorii
-            if (selectedTag != null) {
+            // Informacja o aktywnym zlokalizowanym filtrze kategorii
+            if (selectedTagResId != null) {
                 InputChip(
                     selected = true,
-                    onClick = { selectedTag = null },
-                    label = { Text("Kategoria: $selectedTag") },
+                    onClick = { selectedTagResId = null },
+                    label = { Text("Kategoria: ${stringResource(id = selectedTagResId!!)}") },
                     trailingIcon = {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
@@ -232,12 +232,12 @@ fun AddSubscriptionScreen(
                 )
             }
 
-            // Dynamiczne filtrowanie
+            // Dynamiczne filtrowanie bazujące na identyfikatorach zasobów Int
             val columns = 3
-            val processedPresets = remember(presets, presetSearchQuery, selectedTag) {
+            val processedPresets = remember(presets, presetSearchQuery, selectedTagResId) {
                 var filtered = presets.filter { preset ->
                     val matchesSearch = preset.serviceName.contains(presetSearchQuery, ignoreCase = true)
-                    val matchesTag = selectedTag == null || preset.tags.contains(selectedTag)
+                    val matchesTag = selectedTagResId == null || preset.tagsRes.contains(selectedTagResId)
                     matchesSearch && matchesTag
                 }.sortedBy { it.serviceName }
 
@@ -320,9 +320,9 @@ fun AddSubscriptionScreen(
                 }
             }
 
+            // ZAKŁADKA WYBORU I ORGIZACJI ZLOKALIZOWANEGO PLANU
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-            // DROPDOWN WYBORU PLANU (Full Width)
             ExposedDropdownMenuBox(
                 expanded = isPlanDropdownExpanded,
                 onExpandedChange = { if (selectedService != null) isPlanDropdownExpanded = !isPlanDropdownExpanded }
@@ -343,11 +343,15 @@ fun AddSubscriptionScreen(
                     onDismissRequest = { isPlanDropdownExpanded = false }
                 ) {
                     selectedService?.plans?.forEach { planPreset ->
+                        // Dynamiczne tłumaczenie nazwy planu w locie przy renderowaniu interfejsu
+                        val localizedPlanName = stringResource(id = planPreset.planNameRes)
+
                         DropdownMenuItem(
-                            text = { Text(stringResource(id = R.string.preset_plan_format, planPreset.planName, planPreset.price)) },
+                            text = { Text(stringResource(id = R.string.preset_plan_format, localizedPlanName, planPreset.price)) },
                             onClick = {
                                 selectedPlan = planPreset
-                                plan = planPreset.planName
+                                // Pobieramy zlokalizowany ciąg znaków dopasowany do wybranego języka systemu
+                                plan = context.getString(planPreset.planNameRes)
                                 price = planPreset.price.toString()
                                 billingCycleResId = when (planPreset.billingCycle.lowercase()) {
                                     "tydzień", "week" -> R.string.cycle_week
@@ -411,11 +415,11 @@ fun AddSubscriptionScreen(
                 }
             }
 
-            // Układ dwukolumnowy dla Daty oraz Miejsca na przyszłe Powiadomienia
+            // Układ dwukolumnowy dla Daty oraz Miejsca na Przypomnienia
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically // Wyśrodkuje komponenty w pionie
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 // DATA ROZPOCZĘCIA
                 OutlinedTextField(
@@ -522,10 +526,9 @@ fun AddSubscriptionScreen(
                 }
             }
 
-            // POPRAWKA: Zmiana z Modifier.weight(1f) na bezpieczny stały odstęp w scrollowanym kontenerze
             Spacer(modifier = Modifier.height(24.dp))
 
-            // DOLNE PRZYCISKI
+            // DOLNE PRZYCISKI ZAPISU I MAPOWANIA TAGÓW
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -539,7 +542,8 @@ fun AddSubscriptionScreen(
                 }
                 Button(
                     onClick = {
-                        val currentTags = selectedService?.tags ?: emptyList()
+                        // Pobieramy identyfikatory kategorii z powiązanego presetu i konwertujemy je na Stringi dla bazy
+                        val currentTags = selectedService?.tagsRes?.map { context.getString(it) } ?: emptyList()
                         val finalBillingCycleText = context.getString(billingCycleResId)
 
                         android.util.Log.d(
@@ -552,10 +556,10 @@ fun AddSubscriptionScreen(
 
                         viewModel.addSubscription(
                             name = selectedService?.serviceName ?: name,
-                            plan = selectedPlan?.planName ?: plan,
+                            plan = plan, // Przekazuje poprawnie przetłumaczony tekst planu uzyskany z kontekstu
                             priceText = formattedPriceText,
                             billingCycle = finalBillingCycleText,
-                            tags = currentTags,
+                            tags = currentTags, // Zapisuje zlokalizowane słowa kluczowe kategorii
                             startDate = startDateLong,
                             isTrial = isTrialChecked,
                             trialOption = selectedTrialOption,

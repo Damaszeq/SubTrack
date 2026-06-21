@@ -11,12 +11,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import pl.lab2.subtrack.Subscription
-import pl.lab2.subtrack.data.local.entities.SubscriptionTagCrossRef
 import pl.lab2.subtrack.data.local.entities.Tag
 import pl.lab2.subtrack.data.local.repositories.SubscriptionRepository
 import pl.lab2.subtrack.data.local.repositories.TagRepository
 import pl.lab2.subtrack.toSubscription
-import pl.lab2.subtrack.toUserSubscription
 import java.util.Calendar
 import java.util.Locale
 
@@ -26,7 +24,9 @@ enum class AppThemeMode {
 
 enum class AppLanguage(val code: String) {
     POLISH("pl"),
-    ENGLISH("en")
+    ENGLISH("en"),
+
+    CHINESE("zh")
 }
 
 private fun calculateNextPaymentDate(startDate: Long, billingCycle: String): Long {

@@ -1,7 +1,6 @@
 package pl.lab2.subtrack.ui
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -135,6 +134,13 @@ fun SettingsScreen(
                         icon = Icons.Default.Translate,
                         selected = currentLanguage == AppLanguage.ENGLISH,
                         onClick = { viewModel.setLanguage(AppLanguage.ENGLISH) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    SettingsOptionCard(
+                        label = stringResource(id = R.string.lang_chinesse),
+                        icon = Icons.Default.Translate,
+                        selected = currentLanguage == AppLanguage.CHINESE,
+                        onClick = { viewModel.setLanguage(AppLanguage.CHINESE) },
                         modifier = Modifier.weight(1f)
                     )
                     Spacer(modifier = Modifier.weight(1f))

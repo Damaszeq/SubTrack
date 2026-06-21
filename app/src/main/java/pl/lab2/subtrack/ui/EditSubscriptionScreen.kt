@@ -48,9 +48,9 @@ fun EditSubscriptionScreen(
     var plan by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
     var billingCycleResId by remember { mutableStateOf(R.string.cycle_month) }
-    var currentTags by remember { mutableStateOf<List<String>>(emptyList()) }
+    var currentTagsResIds by remember { mutableStateOf<List<Int>>(emptyList()) }
 
-    // NOWE STANY - w pełni spięte z ViewModel i bazą danych
+    // NOWE STANY - spięte z ViewModel
     var startDateLong by remember { mutableStateOf(System.currentTimeMillis()) }
     var isTrialChecked by remember { mutableStateOf(false) }
     var selectedTrialOption by remember { mutableStateOf("Pierwszy miesiąc za 0 zł, potem standard") }
@@ -81,7 +81,6 @@ fun EditSubscriptionScreen(
             name = sub.name
             plan = sub.plan
             price = sub.price.toString()
-            currentTags = sub.tags
 
             startDateLong = sub.startDate
             isTrialChecked = sub.isTrial
@@ -97,12 +96,17 @@ fun EditSubscriptionScreen(
             }
 
             selectedService = foundService
-            selectedPlan = foundService?.plans?.find { it.planName.equals(sub.plan, ignoreCase = true) }
+            currentTagsResIds = foundService?.tagsRes ?: emptyList()
 
-            billingCycleResId = when (sub.billingCycle.lowercase()) {
-                "tydzień", "week", context.getString(R.string.cycle_week).lowercase() -> R.string.cycle_week
-                "rok", "year", context.getString(R.string.cycle_year).lowercase() -> R.string.cycle_year
-                "kwartał", "quarter", context.getString(R.string.cycle_quarter).lowercase() -> R.string.cycle_quarter
+            selectedPlan = foundService?.plans?.find {
+                context.getString(it.planNameRes).equals(sub.plan, ignoreCase = true)
+            }
+
+            val cycle = sub.billingCycle.lowercase()
+            billingCycleResId = when {
+                cycle.contains("tydzień") || cycle.contains("week") || cycle.contains("周") -> R.string.cycle_week
+                cycle.contains("rok") || cycle.contains("year") || cycle.contains("年") -> R.string.cycle_year
+                cycle.contains("kwartał") || cycle.contains("quarter") || cycle.contains("季度") -> R.string.cycle_quarter
                 else -> R.string.cycle_month
             }
         }
@@ -194,7 +198,7 @@ fun EditSubscriptionScreen(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // DROPDOWN PLANU (Full Width)
+            // DROPDOWN PLANU (Wielojęzyczny)
             ExposedDropdownMenuBox(
                 expanded = isPlanDropdownExpanded,
                 onExpandedChange = { if (selectedService != null) isPlanDropdownExpanded = !isPlanDropdownExpanded }
@@ -223,11 +227,14 @@ fun EditSubscriptionScreen(
                         onDismissRequest = { isPlanDropdownExpanded = false }
                     ) {
                         selectedService?.plans?.forEach { planPreset ->
+                            // POPRAWKA: Dynamiczne tłumaczenie nazwy planu na żądany język interfejsu
+                            val localizedPlanName = stringResource(id = planPreset.planNameRes)
+
                             DropdownMenuItem(
-                                text = { Text(stringResource(id = R.string.preset_plan_format, planPreset.planName, planPreset.price)) },
+                                text = { Text(stringResource(id = R.string.preset_plan_format, localizedPlanName, planPreset.price)) },
                                 onClick = {
                                     selectedPlan = planPreset
-                                    plan = planPreset.planName
+                                    plan = context.getString(planPreset.planNameRes) // Zapis do stanu zlokalizowanego tekstu
                                     price = planPreset.price.toString()
                                     billingCycleResId = when (planPreset.billingCycle.lowercase()) {
                                         "tydzień", "week" -> R.string.cycle_week
@@ -305,7 +312,6 @@ fun EditSubscriptionScreen(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // POLE DATA ROZPOCZĘCIA
                 OutlinedTextField(
                     value = dateFormatter.format(Date(startDateLong)),
                     onValueChange = {},
@@ -326,7 +332,6 @@ fun EditSubscriptionScreen(
                     modifier = Modifier.weight(1f).clickable { showDatePicker = true }
                 )
 
-                // POWIĄZANY SUWAK POWIADOMIEŃ (Identyczny z Add)
                 Row(
                     modifier = Modifier
                         .weight(1f)
@@ -336,12 +341,12 @@ fun EditSubscriptionScreen(
                 ) {
                     Column {
                         Text(
-                            text = "Powiadomienia",
+                            text = stringResource(id = R.string.subscription_notifications_label),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = if (notificationSetting == "true") "Włączone" else "Wyłączone",
+                            text = if (notificationSetting == "true") stringResource(id = R.string.yes) else stringResource(id = R.string.no),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -408,7 +413,8 @@ fun EditSubscriptionScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            // POPRAWKA: Bezpieczny odstęp zamiast Modifier.weight() w kontenerze scrollowalnym
+            Spacer(modifier = Modifier.height(24.dp))
 
             // PRZYCISKI AKCJI Dolnej
             Row(
@@ -428,6 +434,8 @@ fun EditSubscriptionScreen(
                 Button(
                     onClick = {
                         val finalBillingCycleText = context.getString(billingCycleResId)
+                        val finalTags = selectedService?.tagsRes?.map { context.getString(it) }
+                            ?: currentTagsResIds.map { context.getString(it) }
 
                         viewModel.updateSubscription(
                             id = subscriptionId,
@@ -435,7 +443,7 @@ fun EditSubscriptionScreen(
                             plan = plan,
                             priceText = price,
                             billingCycle = finalBillingCycleText,
-                            tags = selectedService?.tags ?: currentTags,
+                            tags = finalTags,
                             startDate = startDateLong,
                             isTrial = isTrialChecked,
                             trialOption = selectedTrialOption,

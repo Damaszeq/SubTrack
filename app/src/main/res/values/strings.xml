@@ -156,5 +156,34 @@
     <string name="mock_title_price_update">Zaktualizowano cennik</string>
     <string name="mock_msg_system">SubTrack wprowadza nowe funkcje synchronizacji w chmurze.</string>
     <string name="total_monthly_expenses">Suma wydatków (miesięcznie)</string>
+    <string name="lang_chinesse" >Chiński</string>
 
+    <!-- Kategorie (Tags) -->
+    <string name="tag_entertainment">Rozrywka</string>
+    <string name="tag_productivity">Produktywność</string>
+    <string name="tag_gaming">Gaming</string>
+    <string name="tag_shopping">Zakupy i Dostawy</string>
+    <string name="tag_education">Edukacja</string>
+    <string name="tag_news">Informacje</string>
+    <string name="tag_health">Sport i Zdrowie</string>
+    <string name="tag_automotive">Motoryzacja</string>
+
+    <!-- Nazwy Planów -->
+    <string name="plan_basic">Podstawowy</string>
+    <string name="plan_standard">Standard</string>
+    <string name="plan_premium">Premium</string>
+    <string name="plan_premium_4k">Premium 4K</string>
+    <string name="plan_with_ads">Z reklamami</string>
+    <string name="plan_no_ads">Bez reklam</string>
+    <string name="plan_monthly">Miesięczny</string>
+    <string name="plan_yearly">Roczny</string>
+    <string name="plan_individual">Indywidualny</string>
+    <string name="plan_student">Studencki</string>
+    <string name="plan_family">Rodzinny</string>
+    <string name="plan_free_delivery">Darmowa dostawa</string>
+
+    <string name="trial_badge">OKRES PRÓBNY (TRIAL)</string>
+    <string name="trial_ends_today">Koniec dzisiaj</string>
+    <string name="trial_ends_tomorrow">Koniec jutro</string>
+    <string name="trial_ends_in_days">Koniec za %1$d dni</string>
 </resources>

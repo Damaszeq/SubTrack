@@ -6,7 +6,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Tune
@@ -76,7 +75,6 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // LISTA SUBSKRYPCJI (scrolluje się pod dolnym paskiem)
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -99,7 +97,6 @@ fun MainScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Bottom
             ) {
-
 
                 Card(
                     modifier = Modifier
@@ -153,17 +150,26 @@ fun SubscriptionItem(
     onClick: () -> Unit
 ) {
     val now = System.currentTimeMillis()
-    val calendar = remember(subscription.nextPaymentDate) {
+    val calendar = remember(subscription.nextPaymentDate, subscription.billingCycle) {
         java.util.Calendar.getInstance().apply {
             timeInMillis = subscription.nextPaymentDate
 
-            // Pętla korygująca: przesuwaj datę do przodu, aż będzie w przyszłości
+            val cycle = subscription.billingCycle.lowercase()
+            // Zlokalizowana poprawka: pętla dopasowuje słowa niezależnie od języka bazy (PL / EN / ZH)
             while (timeInMillis < now) {
-                when (subscription.billingCycle.lowercase()) {
-                    "tydzień", "week" -> add(java.util.Calendar.WEEK_OF_YEAR, 1)
-                    "kwartał", "quarter" -> add(java.util.Calendar.MONTH, 3)
-                    "rok", "year" -> add(java.util.Calendar.YEAR, 1)
-                    else -> add(java.util.Calendar.MONTH, 1)
+                when {
+                    cycle.contains("tydzień") || cycle.contains("week") || cycle.contains("周") -> {
+                        add(java.util.Calendar.WEEK_OF_YEAR, 1)
+                    }
+                    cycle.contains("kwartał") || cycle.contains("quarter") || cycle.contains("季度") -> {
+                        add(java.util.Calendar.MONTH, 3)
+                    }
+                    cycle.contains("rok") || cycle.contains("year") || cycle.contains("年") -> {
+                        add(java.util.Calendar.YEAR, 1)
+                    }
+                    else -> { // Domyślnie co miesiąc (miesiąc / month / 月 / co 30 dni)
+                        add(java.util.Calendar.MONTH, 1)
+                    }
                 }
             }
         }
@@ -173,7 +179,6 @@ fun SubscriptionItem(
     val dateFormatter = remember { java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()) }
     val formattedDate = dateFormatter.format(java.util.Date(nextFutureDate))
 
-    // Obliczamy dni do przyszłej płatności
     val daysLeft = ((nextFutureDate - now) / (1000 * 60 * 60 * 24)).toInt()
 
     val cardColors = if (subscription.isTrial) {
@@ -206,7 +211,7 @@ fun SubscriptionItem(
                     modifier = Modifier.padding(bottom = 12.dp)
                 ) {
                     Text(
-                        text = "OKRES PRÓBNY (TRIAL)",
+                        text = stringResource(id = R.string.trial_badge), // POPRAWKA: Zlokalizowany badge Trial
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.ExtraBold,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
@@ -237,9 +242,9 @@ fun SubscriptionItem(
 
                     val paymentText = if (subscription.isTrial) {
                         when (daysLeft) {
-                            0 -> "Koniec dzisiaj"
-                            1 -> "Koniec jutro"
-                            else -> "Koniec za $daysLeft dni"
+                            0 -> stringResource(id = R.string.trial_ends_today)
+                            1 -> stringResource(id = R.string.trial_ends_tomorrow)
+                            else -> stringResource(id = R.string.trial_ends_in_days, daysLeft)
                         }
                     } else if (daysLeft <= 3) {
                         when (daysLeft) {
