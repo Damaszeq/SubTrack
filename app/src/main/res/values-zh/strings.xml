@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings">设置</string>
+    <string name="monthly_balance">月度收支</string>
+    <string name="app_name">SubTrack</string>
+    <string name="settings_auth">设置</string>
+    <string name="add_subscription">添加订阅</string>
+    <string name="total_sum_label">总计</string>
+    <string name="placeholder_price">0.00 PLN</string>
+    <string name="placeholder_service_name">订阅名称</string>
+    <string name="placeholder_plan">套餐 / 周期</string>
+    <string name="currency_suffix">PLN</string>
+    <string name="details_title">详情</string>
+    <string name="back_desc">返回</string>
+    <string name="edit_desc">编辑</string>
+    <string name="delete_desc">删除</string>
+
+    <!-- Etykiety danych -->
+    <string name="label_total_price">总价</string>
+    <string name="label_cycle">周期</string>
+    <string name="label_next_payment">下次扣款时间</string>
+    <string name="label_subaccounts">子账户</string>
+    <string name="label_payment_history">扣款记录</string>
+
+    <!-- Przykładowe dane (tymczasowe) -->
+    <string name="mock_service_name">Netflix</string>
+    <string name="mock_category">视频流媒体</string>
+    <string name="mock_price">43.00 PLN</string>
+    <string name="mock_cycle">月</string>
+    <string name="mock_next_date">2024-05-12</string>
+    <string name="mock_user_main">你 (主账号)</string>
+    <string name="mock_user_other">王明</string>
+    <string name="mock_sub_price">21.50 PLN</string>
+
+    <!-- Top Bar -->
+    <string name="notifications_title">通知</string>
+
+    <!-- Nagłówki sekcji -->
+    <string name="settings_header">提醒设置</string>
+    <string name="alerts_header">即将到来的提醒</string>
+
+    <!-- Ustawienia -->
+    <string name="notify_3days_title">提前3天</string>
+    <string name="notify_3days_sub">默认预先提醒</string>
+    <string name="notify_24h_title">提前24小时</string>
+    <string name="notify_24h_sub">扣款前最后警告</string>
+
+    <!-- Powiadomienia -->
+    <string name="dynamic_msg_payment">%1$d 天后将扣除 %3$s 订阅费用 %2$s。</string>
+    <string name="dynamic_msg_trial">您在 %1$s 的免费试用将于明天结束。</string>
+    <string name="subscription_notifications_label">付款通知</string>
+    <string name="yes">是</string>
+    <string name="no">否</string>
+
+    <!-- Niestandardowe -->
+    <string name="custom_settings_title">自定义设置</string>
+    <string name="custom_settings_sub">添加自定义提醒时间</string>
+
+    <!-- Przykładowe powiadomienie -->
+    <string name="mock_notification_desc">提醒：3天后付款</string>
+
+    <!-- Top Bar -->
+    <string name="add_sub_title">订阅详情</string>
+
+    <!-- Sekcja 1: Informacje główne -->
+    <string name="header_service_info">服务信息</string>
+    <string name="label_service_name">服务名称</string>
+    <string name="label_category">类别</string>
+    <string name="placeholder_category">例如：音频流媒体</string>
+    <string name="label_total_price_field">总价</string>
+    <string name="currency_pln">PLN</string>
+
+    <!-- Sekcja 2: Rodzaj płatności -->
+    <string name="header_payment_type">付款类型</string>
+    <string name="payment_cyclic">定期续费</string>
+    <string name="payment_one_time">一次性付款</string>
+    <string name="label_billing_period">账单周期</string>
+
+    <!-- Opcje okresu -->
+    <string name="period_monthly">每月</string>
+    <string name="period_yearly">每年</string>
+    <string name="period_30days">每30天</string>
+    <string name="period_quarterly">每季度</string>
+
+    <!-- Sekcja 3: Terminy -->
+    <string name="label_start_date">开始日期</string>
+    <string name="label_end_date">结束日期</string>
+    <string name="placeholder_date">YYYY-MM-DD</string>
+    <string name="support_end_date">访问权限到期日</string>
+
+    <!-- Sekcja 4: Subkonta -->
+    <string name="checkbox_subaccounts">拥有子账户</string>
+    <string name="label_user">用户</string>
+    <string name="label_price">价格</string>
+    <string name="btn_add_subaccount">添加新子账户</string>
+
+    <!-- Przycisk główny -->
+    <string name="btn_save_subscription">添加订阅</string>
+    <string name="en">zh</string>
+    <string name="details">详情</string>
+    <string name="back">返回</string>
+    <string name="edit">编辑</string>
+    <string name="delete">删除</string>
+    <string name="subscription_not_found">未找到订阅</string>
+    <string name="payment_history">扣款记录</string>
+    <string name="status_paid">已支付</string>
+    <string name="status_unpaid">未支付</string>
+
+    <string name="price_format">%1$.2f PLN</string>
+    <string name="minus_price_format">-%1$.2f PLN</string>
+    <string name="settings_title">设置</string>
+    <string name="theme_section_title">选择应用主题</string>
+    <string name="theme_system">系统默认</string>
+    <string name="theme_light">浅色模式</string>
+    <string name="theme_dark">深色模式</string>
+    <string name="language_section_title">选择语言</string>
+    <string name="lang_polish">波兰语 (Polski)</string>
+    <string name="lang_english">英语 (English)</string>
+    <string name="payment_today">今天付款！</string>
+    <string name="payment_tomorrow">明天付款</string>
+    <string name="payment_in_days">%1$d 天后付款</string>
+    <string name="payment_date_format">付款日期：%1$s</string>
+
+    <string name="choose_service_label">从列表中选择服务：</string>
+    <string name="hint_select_service_first">请先在上方选择一项服务</string>
+    <string name="hint_select_plan">选择套餐</string>
+    <string name="label_price_with_currency">价格 (PLN)</string>
+
+    <string name="cycle_week">周</string>
+    <string name="cycle_month">月</string>
+    <string name="cycle_quarter">季度</string>
+    <string name="cycle_year">年</string>
+
+    <string name="preset_plan_format">%1$s (%2$.2f PLN)</string>
+    <string name="btn_cancel">取消</string>
+    <string name="btn_save">保存</string>
+    <string name="notifications_empty">暂无新通知。</string>
+    <string name="trigger_push_desc">触发推送</string>
+
+    <string name="system_channel_name">SubTrack 提醒</string>
+    <string name="system_channel_desc">订阅续费通知通道</string>
+
+    <string name="time_today">今天</string>
+    <string name="time_yesterday">昨天</string>
+    <string name="time_2_days_ago">2天前</string>
+    <string name="time_3_days_ago">3天前</string>
+
+    <string name="mock_title_payment_tomorrow">今天或明天付款！</string>
+    <string name="mock_msg_netflix">1 天后将扣除 Netflix 订阅费用 %1$s PLN。</string>
+
+    <string name="mock_title_payment_approaching">扣款临近</string>
+    <string name="mock_msg_spotify">3 天后将扣除 Spotify 订阅费用 %1$s PLN。</string>
+
+    <string name="mock_title_trial_ending">免费试用即将结束！</string>
+    <string name="mock_msg_youtube">您在 YouTube Premium 的免费试用将于明天结束。</string>
+
+    <string name="mock_title_price_update">价格已更新</string>
+    <string name="mock_msg_system">SubTrack 正在推出全新的云同步功能。</string>
+    <string name="total_monthly_expenses">总支出 (每月)</string>
+</resources>
