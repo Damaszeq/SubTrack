@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import pl.lab2.subtrack.models.NotificationItem
 import pl.lab2.subtrack.models.NotificationType
-import java.util.Calendar
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -41,33 +40,31 @@ class NotificationViewModel : ViewModel() {
                 val newNotificationsList = mutableListOf<NotificationItem>()
 
                 for (sub in activeSubs) {
-                    val isEnabled = try {
-                        val field = sub::class.java.getDeclaredField("notificationSetting")
-                        field.isAccessible = true
-                        field.get(sub)?.toString() == "true"
-                    } catch (e: Exception) {
-                        true
-                    }
+                    val isEnabled = sub.notificationSetting == "true"
 
                     if (isEnabled) {
-                        val nextPayment = try { sub.nextPaymentDate } catch(e: Exception) { currentTime }
-                        val price = try { sub.price } catch(e: Exception) { 0.0 }
-                        val name = try { sub.name } catch(e: Exception) { "Subskrypcja" }
+                        val nextPayment = sub.nextPaymentDate
+                        val price = sub.price
+                        val name = sub.name
 
                         val diffInMs = nextPayment - currentTime
+                        // Obliczamy różnicę czasu w dniach
                         val diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMs).toInt()
 
+                        // Logika: Generuj powiadomienie, gdy płatność nastąpi za 0, 1, 2 lub 3 dni
                         if (diffInDays in 0..3) {
                             val notification = NotificationItem(
-                                id = java.util.UUID.randomUUID().toString(),
+                                id = UUID.randomUUID().toString(),
                                 subscriptionName = name,
-                                type = NotificationType.PAYMENT_REMINDER,
+                                type = if (sub.isTrial) NotificationType.TRIAL_EXPIRING else NotificationType.PAYMENT_REMINDER,
                                 priceTriggered = price,
                                 daysLeft = diffInDays,
                                 timestamp = System.currentTimeMillis(),
                                 isRead = false
                             )
                             newNotificationsList.add(notification)
+
+                            showSystemNotification(context, notification)
                         }
                     }
                 }
@@ -80,7 +77,7 @@ class NotificationViewModel : ViewModel() {
                 }
 
             } catch (e: Exception) {
-                android.util.Log.e("SUBTRACK_CRASH_GUARD", "Błąd podczas ładowania powiadomień: ${e.message}", e)
+                android.util.Log.e("SUBTRACK_NOTIF_ERROR", "Błąd podczas walidacji terminów płatności: ${e.message}", e)
             }
         }
     }
