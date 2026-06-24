@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -23,6 +24,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import pl.lab2.subtrack.R
+import pl.lab2.subtrack.data.resolvePlanName
 import pl.lab2.subtrack.ui.components.SubscriptionIcon
 
 data class PaymentHistoryMock(
@@ -39,9 +41,39 @@ fun SubscriptionDetailsScreen(
     onBackClick: () -> Unit,
     onEditClick: (String) -> Unit
 ) {
+    val context = LocalContext.current
     val subscriptions by viewModel.subscriptions.collectAsState()
     val subscription = subscriptions.find { it.id == subId?.toLongOrNull() }
     val dateFormatter = remember { SimpleDateFormat("dd.MM.yyyy", Locale("pl", "PL")) }
+
+    // DYNAMICZNE OBLICZANIE KOLEJNEJ PŁATNOŚCI
+    val nextPaymentFormatted = remember(subscription?.nextPaymentDate, subscription?.billingCycle) {
+        if (subscription == null) "" else {
+            val now = System.currentTimeMillis()
+            val calendar = java.util.Calendar.getInstance().apply {
+                timeInMillis = subscription.nextPaymentDate
+                val cycle = subscription.billingCycle.lowercase()
+
+                while (timeInMillis < now) {
+                    when {
+                        cycle.contains("tydzień") || cycle.contains("week") || cycle.contains("周") -> {
+                            add(java.util.Calendar.WEEK_OF_YEAR, 1)
+                        }
+                        cycle.contains("kwartał") || cycle.contains("quarter") || cycle.contains("季度") -> {
+                            add(java.util.Calendar.MONTH, 3)
+                        }
+                        cycle.contains("rok") || cycle.contains("year") || cycle.contains("年") -> {
+                            add(java.util.Calendar.YEAR, 1)
+                        }
+                        else -> { // Domyślnie co miesiąc
+                            add(java.util.Calendar.MONTH, 1)
+                        }
+                    }
+                }
+            }
+            dateFormatter.format(Date(calendar.timeInMillis))
+        }
+    }
 
     // Rzeczywiste płatności wyliczane na podstawie daty i ceny z obiektu Subscription
     val payments = remember(subscription) {
@@ -113,6 +145,9 @@ fun SubscriptionDetailsScreen(
             return@Scaffold
         }
 
+        // Tłumaczenie nazwy planu z klucza technicznego na zlokalizowany tekst
+        val displayedPlanName = resolvePlanName(subscription.plan, context)
+
         LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
@@ -147,8 +182,10 @@ fun SubscriptionDetailsScreen(
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold
                         )
+
+                        // POPRAWKA: Wyświetlanie przetłumaczonego planu zamiast klucza bazy
                         Text(
-                            text = subscription.plan,
+                            text = displayedPlanName,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -192,10 +229,30 @@ fun SubscriptionDetailsScreen(
                                     label = "Powiadomienia",
                                     value = notificationsText,
                                     modifier = Modifier.weight(1f),
-                                    // Wyblakły tekst, gdy powiadomienia są na "Nie"
                                     alpha = if (!isNotifEnabled) 0.4f else 1f
                                 )
                             }
+                        }
+
+                        // NOWA SEKCJA: DATA KOLEJNEJ PŁATNOŚCI DODANA DO CARD
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Kolejna płatność: ",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = nextPaymentFormatted,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 }
