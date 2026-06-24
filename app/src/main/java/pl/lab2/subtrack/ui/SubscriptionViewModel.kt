@@ -17,6 +17,7 @@ import pl.lab2.subtrack.data.local.repositories.TagRepository
 import pl.lab2.subtrack.toSubscription
 import java.util.Calendar
 import java.util.Locale
+import pl.lab2.subtrack.data.SettingsManager
 
 enum class AppThemeMode {
     SYSTEM, LIGHT, DARK
@@ -45,7 +46,8 @@ private fun calculateNextPaymentDate(startDate: Long, billingCycle: String): Lon
 class SubscriptionViewModel(
     private val subscriptionRepository: SubscriptionRepository,
     private val tagRepository: TagRepository,
-    private val tagDao: pl.lab2.subtrack.data.local.dao.TagDao
+    private val tagDao: pl.lab2.subtrack.data.local.dao.TagDao,
+    private val settingsManager: SettingsManager
 ) : ViewModel() {
 
     val subscriptions: StateFlow<List<Subscription>> = subscriptionRepository.getActiveSubscriptionsWithTagsStream()
@@ -79,18 +81,33 @@ class SubscriptionViewModel(
     }
 
     // --- SEKCJA USTAWIEŃ GLOBALNYCH POWIADOMIEŃ ---
-    private val _isNotificationsEnabledGlobal = MutableStateFlow(true)
-    val isNotificationsEnabledGlobal: StateFlow<Boolean> = _isNotificationsEnabledGlobal.asStateFlow()
+    // 2. Pobieramy strumień bezpośrednio z DataStore i zamieniamy go w StateFlow dla Compose UI
+    val isNotificationsEnabledGlobal: StateFlow<Boolean> = settingsManager.isNotificationsEnabledGlobal
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true
+        )
 
-    private val _globalReminderHours = MutableStateFlow(setOf(24))
-    val globalReminderHours: StateFlow<Set<Int>> = _globalReminderHours.asStateFlow()
+    // 3. To samo robimy dla zbioru godzin/dni powiadomień
+    val globalReminderHours: StateFlow<Set<Int>> = settingsManager.globalReminderHours
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = setOf(24) // domyślnie 24 godziny (1 dzień) przed
+        )
 
+    // 4. Zapis do DataStore uruchamiamy w asynchronicznym wątku (viewModelScope)
     fun setGlobalNotificationsEnabled(enabled: Boolean) {
-        _isNotificationsEnabledGlobal.value = enabled
+        viewModelScope.launch {
+            settingsManager.setGlobalNotificationsEnabled(enabled)
+        }
     }
 
     fun setGlobalReminderHours(hours: Set<Int>) {
-        _globalReminderHours.value = hours
+        viewModelScope.launch {
+            settingsManager.setGlobalReminderHours(hours)
+        }
     }
     // ----------------------------------------------
 

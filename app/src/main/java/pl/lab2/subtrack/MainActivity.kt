@@ -28,6 +28,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import kotlinx.coroutines.launch
 import pl.lab2.subtrack.ui.MainScreen
 import pl.lab2.subtrack.ui.AddSubscriptionScreen
 import pl.lab2.subtrack.ui.SubscriptionDetailsScreen
@@ -39,6 +40,7 @@ import pl.lab2.subtrack.ui.SubTrackTheme
 import pl.lab2.subtrack.ui.AppThemeMode
 import pl.lab2.subtrack.ui.AppLanguage
 import pl.lab2.subtrack.ui.EditSubscriptionScreen
+import pl.lab2.subtrack.notification.NotificationScheduler
 import pl.lab2.subtrack.ui.AppViewModelProvider
 import java.util.Locale
 
@@ -66,6 +68,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val scheduler = NotificationScheduler(applicationContext)
+        scheduler.scheduleDailyNotificationCheck()
+
         setContent {
             val currentTheme by subscriptionViewModel.themeMode.collectAsState()
             val currentLanguage by subscriptionViewModel.language.collectAsState()

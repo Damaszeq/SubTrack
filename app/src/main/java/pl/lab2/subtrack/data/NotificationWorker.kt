@@ -4,6 +4,7 @@ package pl.lab2.subtrack.data
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import pl.lab2.subtrack.notification.NotificationScheduler
 import pl.lab2.subtrack.ui.AppViewModelProvider
 
 class NotificationWorker(
