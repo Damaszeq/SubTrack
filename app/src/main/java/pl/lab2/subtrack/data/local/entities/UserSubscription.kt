@@ -12,7 +12,7 @@ data class UserSubscription(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val name: String,
-    val planName: String,
+    val planKey: String,
     val price: Double,
     val billingCycle: String,
     val startDate: Long,

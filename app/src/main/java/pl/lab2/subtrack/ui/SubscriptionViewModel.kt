@@ -113,7 +113,7 @@ class SubscriptionViewModel(
             val entity = pl.lab2.subtrack.data.local.entities.UserSubscription(
                 id = 0,
                 name = name,
-                planName = plan,
+                planKey = plan,
                 price = parsedPrice,
                 billingCycle = billingCycle,
                 startDate = startDate,
@@ -141,7 +141,7 @@ class SubscriptionViewModel(
     }
 
     fun getSubscriptionById(id: String): Subscription? {
-        return subscriptions.value.find { it.id == id }
+        return subscriptions.value.find { it.id == id.toLongOrNull() }
     }
 
     // EDYCJA SUBSKRYPCJI
@@ -166,7 +166,7 @@ class SubscriptionViewModel(
             val updatedEntity = pl.lab2.subtrack.data.local.entities.UserSubscription(
                 id = subscriptionId,
                 name = name,
-                planName = plan,
+                planKey = plan,
                 price = parsedPrice,
                 billingCycle = billingCycle,
                 startDate = startDate,

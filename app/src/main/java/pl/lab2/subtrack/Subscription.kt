@@ -1,7 +1,7 @@
 package pl.lab2.subtrack
 
 data class Subscription(
-    val id: String = java.util.UUID.randomUUID().toString(),
+    val id: Long? = null,
     val name: String,
     val plan: String,
     val price: Double,
@@ -11,7 +11,7 @@ data class Subscription(
     val nextPaymentDate: Long = System.currentTimeMillis(),
     val isTrial: Boolean = false,
     val trialOption: String = "",
-    val notificationSetting: String = "true" // Zmieniono domyślny z "Brak" na "true"
+    val notificationSetting: String = "true"
 ) {
     val monthlyEquivalent: Double
         get() = when (billingCycle.lowercase()) {
@@ -22,11 +22,12 @@ data class Subscription(
         }
 }
 
+// Mapowanie z bazy danych (Room) do modelu domenowego (UI)
 fun pl.lab2.subtrack.data.local.entities.SubscriptionWithTags.toSubscription(): Subscription {
     return Subscription(
-        id = subscription.id.toString(),
+        id = subscription.id,
         name = subscription.name,
-        plan = subscription.planName,
+        plan = subscription.planKey,
         price = subscription.price,
         billingCycle = subscription.billingCycle,
         tags = tags.map { it.name },
@@ -38,12 +39,12 @@ fun pl.lab2.subtrack.data.local.entities.SubscriptionWithTags.toSubscription(): 
     )
 }
 
+// Mapowanie z modelu domenowego (UI) do bazy danych (Room)
 fun Subscription.toUserSubscription(): pl.lab2.subtrack.data.local.entities.UserSubscription {
-    val numericId = id.toLongOrNull() ?: 0L
     return pl.lab2.subtrack.data.local.entities.UserSubscription(
-        id = numericId,
+        id = id ?: 0L,
         name = name,
-        planName = plan,
+        planKey = plan,
         price = price,
         billingCycle = billingCycle,
         startDate = startDate,

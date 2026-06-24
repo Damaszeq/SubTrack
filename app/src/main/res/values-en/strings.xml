@@ -167,6 +167,7 @@
     <string name="tag_news">News &amp; Info</string>
     <string name="tag_health">Health &amp; Fitness</string>
     <string name="tag_automotive">Automotive</string>
+    <string name="tag_lifestyle">Lifestyle</string>
 
     <!-- Nazwy Planów -->
     <string name="plan_basic">Basic</string>

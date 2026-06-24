@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -24,6 +25,7 @@ import pl.lab2.subtrack.Subscription
 import pl.lab2.subtrack.ui.components.SubscriptionIcon
 import java.util.Locale
 import androidx.compose.ui.platform.LocalLocale
+import pl.lab2.subtrack.data.resolvePlanName
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,7 +86,7 @@ fun MainScreen(
                 subscriptions.forEach { sub ->
                     SubscriptionItem(
                         subscription = sub,
-                        onClick = { onDetailsClick(sub.id) }
+                        onClick = { onDetailsClick(sub.id.toString()) }
                     )
                 }
             }
@@ -149,13 +151,18 @@ fun SubscriptionItem(
     subscription: Subscription,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
     val now = System.currentTimeMillis()
+
+    val displayedPlanName = remember(subscription.plan) {
+        resolvePlanName(subscription.plan, context)
+    }
+
     val calendar = remember(subscription.nextPaymentDate, subscription.billingCycle) {
         java.util.Calendar.getInstance().apply {
             timeInMillis = subscription.nextPaymentDate
 
             val cycle = subscription.billingCycle.lowercase()
-            // Zlokalizowana poprawka: pętla dopasowuje słowa niezależnie od języka bazy (PL / EN / ZH)
             while (timeInMillis < now) {
                 when {
                     cycle.contains("tydzień") || cycle.contains("week") || cycle.contains("周") -> {
@@ -167,7 +174,7 @@ fun SubscriptionItem(
                     cycle.contains("rok") || cycle.contains("year") || cycle.contains("年") -> {
                         add(java.util.Calendar.YEAR, 1)
                     }
-                    else -> { // Domyślnie co miesiąc (miesiąc / month / 月 / co 30 dni)
+                    else -> {
                         add(java.util.Calendar.MONTH, 1)
                     }
                 }
@@ -211,7 +218,7 @@ fun SubscriptionItem(
                     modifier = Modifier.padding(bottom = 12.dp)
                 ) {
                     Text(
-                        text = stringResource(id = R.string.trial_badge), // POPRAWKA: Zlokalizowany badge Trial
+                        text = stringResource(id = R.string.trial_badge),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.ExtraBold,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
@@ -225,7 +232,8 @@ fun SubscriptionItem(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = subscription.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1)
-                    Text(text = subscription.plan, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                    // ZMIANA: Wyświetlamy bezpiecznie przetłumaczony tekst planu zamiast klucza technicznego
+                    Text(text = displayedPlanName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                 }
 
                 Spacer(modifier = Modifier.width(16.dp))

@@ -168,6 +168,7 @@
     <string name="tag_news">新闻资讯</string>
     <string name="tag_health">运动健康</string>
     <string name="tag_automotive">汽车车载</string>
+    <string name="tag_lifestyle">生活</string>
 
     <!-- Nazwy Planów -->
     <string name="plan_basic">基础套餐</string>

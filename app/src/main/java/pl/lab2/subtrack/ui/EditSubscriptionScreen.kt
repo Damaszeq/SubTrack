@@ -312,25 +312,34 @@ fun EditSubscriptionScreen(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedTextField(
-                    value = dateFormatter.format(Date(startDateLong)),
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Od (rozpoczęcie)") },
-                    trailingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.DateRange,
-                            contentDescription = "Zmień datę",
-                            modifier = Modifier.clickable { showDatePicker = true }
-                        )
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.weight(1f).clickable { showDatePicker = true }
-                )
+                // Bezpieczne opakowanie pola w Box z obsługą kliknięcia na całym obszarze
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { showDatePicker = true }
+                ) {
+                    OutlinedTextField(
+                        value = dateFormatter.format(Date(startDateLong)),
+                        onValueChange = {},
+                        readOnly = true,
+                        enabled = false,
+                        label = { Text("Od (rozpoczęcie)") },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.DateRange,
+                                contentDescription = "Zmień datę"
+                            )
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                            disabledBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
+                            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
 
                 Row(
                     modifier = Modifier
@@ -413,7 +422,6 @@ fun EditSubscriptionScreen(
                 }
             }
 
-            // POPRAWKA: Bezpieczny odstęp zamiast Modifier.weight() w kontenerze scrollowalnym
             Spacer(modifier = Modifier.height(24.dp))
 
             // PRZYCISKI AKCJI Dolnej

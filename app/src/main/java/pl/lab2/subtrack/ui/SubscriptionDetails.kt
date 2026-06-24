@@ -40,7 +40,7 @@ fun SubscriptionDetailsScreen(
     onEditClick: (String) -> Unit
 ) {
     val subscriptions by viewModel.subscriptions.collectAsState()
-    val subscription = subscriptions.find { it.id == subId }
+    val subscription = subscriptions.find { it.id == subId?.toLongOrNull() }
     val dateFormatter = remember { SimpleDateFormat("dd.MM.yyyy", Locale("pl", "PL")) }
 
     // Rzeczywiste płatności wyliczane na podstawie daty i ceny z obiektu Subscription
@@ -82,13 +82,13 @@ fun SubscriptionDetailsScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { subscription?.id?.let { onEditClick(it) } }) {
+                    IconButton(onClick = { subscription?.id?.let { onEditClick(it.toString()) } }) {
                         Icon(Icons.Default.Edit, contentDescription = stringResource(id = R.string.edit))
                     }
                     IconButton(onClick = {
                         onBackClick()
                         subscription?.id?.let { subId ->
-                            viewModel.deleteSubscription(subId)
+                            viewModel.deleteSubscription(subId.toString())
                         }
                     }) {
                         Icon(

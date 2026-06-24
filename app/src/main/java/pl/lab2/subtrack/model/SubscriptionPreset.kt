@@ -1,6 +1,7 @@
 package pl.lab2.subtrack.model
 
 data class SubscriptionPlanPreset(
+    val planKey: String,
     val planNameRes: Int,
     val price: Double,
     val billingCycle: String = "Miesiąc"

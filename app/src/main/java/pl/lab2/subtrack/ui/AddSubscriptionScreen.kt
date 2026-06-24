@@ -62,7 +62,7 @@ fun AddSubscriptionScreen(
     var isTrialChecked by remember { mutableStateOf(false) }
     var selectedTrialOption by remember { mutableStateOf("Pierwszy miesiąc za 0 zł, potem standard") }
 
-    // STAN WYSZUKIWANIA I FILTROWANIA PO TAGACH (Poprawka: przechowujemy ID zasobu jako Int? zamiast String?)
+    // Stan wyszukiwania i filtrowania po tagach
     var presetSearchQuery by remember { mutableStateOf("") }
     var selectedTagResId by remember { mutableStateOf<Int?>(null) } // null oznacza "Wszystkie"
     var isFilterMenuExpanded by remember { mutableStateOf(false) }
@@ -91,7 +91,7 @@ fun AddSubscriptionScreen(
         "Własny trial (określona liczba dni wolnych)"
     )
 
-    // SYSTEMOWY DATE PICKER DIALOG (Material 3)
+    // Systemowy Date Picker Dialog (Material 3)
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(initialSelectedDateMillis = startDateLong)
         DatePickerDialog(
@@ -181,7 +181,6 @@ fun AddSubscriptionScreen(
                         expanded = isFilterMenuExpanded,
                         onDismissRequest = { isFilterMenuExpanded = false }
                     ) {
-                        // Opcja resetu filtra ("Wszystkie")
                         DropdownMenuItem(
                             text = { Text("Wszystkie kategorie", fontWeight = if (selectedTagResId == null) FontWeight.Bold else FontWeight.Normal) },
                             onClick = {
@@ -197,7 +196,6 @@ fun AddSubscriptionScreen(
 
                         HorizontalDivider()
 
-                        // Dynamiczna zlokalizowana lista tagów
                         allAvailableTags.forEach { tagRes ->
                             DropdownMenuItem(
                                 text = { Text(text = stringResource(id = tagRes), fontWeight = if (selectedTagResId == tagRes) FontWeight.Bold else FontWeight.Normal) },
@@ -216,7 +214,6 @@ fun AddSubscriptionScreen(
                 }
             }
 
-            // Informacja o aktywnym zlokalizowanym filtrze kategorii
             if (selectedTagResId != null) {
                 InputChip(
                     selected = true,
@@ -232,10 +229,9 @@ fun AddSubscriptionScreen(
                 )
             }
 
-            // Dynamiczne filtrowanie bazujące na identyfikatorach zasobów Int
             val columns = 3
             val processedPresets = remember(presets, presetSearchQuery, selectedTagResId) {
-                var filtered = presets.filter { preset ->
+                val filtered = presets.filter { preset ->
                     val matchesSearch = preset.serviceName.contains(presetSearchQuery, ignoreCase = true)
                     val matchesTag = selectedTagResId == null || preset.tagsRes.contains(selectedTagResId)
                     matchesSearch && matchesTag
@@ -320,7 +316,6 @@ fun AddSubscriptionScreen(
                 }
             }
 
-            // ZAKŁADKA WYBORU I ORGIZACJI ZLOKALIZOWANEGO PLANU
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
             ExposedDropdownMenuBox(
@@ -343,14 +338,13 @@ fun AddSubscriptionScreen(
                     onDismissRequest = { isPlanDropdownExpanded = false }
                 ) {
                     selectedService?.plans?.forEach { planPreset ->
-                        // Dynamiczne tłumaczenie nazwy planu w locie przy renderowaniu interfejsu
                         val localizedPlanName = stringResource(id = planPreset.planNameRes)
 
                         DropdownMenuItem(
                             text = { Text(stringResource(id = R.string.preset_plan_format, localizedPlanName, planPreset.price)) },
                             onClick = {
                                 selectedPlan = planPreset
-                                // Pobieramy zlokalizowany ciąg znaków dopasowany do wybranego języka systemu
+                                // Wizualnie w UI ustawiamy przetłumaczony tekst dla użytkownika
                                 plan = context.getString(planPreset.planNameRes)
                                 price = planPreset.price.toString()
                                 billingCycleResId = when (planPreset.billingCycle.lowercase()) {
@@ -370,7 +364,6 @@ fun AddSubscriptionScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // POLE CENA
                 OutlinedTextField(
                     value = price,
                     onValueChange = { price = it },
@@ -382,7 +375,6 @@ fun AddSubscriptionScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
 
-                // POLE CYKL
                 ExposedDropdownMenuBox(
                     expanded = isBillingDropdownExpanded,
                     onExpandedChange = { if (selectedService != null) isBillingDropdownExpanded = !isBillingDropdownExpanded },
@@ -415,13 +407,11 @@ fun AddSubscriptionScreen(
                 }
             }
 
-            // Układ dwukolumnowy dla Daty oraz Miejsca na Przypomnienia
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // DATA ROZPOCZĘCIA
                 OutlinedTextField(
                     value = dateFormatter.format(Date(startDateLong)),
                     onValueChange = {},
@@ -439,7 +429,6 @@ fun AddSubscriptionScreen(
                     modifier = Modifier.weight(1f).clickable(enabled = selectedService != null) { showDatePicker = true }
                 )
 
-                // PRZEŁĄCZNIK POWIADOMIEŃ
                 Row(
                     modifier = Modifier
                         .weight(1f)
@@ -475,7 +464,6 @@ fun AddSubscriptionScreen(
                 }
             }
 
-            // CHECKBOX OKRESU PRÓBNEGO (TRIAL)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -494,7 +482,6 @@ fun AddSubscriptionScreen(
                 )
             }
 
-            // ROZSZERZONY DROPDOWN POKAZYWANY ANIMOWANIE
             AnimatedVisibility(visible = isTrialChecked && selectedService != null) {
                 ExposedDropdownMenuBox(
                     expanded = isTrialDropdownExpanded,
@@ -528,7 +515,6 @@ fun AddSubscriptionScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // DOLNE PRZYCISKI ZAPISU I MAPOWANIA TAGÓW
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -542,13 +528,12 @@ fun AddSubscriptionScreen(
                 }
                 Button(
                     onClick = {
-                        // Pobieramy identyfikatory kategorii z powiązanego presetu i konwertujemy je na Stringi dla bazy
                         val currentTags = selectedService?.tagsRes?.map { context.getString(it) } ?: emptyList()
                         val finalBillingCycleText = context.getString(billingCycleResId)
 
                         android.util.Log.d(
                             "SubTrackDebug",
-                            "KLIKNIĘTO ZAPIS -> Nazwa: ${selectedService?.serviceName ?: name}, Czy trial: $isTrialChecked, Opcja: $selectedTrialOption"
+                            "KLIKNIĘTO ZAPIS -> Nazwa: ${selectedService?.serviceName ?: name}, Czy trial: $isTrialChecked"
                         )
 
                         val rawPrice = price.replace(",", ".").trim().toDoubleOrNull() ?: 0.0
@@ -556,10 +541,11 @@ fun AddSubscriptionScreen(
 
                         viewModel.addSubscription(
                             name = selectedService?.serviceName ?: name,
-                            plan = plan, // Przekazuje poprawnie przetłumaczony tekst planu uzyskany z kontekstu
+                            // TUTAJ ZMIANA: Zapisujemy unikalny klucz planu (np. "yt_student") zamiast przetłumaczonego tekstu
+                            plan = selectedPlan?.planKey ?: plan,
                             priceText = formattedPriceText,
                             billingCycle = finalBillingCycleText,
-                            tags = currentTags, // Zapisuje zlokalizowane słowa kluczowe kategorii
+                            tags = currentTags,
                             startDate = startDateLong,
                             isTrial = isTrialChecked,
                             trialOption = selectedTrialOption,
