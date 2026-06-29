@@ -42,6 +42,7 @@ import pl.lab2.subtrack.ui.AppLanguage
 import pl.lab2.subtrack.ui.EditSubscriptionScreen
 import pl.lab2.subtrack.notification.NotificationScheduler
 import pl.lab2.subtrack.ui.AppViewModelProvider
+import pl.lab2.subtrack.ui.FinancialStatsScreen
 import java.util.Locale
 
 @Composable
@@ -103,6 +104,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+const val ROUTE_STATS = "financial_stats"
 @Composable
 fun AppNavigation(
     subViewModel: SubscriptionViewModel = viewModel(factory = AppViewModelProvider.Factory),
@@ -122,7 +124,9 @@ fun AppNavigation(
                 onAddClick = { navController.navigate("add") },
                 onDetailsClick = { subId -> navController.navigate("details/$subId") },
                 onNotificationsClick = { navController.navigate("notifications") },
-                onSettingsClick = { navController.navigate("settings") }
+                onSettingsClick = { navController.navigate("settings") },
+                onTotalSumClick = { navController.navigate(ROUTE_STATS) }
+
             )
         }
 
@@ -198,6 +202,13 @@ fun AppNavigation(
                 subscriptionId = subId,
                 viewModel = subViewModel,
                 onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(ROUTE_STATS) {
+            FinancialStatsScreen(
+                viewModel = subViewModel,
+                onBackClick = { navController.popBackStack() } // Powrót strzałką wstecz
             )
         }
     }

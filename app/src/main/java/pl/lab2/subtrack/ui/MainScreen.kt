@@ -1,6 +1,7 @@
 package pl.lab2.subtrack.ui
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,7 +36,8 @@ fun MainScreen(
     onAddClick: () -> Unit,
     onDetailsClick: (String) -> Unit,
     onNotificationsClick: () -> Unit,
-    onSettingsClick: () -> Unit = {}
+    onSettingsClick: () -> Unit = {},
+    onTotalSumClick: () -> Unit
 ) {
     val subscriptions by viewModel.subscriptions.collectAsState()
     val totalMonthlyCost by viewModel.totalMonthlyCost.collectAsState()
@@ -102,7 +104,8 @@ fun MainScreen(
                 Card(
                     modifier = Modifier
                         .wrapContentWidth()
-                        .padding(bottom = 4.dp),
+                        .padding(bottom = 4.dp)
+                        .clickable { onTotalSumClick() },
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,

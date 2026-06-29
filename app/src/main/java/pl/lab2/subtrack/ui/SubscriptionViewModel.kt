@@ -226,4 +226,37 @@ class SubscriptionViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = 0.0
         )
+
+    val pieChartData: kotlinx.coroutines.flow.StateFlow<List<PieChartEntry>> = subscriptions
+        .map { subList ->
+            // Paleta ładnych, zróżnicowanych kolorów dla subskrypcji na wykresie
+            val colors = listOf(
+                androidx.compose.ui.graphics.Color(0xFF6200EE),
+                androidx.compose.ui.graphics.Color(0xFF03DAC6),
+                androidx.compose.ui.graphics.Color(0xFFFFB74D),
+                androidx.compose.ui.graphics.Color(0xFFFF5252),
+                androidx.compose.ui.graphics.Color(0xFF4CAF50),
+                androidx.compose.ui.graphics.Color(0xFF2196F3),
+                androidx.compose.ui.graphics.Color(0xFF9C27B0)
+            )
+
+            subList.mapIndexed { index, sub ->
+                PieChartEntry(
+                    name = sub.name,
+                    value = sub.monthlyEquivalent, // Używamy Twojego przelicznika miesięcznego!
+                    color = colors[index % colors.size] // Bezpieczne przypisywanie kolorów z palety
+                )
+            }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 }
+
+data class PieChartEntry(
+    val name: String,
+    val value: Double,
+    val color: androidx.compose.ui.graphics.Color
+)
