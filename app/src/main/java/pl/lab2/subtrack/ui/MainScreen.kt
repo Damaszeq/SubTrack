@@ -26,6 +26,7 @@ import pl.lab2.subtrack.ui.components.SubscriptionIcon
 import java.util.Locale
 import androidx.compose.ui.platform.LocalLocale
 import pl.lab2.subtrack.data.resolvePlanName
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,7 +37,6 @@ fun MainScreen(
     onNotificationsClick: () -> Unit,
     onSettingsClick: () -> Unit = {}
 ) {
-
     val subscriptions by viewModel.subscriptions.collectAsState()
     val totalMonthlyCost by viewModel.totalMonthlyCost.collectAsState()
 
@@ -99,7 +99,6 @@ fun MainScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Bottom
             ) {
-
                 Card(
                     modifier = Modifier
                         .wrapContentWidth()
@@ -152,41 +151,35 @@ fun SubscriptionItem(
     onClick: () -> Unit
 ) {
     val context = LocalContext.current
-    val now = System.currentTimeMillis()
 
     val displayedPlanName = remember(subscription.plan) {
         resolvePlanName(subscription.plan, context)
     }
 
-    val calendar = remember(subscription.nextPaymentDate, subscription.billingCycle) {
-        java.util.Calendar.getInstance().apply {
-            timeInMillis = subscription.nextPaymentDate
-
-            val cycle = subscription.billingCycle.lowercase()
-            while (timeInMillis < now) {
-                when {
-                    cycle.contains("tydzień") || cycle.contains("week") || cycle.contains("周") -> {
-                        add(java.util.Calendar.WEEK_OF_YEAR, 1)
-                    }
-                    cycle.contains("kwartał") || cycle.contains("quarter") || cycle.contains("季度") -> {
-                        add(java.util.Calendar.MONTH, 3)
-                    }
-                    cycle.contains("rok") || cycle.contains("year") || cycle.contains("年") -> {
-                        add(java.util.Calendar.YEAR, 1)
-                    }
-                    else -> {
-                        add(java.util.Calendar.MONTH, 1)
-                    }
-                }
-            }
+    // Obliczamy różnicę dni opierając się wyłącznie na czystych datach (północy)
+    val daysLeft = remember(subscription.nextPaymentDate) {
+        val todayCal = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
         }
+
+        val subCal = Calendar.getInstance().apply {
+            timeInMillis = subscription.nextPaymentDate
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        val diffInMs = subCal.timeInMillis - todayCal.timeInMillis
+        (diffInMs / (1000 * 60 * 60 * 24)).toInt()
     }
 
-    val nextFutureDate = calendar.timeInMillis
+    // Formatowanie daty bezpośrednio z obiektu bazy danych
     val dateFormatter = remember { java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()) }
-    val formattedDate = dateFormatter.format(java.util.Date(nextFutureDate))
-
-    val daysLeft = ((nextFutureDate - now) / (1000 * 60 * 60 * 24)).toInt()
+    val formattedDate = dateFormatter.format(java.util.Date(subscription.nextPaymentDate))
 
     val cardColors = if (subscription.isTrial) {
         CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.12f))
@@ -232,7 +225,6 @@ fun SubscriptionItem(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = subscription.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1)
-                    // ZMIANA: Wyświetlamy bezpiecznie przetłumaczony tekst planu zamiast klucza technicznego
                     Text(text = displayedPlanName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                 }
 
@@ -249,15 +241,17 @@ fun SubscriptionItem(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     val paymentText = if (subscription.isTrial) {
-                        when (daysLeft) {
-                            0 -> stringResource(id = R.string.trial_ends_today)
-                            1 -> stringResource(id = R.string.trial_ends_tomorrow)
+                        when {
+                            daysLeft == 0 -> stringResource(id = R.string.trial_ends_today)
+                            daysLeft == 1 -> stringResource(id = R.string.trial_ends_tomorrow)
+                            daysLeft < 0 -> "Zakończono okres próbny"
                             else -> stringResource(id = R.string.trial_ends_in_days, daysLeft)
                         }
                     } else if (daysLeft <= 3) {
-                        when (daysLeft) {
-                            0 -> stringResource(id = R.string.payment_today)
-                            1 -> stringResource(id = R.string.payment_tomorrow)
+                        when {
+                            daysLeft == 0 -> stringResource(id = R.string.payment_today)
+                            daysLeft == 1 -> stringResource(id = R.string.payment_tomorrow)
+                            daysLeft < 0 -> "Termin minął"
                             else -> stringResource(id = R.string.payment_in_days, daysLeft)
                         }
                     } else {

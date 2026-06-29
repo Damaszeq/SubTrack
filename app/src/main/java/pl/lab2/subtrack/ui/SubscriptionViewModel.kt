@@ -31,14 +31,32 @@ enum class AppLanguage(val code: String) {
 }
 
 private fun calculateNextPaymentDate(startDate: Long, billingCycle: String): Long {
-    val calendar = Calendar.getInstance()
-    calendar.timeInMillis = startDate
+    val calendar = Calendar.getInstance().apply {
+        timeInMillis = startDate
+        // Zerujemy czas, interesuje nas tylko czysty dzień kalendarzowy
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }
 
-    when (billingCycle.lowercase(Locale.ROOT)) {
-        "tydzień", "week" -> calendar.add(Calendar.WEEK_OF_YEAR, 1)
-        "kwartał", "quarter" -> calendar.add(Calendar.MONTH, 3)
-        "rok", "year" -> calendar.add(Calendar.YEAR, 1)
-        else -> calendar.add(Calendar.MONTH, 1) // domyślnie miesiąc
+    val today = Calendar.getInstance().apply {
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }
+
+    // Dopóki wyliczona data jest w TRUPEJ przeszłości (wczoraj lub dawniej),
+    // dodajemy kolejne okresy rozliczeniowe.
+    // Jeśli wyjdzie DZIŚ, pętla się zatrzyma i zwróci dzisiejszy dzień!
+    while (calendar.before(today)) {
+        when (billingCycle.lowercase(Locale.ROOT)) {
+            "tydzień", "week", "weekly" -> calendar.add(Calendar.WEEK_OF_YEAR, 1)
+            "kwartał", "quarter" -> calendar.add(Calendar.MONTH, 3)
+            "rok", "year", "yearly", "roczny", "rocznie" -> calendar.add(Calendar.YEAR, 1)
+            else -> calendar.add(Calendar.MONTH, 1) // domyślnie miesiąc
+        }
     }
     return calendar.timeInMillis
 }

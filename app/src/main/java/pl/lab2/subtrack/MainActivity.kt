@@ -67,6 +67,7 @@ class MainActivity : ComponentActivity() {
     private val notificationViewModel: NotificationViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
 
         val scheduler = NotificationScheduler(applicationContext)

@@ -15,7 +15,6 @@ import java.util.concurrent.TimeUnit
 
 class NotificationScheduler(private val context: Context) {
 
-
     private val settingsManager = SettingsManager(context)
 
     suspend fun checkSubscriptionsAndNotify(repository: SubscriptionRepository) {
@@ -30,22 +29,38 @@ class NotificationScheduler(private val context: Context) {
             // 2. Pobieramy preferowane terminy przypomnień (np. setOf(24), czyli 24h przed)
             val preferredHours = settingsManager.globalReminderHours.first()
 
+            // Pobieramy pełne encje z relacjami, żeby mieć dostęp do obiektów bazodanowych do zapisu
             val entitiesWithTags = repository.getActiveSubscriptionsWithTagsStream().first()
-            val activeSubs = entitiesWithTags.map { it.toSubscription() }
             val currentTime = System.currentTimeMillis()
 
-            for (sub in activeSubs) {
-                // Sprawdzamy, czy powiadomienia dla tej konkretnej subskrypcji są włączone
-                if (sub.notificationSetting == "true") {
-                    val diffInMs = sub.nextPaymentDate - currentTime
-                    val diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMs).toInt()
+            for (subWithTagsEntity in entitiesWithTags) {
+                val sub = subWithTagsEntity.toSubscription()
 
-                    // Przeliczamy dni na godziny (np. 1 dzień przed = 24h), aby pasowało do ustawień globalnych
+                if (sub.notificationSetting == "true") {
+                    // Sprowadzamy czas bieżący do północy dnia dzisiejszego
+                    val todayCal = java.util.Calendar.getInstance().apply {
+                        set(java.util.Calendar.HOUR_OF_DAY, 0)
+                        set(java.util.Calendar.MINUTE, 0)
+                        set(java.util.Calendar.SECOND, 0)
+                        set(java.util.Calendar.MILLISECOND, 0)
+                    }
+
+                    // Sprowadzamy datę płatności do północy
+                    val subCal = java.util.Calendar.getInstance().apply {
+                        timeInMillis = sub.nextPaymentDate
+                        set(java.util.Calendar.HOUR_OF_DAY, 0)
+                        set(java.util.Calendar.MINUTE, 0)
+                        set(java.util.Calendar.SECOND, 0)
+                        set(java.util.Calendar.MILLISECOND, 0)
+                    }
+
+                    val diffInMs = subCal.timeInMillis - todayCal.timeInMillis
+                    val diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMs).toInt()
                     val diffInHours = diffInDays * 24
 
                     // 3. DYNAMICZNY WARUNEK: Sprawdzamy, czy czas do płatności pokrywa się z wyborem użytkownika
                     val isTimeMatched = preferredHours.any { hour ->
-                        diffInHours == hour || (hour == 24 && diffInDays == 1) // bezpiecznik dla zaokrągleń czasu
+                        diffInHours == hour || (hour == 24 && diffInDays == 1)
                     }
 
                     if (isTimeMatched) {
@@ -58,8 +73,26 @@ class NotificationScheduler(private val context: Context) {
                             timestamp = System.currentTimeMillis(),
                             isRead = false
                         )
-                        // Wywołanie natywnego pusha w Androidzie
                         showSystemNotification(context, notification)
+                    }
+
+                    // 4. AUTOMATYCZNE ODNAWIANIE DATY PŁATNOŚCI
+                    // Teraz diffInDays wyniesie dokładnie 0, jeśli termin przypada na dzisiaj.
+                    // Warunek < 0 wykona się dopierojutro (gdy diffInDays wyniesie -1).
+                    if (diffInDays < 0) {
+                        val originalEntity = subWithTagsEntity.subscription
+                        val updatedNextPaymentDate = incrementPaymentDate(originalEntity.nextPaymentDate, originalEntity.billingCycle)
+
+                        val renewedSubscription = originalEntity.copy(
+                            nextPaymentDate = updatedNextPaymentDate
+                        )
+
+                        repository.updateSubscription(renewedSubscription)
+
+                        android.util.Log.d(
+                            "SUBTRACK_AUTORENEW",
+                            "Subskrypcja ${originalEntity.name} minęła ($diffInDays dni). Automatyczne przesunięcie daty."
+                        )
                     }
                 }
             }
@@ -88,5 +121,24 @@ class NotificationScheduler(private val context: Context) {
             ExistingPeriodicWorkPolicy.KEEP,
             dailyWorkRequest
         )
+    }
+
+    private fun incrementPaymentDate(currentNextPayment: Long, billingCycle: String): Long {
+        val calendar = java.util.Calendar.getInstance()
+        calendar.timeInMillis = currentNextPayment
+
+        val currentTime = System.currentTimeMillis()
+
+        // Przesuwamy datę do przodu tak długo, aż znajdzie się w przyszłości
+        while (calendar.timeInMillis <= currentTime) {
+            when (billingCycle.lowercase(java.util.Locale.ROOT)) {
+                "monthly", "miesięczny", "miesięcznie" -> calendar.add(java.util.Calendar.MONTH, 1)
+                "yearly", "roczny", "rocznie", "rok", "year" -> calendar.add(java.util.Calendar.YEAR, 1)
+                "weekly", "tygodniowy", "tygodniowo", "tydzień", "week" -> calendar.add(java.util.Calendar.WEEK_OF_YEAR, 1)
+                "kwartał", "quarter" -> calendar.add(java.util.Calendar.MONTH, 3)
+                else -> calendar.add(java.util.Calendar.MONTH, 1)
+            }
+        }
+        return calendar.timeInMillis
     }
 }
