@@ -26,6 +26,7 @@ import java.util.Locale
 import pl.lab2.subtrack.R
 import pl.lab2.subtrack.data.resolvePlanName
 import pl.lab2.subtrack.ui.components.SubscriptionIcon
+import androidx.compose.ui.platform.LocalLocale
 
 data class PaymentHistoryMock(
     val date: String,
@@ -164,95 +165,123 @@ fun SubscriptionDetailsScreen(
                     shape = RoundedCornerShape(24.dp),
                     elevation = CardDefaults.cardElevation(4.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        SubscriptionIcon(
-                            serviceName = subscription.name,
-                            modifier = Modifier
-                                .size(80.dp)
-                                .padding(4.dp)
-                        )
+                    // Box pozwala na nakładanie komponentów na siebie i pozycjonowanie w rogach
+                    Box(modifier = Modifier.fillMaxWidth()) {
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        if (subscription.tags.isNotEmpty()) {
+                            Column(
+                                // Pozycjonujemy całą kolumnę w prawym górnym rogu karty
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(top = 16.dp, end = 20.dp), // Odstęp od krawędzi karty
+                                // Ustalamy niewielki odstęp pionowy (np. 4.dp) pomiędzy tagami
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                // Wyrównujemy teksty w kolumnie do prawej krawędzi, żeby ładnie wyglądały przy różnej długości słów
+                                horizontalAlignment = Alignment.End
+                            ) {
+                                // Iterujemy po wszystkich tagach z listy
+                                subscription.tags.forEach { tag ->
+                                    Text(
+                                        text = tag.uppercase(LocalLocale.current.platformLocale),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f) // Subtelny, przezroczysty napis
+                                    )
+                                }
+                            }
+                        } // <--- TUTAJ BRAKOWAŁO TEGO NAWIASU ZAMYKAJĄCEGO BLOK IF
 
-                        Text(
-                            text = subscription.name,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        // POPRAWKA: Wyświetlanie przetłumaczonego planu zamiast klucza bazy
-                        Text(
-                            text = displayedPlanName,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
-
-                        // Wyciągnięcie i przetłumaczenie flagi powiadomień ("true"/"false" -> "Tak"/"Nie")
-                        val isNotifEnabled = subscription.notificationSetting == "true"
-                        val notificationsText = if (isNotifEnabled) "Tak" else "Nie"
-
+                        // Dotychczasowa zawartość karty (niezmieniona, wycentrowana)
                         Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                InfoColumn(
-                                    label = stringResource(id = R.string.label_price),
-                                    value = stringResource(id = R.string.price_format, subscription.price),
-                                    modifier = Modifier.weight(1f)
-                                )
-                                InfoColumn(
-                                    label = stringResource(id = R.string.label_cycle),
-                                    value = subscription.billingCycle,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
+                            SubscriptionIcon(
+                                serviceName = subscription.name,
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .padding(4.dp)
+                            )
 
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                InfoColumn(
-                                    label = "Data rozpoczęcia",
-                                    value = dateFormatter.format(Date(subscription.startDate)),
-                                    modifier = Modifier.weight(1f)
-                                )
-                                InfoColumn(
-                                    label = "Powiadomienia",
-                                    value = notificationsText,
-                                    modifier = Modifier.weight(1f),
-                                    alpha = if (!isNotifEnabled) 0.4f else 1f
-                                )
-                            }
-                        }
+                            Spacer(modifier = Modifier.height(16.dp))
 
-                        // NOWA SEKCJA: DATA KOLEJNEJ PŁATNOŚCI DODANA DO CARD
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
                             Text(
-                                text = "Kolejna płatność: ",
+                                text = subscription.name,
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            // Wyświetlanie przetłumaczonego planu zamiast klucza bazy
+                            Text(
+                                text = displayedPlanName,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Text(
-                                text = nextPaymentFormatted,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
+
+                            // Wyciągnięcie i przetłumaczenie flagi powiadomień ("true"/"false" -> "Tak"/"Nie")
+                            val isNotifEnabled = subscription.notificationSetting == "true"
+                            val notificationsText = if (isNotifEnabled) "Tak" else "Nie"
+
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    InfoColumn(
+                                        label = stringResource(id = R.string.label_price),
+                                        value = stringResource(id = R.string.price_format, subscription.price),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    InfoColumn(
+                                        label = stringResource(id = R.string.label_cycle),
+                                        value = subscription.billingCycle,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    InfoColumn(
+                                        label = "Data rozpoczęcia",
+                                        value = dateFormatter.format(Date(subscription.startDate)),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    InfoColumn(
+                                        label = "Powiadomienia",
+                                        value = notificationsText,
+                                        modifier = Modifier.weight(1f),
+                                        alpha = if (!isNotifEnabled) 0.4f else 1f
+                                    )
+                                }
+                            }
+
+                            // DATA KOLEJNEJ PŁATNOŚCI DODANA DO CARD
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Kolejna płatność: ",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = nextPaymentFormatted,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                 }
