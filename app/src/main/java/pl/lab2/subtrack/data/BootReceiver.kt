@@ -3,6 +3,7 @@ package pl.lab2.subtrack.data
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import pl.lab2.subtrack.SubTrackApplication
 import pl.lab2.subtrack.notification.NotificationScheduler
 
 class BootReceiver : BroadcastReceiver() {
@@ -12,8 +13,8 @@ class BootReceiver : BroadcastReceiver() {
             android.util.Log.d("SUBTRACK_BOOT", "Telefon uruchomiony lub aplikacja zaktualizowana. Rejestruję WorkManager...")
 
             // Inicjalizujemy scheduler i wrzucamy zadanie sprawdzania subskrypcji do kolejki systemu
-            val scheduler = NotificationScheduler(context)
-            scheduler.scheduleDailyNotificationCheck()
+            val app = context.applicationContext as SubTrackApplication
+            val scheduler = NotificationScheduler(context, app.container.paymentRepository)
         }
     }
 }

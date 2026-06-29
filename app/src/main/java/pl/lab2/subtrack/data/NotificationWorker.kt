@@ -4,6 +4,7 @@ package pl.lab2.subtrack.data
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import pl.lab2.subtrack.SubTrackApplication
 import pl.lab2.subtrack.notification.NotificationScheduler
 import pl.lab2.subtrack.ui.AppViewModelProvider
 
@@ -13,21 +14,19 @@ class NotificationWorker(
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
-        android.util.Log.d("SUBTRACK_WORKER", "Uruchomiono cykliczne sprawdzanie subskrypcji w tle...")
+        return try {
+            val app = applicationContext as SubTrackApplication
 
-        try {
-            // Ponieważ Worker nie ma dostępu do ViewModelu, pobieramy repozytorium bezpośrednio
-            // z Twojego kontenera aplikacji (tak samo, jak robi to AppViewModelProvider dla ViewModeli)
-            val application = applicationContext as pl.lab2.subtrack.SubTrackApplication // Upewnij się, że nazwa klasy Application się zgadza
-            val repository = application.container.subscriptionRepository // Dostosuj ścieżkę do swojego kontenera (np. application.container...)
+            // Przekazujemy oba repozytoria
+            val scheduler = NotificationScheduler(
+                context = applicationContext,
+                paymentRepository = app.container.paymentRepository // nazwa repozytorium z Twojego AppContainer
+            )
 
-            val scheduler = NotificationScheduler(applicationContext)
-            scheduler.checkSubscriptionsAndNotify(repository)
-
-            return Result.success()
+            scheduler.checkSubscriptionsAndNotify(app.container.subscriptionRepository)
+            Result.success()
         } catch (e: Exception) {
-            android.util.Log.e("SUBTRACK_WORKER", "Błąd podczas wykonywania zadania w tle: ${e.message}", e)
-            return Result.failure()
+            Result.failure()
         }
     }
 }

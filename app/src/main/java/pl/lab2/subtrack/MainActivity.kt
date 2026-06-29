@@ -69,8 +69,16 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
+// 1. Pobieramy aplikację i jej kontener zależności
+        val app = application as SubTrackApplication
 
-        val scheduler = NotificationScheduler(applicationContext)
+        // 2. Inicjalizujemy scheduler, przekazując context oraz repozytorium płatności dla historii
+        val scheduler = NotificationScheduler(
+            context = applicationContext,
+            paymentRepository = app.container.paymentRepository
+        )
+
+        // 3. Rejestrujemy codzienne sprawdzanie w WorkManagerze
         scheduler.scheduleDailyNotificationCheck()
 
         setContent {

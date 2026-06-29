@@ -23,7 +23,7 @@
             </intent-filter>
         </activity>
         <receiver
-            android:name=".notification.BootReceiver"
+            android:name=".data.BootReceiver"
             android:enabled="true"
             android:exported="false">
             <intent-filter>
