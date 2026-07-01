@@ -1,8 +1,13 @@
 package pl.lab2.subtrack.ui.components
 
 import android.util.Log
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -18,24 +23,51 @@ import pl.lab2.subtrack.R
 @Composable
 fun SubscriptionIcon(
     serviceName: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    planKey: String = "" // <-- NOWOŚĆ: Przekazujemy tutaj pole planu/ikony
 ) {
+    val rawIconId = if (planKey.contains("|")) planKey.substringAfter("|") else planKey
+    val iconId = rawIconId.lowercase().trim()
+    // --- NOWOŚĆ: Obsługa ikon niestandardowych (Custom) ---
+    if (iconId.startsWith("custom_")) {
+        val iconVector = when (iconId) {
+            "custom_star"     -> Icons.Default.Star
+            "custom_gym"      -> Icons.Default.FitnessCenter
+            "custom_home"     -> Icons.Default.Home
+            "custom_code"     -> Icons.Default.Code
+            "custom_car"      -> Icons.Default.DirectionsCar
+            "custom_school"   -> Icons.Default.School
+            "custom_medical"  -> Icons.Default.Favorite
+            "custom_shopping" -> Icons.Default.ShoppingCart
+            "custom_money"    -> Icons.Default.AccountBalance
+            "custom_game"     -> Icons.Default.PlayArrow
+            else              -> Icons.Default.Star
+        }
 
-    // 0. Odcięcie dopisków w nawiasach (np. "CD-Action (Geek Week)" -> "CD-Action")
+        Icon(
+            imageVector = iconVector,
+            contentDescription = "Custom Icon",
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = modifier
+                .size(34.dp)
+                .padding(4.dp)
+        )
+        return // Przerywamy rysowanie, nie ładujemy z sieci!
+    }
+
+    // --- Dotychczasowa logika dla presetów sieciowych ---
     val baseName = if (serviceName.contains("(")) {
         serviceName.substringBefore("(").trim()
     } else {
         serviceName
     }
 
-    // 1. Standaryzacja nazwy wpisanej przez użytkownika
     var cleanName = baseName.lowercase().trim()
         .replace(" ", "")
         .replace("+", "")
         .replace("!", "")
         .replace("-", "")
 
-    // 2. Usuwanie popularnych sufiksów (kolejność ma znaczenie)
     val suffixesToRemove = listOf("premium", "plus", "online", "go", "gold", "vod")
     for (suffix in suffixesToRemove) {
         if (cleanName.endsWith(suffix) && cleanName != suffix) {
@@ -43,9 +75,8 @@ fun SubscriptionIcon(
         }
     }
 
-    // 3. Mapa domen obsługiwanych przez Google Favicon API
     val googleDomains = mapOf(
-        // Streaming & VOD
+        "cda" to "cda.pl",
         "disney" to "disneyplus.com",
         "hbomax" to "max.com",
         "max" to "max.com",
@@ -60,22 +91,16 @@ fun SubscriptionIcon(
         "tvpvod" to "tvp.pl",
         "youtube" to "youtube.com",
         "appletv" to "tv.apple.com",
-
-        // Zakupy & Dostawy
         "empik" to "empik.com",
         "allegrosmart" to "allegro.pl",
         "amazonprime" to "amazon.pl",
         "glovo" to "glovo.com",
         "glovoprime" to "glovo.com",
-
-        // Gaming
         "nintendoswitch" to "nintendo.com",
         "ubisoft" to "ubisoft.com",
         "xbox" to "xbox.com",
         "ea" to "ea.com",
         "cdaction" to "cdaction.pl",
-
-        // Kultura & Produktywność
         "marvel" to "marvel.com",
         "marvelunlimited" to "marvel.com",
         "googleone" to "one.google.com",
@@ -85,27 +110,23 @@ fun SubscriptionIcon(
         "icloud" to "apple.com",
         "linkedin" to "linkedin.com",
         "carly" to "mycarly.com",
-
-        // Prasa & Informacje
         "wyborcza" to "wyborcza.pl",
         "wyborczapl" to "wyborcza.pl",
         "newsweekpolska" to "newsweek.pl",
         "onet" to "onet.pl",
         "politykacyfrowa" to "polityka.pl",
-
-        // Sport, Zdrowie & Inne
         "multisport" to "kartamultisport.pl",
         "tinder" to "tinder.com",
         "fitatu" to "fitatu.com",
         "flo" to "flo.health"
     )
 
-    // 4. Alternatywna mapa dla DuckDuckGo
     val duckDuckGoDomains = mapOf(
-        "duolingo" to "duolingo.com"
+        "duolingo" to "duolingo.com",
+        "discord" to "discordapp.com",
+        "strava" to "strava.com"
     )
 
-    // 5. Wyznaczenie poprawnego adresu URL ikony
     val logoUrl = when {
         duckDuckGoDomains.containsKey(cleanName) -> {
             val domain = duckDuckGoDomains[cleanName]!!
@@ -115,7 +136,6 @@ fun SubscriptionIcon(
             val domain = googleDomains[cleanName]!!
             "https://www.google.com/s2/favicons?domain=$domain&sz=128"
         }
-
         cleanName.contains(".") -> {
             "https://www.google.com/s2/favicons?domain=$cleanName&sz=128"
         }
@@ -123,9 +143,6 @@ fun SubscriptionIcon(
             "https://www.google.com/s2/favicons?domain=$cleanName.com&sz=128"
         }
     }
-
-    // Logowanie ułatwiające debugowanie w Logcat
-    Log.d("SubscriptionIcon", "Service: $serviceName -> Cleaned: $cleanName -> URL: $logoUrl")
 
     AsyncImage(
         model = ImageRequest.Builder(LocalContext.current)

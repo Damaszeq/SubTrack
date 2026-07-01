@@ -12,8 +12,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import pl.lab2.subtrack.Subscription
 import pl.lab2.subtrack.data.local.entities.Tag
+import pl.lab2.subtrack.data.local.entities.PaymentHistory // <-- Upewnij się, że importujesz encję historii
 import pl.lab2.subtrack.data.local.repositories.SubscriptionRepository
 import pl.lab2.subtrack.data.local.repositories.TagRepository
+import pl.lab2.subtrack.data.local.repositories.PaymentRepository // <-- NOWY IMPORT
 import pl.lab2.subtrack.toSubscription
 import java.util.Calendar
 import java.util.Locale
@@ -26,14 +28,12 @@ enum class AppThemeMode {
 enum class AppLanguage(val code: String) {
     POLISH("pl"),
     ENGLISH("en"),
-
     CHINESE("zh")
 }
 
 private fun calculateNextPaymentDate(startDate: Long, billingCycle: String): Long {
     val calendar = Calendar.getInstance().apply {
         timeInMillis = startDate
-        // Zerujemy czas, interesuje nas tylko czysty dzień kalendarzowy
         set(Calendar.HOUR_OF_DAY, 0)
         set(Calendar.MINUTE, 0)
         set(Calendar.SECOND, 0)
@@ -47,15 +47,12 @@ private fun calculateNextPaymentDate(startDate: Long, billingCycle: String): Lon
         set(Calendar.MILLISECOND, 0)
     }
 
-    // Dopóki wyliczona data jest w TRUPEJ przeszłości (wczoraj lub dawniej),
-    // dodajemy kolejne okresy rozliczeniowe.
-    // Jeśli wyjdzie DZIŚ, pętla się zatrzyma i zwróci dzisiejszy dzień!
-    while (calendar.before(today)) {
+    while (!calendar.after(today)) {
         when (billingCycle.lowercase(Locale.ROOT)) {
             "tydzień", "week", "weekly" -> calendar.add(Calendar.WEEK_OF_YEAR, 1)
             "kwartał", "quarter" -> calendar.add(Calendar.MONTH, 3)
             "rok", "year", "yearly", "roczny", "rocznie" -> calendar.add(Calendar.YEAR, 1)
-            else -> calendar.add(Calendar.MONTH, 1) // domyślnie miesiąc
+            else -> calendar.add(Calendar.MONTH, 1)
         }
     }
     return calendar.timeInMillis
@@ -64,6 +61,7 @@ private fun calculateNextPaymentDate(startDate: Long, billingCycle: String): Lon
 class SubscriptionViewModel(
     private val subscriptionRepository: SubscriptionRepository,
     private val tagRepository: TagRepository,
+    private val paymentRepository: PaymentRepository, // <-- NOWOŚĆ: Wstrzykiwanie repozytorium płatności
     private val tagDao: pl.lab2.subtrack.data.local.dao.TagDao,
     private val settingsManager: SettingsManager
 ) : ViewModel() {
@@ -98,8 +96,6 @@ class SubscriptionViewModel(
         _language.value = lang
     }
 
-    // --- SEKCJA USTAWIEŃ GLOBALNYCH POWIADOMIEŃ ---
-    // 2. Pobieramy strumień bezpośrednio z DataStore i zamieniamy go w StateFlow dla Compose UI
     val isNotificationsEnabledGlobal: StateFlow<Boolean> = settingsManager.isNotificationsEnabledGlobal
         .stateIn(
             scope = viewModelScope,
@@ -107,15 +103,13 @@ class SubscriptionViewModel(
             initialValue = true
         )
 
-    // 3. To samo robimy dla zbioru godzin/dni powiadomień
     val globalReminderHours: StateFlow<Set<Int>> = settingsManager.globalReminderHours
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = setOf(24) // domyślnie 24 godziny (1 dzień) przed
+            initialValue = setOf(24)
         )
 
-    // 4. Zapis do DataStore uruchamiamy w asynchronicznym wątku (viewModelScope)
     fun setGlobalNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsManager.setGlobalNotificationsEnabled(enabled)
@@ -127,9 +121,8 @@ class SubscriptionViewModel(
             settingsManager.setGlobalReminderHours(hours)
         }
     }
-    // ----------------------------------------------
 
-    // DODAWANIE NOWEJ SUBSKRYPCJI
+    // --- POPRAWIONE I ROZBUDOWANE DODAWANIE SUBSKRYPCJI Z HISTORIĄ ---
     fun addSubscription(
         name: String,
         plan: String,
@@ -145,6 +138,7 @@ class SubscriptionViewModel(
 
         viewModelScope.launch {
             val nextDate = calculateNextPaymentDate(startDate, billingCycle)
+
             val entity = pl.lab2.subtrack.data.local.entities.UserSubscription(
                 id = 0,
                 name = name,
@@ -160,7 +154,50 @@ class SubscriptionViewModel(
             )
 
             val tagEntities = tags.map { Tag(name = it) }
-            subscriptionRepository.insertSubscriptionWithTags(entity, tagEntities, tagDao)
+
+            // 1. Wstawiamy subskrypcję do bazy i odbieramy jej unikalne ID wygenerowane przez Room
+            val insertedSubscriptionId = subscriptionRepository.insertSubscriptionWithTags(entity, tagEntities, tagDao)
+
+            // 2. Generowanie historii transakcji wstecznej od startDate do momentu przed nextPaymentDate
+            val historyCalendar = Calendar.getInstance().apply {
+                timeInMillis = startDate
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+
+            val targetNextPaymentDate = Calendar.getInstance().apply {
+                timeInMillis = nextDate
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+
+// Pętla od daty startowej dodaje wpisy historyczne krok po kroku
+            while (historyCalendar.before(targetNextPaymentDate)) {
+                val paymentRecord = PaymentHistory(
+                    id = 0,
+                    subscriptionId = insertedSubscriptionId,
+                    paymentDate = historyCalendar.timeInMillis,
+
+                    // --- POPRAWIONE PARAMETRY ZGODNIE Z TWOIM MODELEM ---
+                    serviceName = name.trim(),
+                    planName = plan.substringBefore("|").trim().ifEmpty { "Plan niestandardowy" },
+                    price = parsedPrice // Tutaj ląduje Twoja kwota Double
+                )
+
+                paymentRepository.insertPayment(paymentRecord)
+
+                // Przesuwamy kalendarz historii o jeden cykl
+                when (billingCycle.lowercase(Locale.ROOT)) {
+                    "tydzień", "week", "weekly" -> historyCalendar.add(Calendar.WEEK_OF_YEAR, 1)
+                    "kwartał", "quarter" -> historyCalendar.add(Calendar.MONTH, 3)
+                    "rok", "year", "yearly", "roczny", "rocznie" -> historyCalendar.add(Calendar.YEAR, 1)
+                    else -> historyCalendar.add(Calendar.MONTH, 1)
+                }
+            }
         }
     }
 
@@ -227,9 +264,8 @@ class SubscriptionViewModel(
             initialValue = 0.0
         )
 
-    val pieChartData: kotlinx.coroutines.flow.StateFlow<List<PieChartEntry>> = subscriptions
+    val pieChartData: StateFlow<List<PieChartEntry>> = subscriptions
         .map { subList ->
-            // Paleta ładnych, zróżnicowanych kolorów dla subskrypcji na wykresie
             val colors = listOf(
                 androidx.compose.ui.graphics.Color(0xFF6200EE),
                 androidx.compose.ui.graphics.Color(0xFF03DAC6),
@@ -243,14 +279,14 @@ class SubscriptionViewModel(
             subList.mapIndexed { index, sub ->
                 PieChartEntry(
                     name = sub.name,
-                    value = sub.monthlyEquivalent, // Używamy Twojego przelicznika miesięcznego!
-                    color = colors[index % colors.size] // Bezpieczne przypisywanie kolorów z palety
+                    value = sub.monthlyEquivalent,
+                    color = colors[index % colors.size]
                 )
             }
         }
         .stateIn(
             scope = viewModelScope,
-            started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 }

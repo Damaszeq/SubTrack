@@ -100,6 +100,23 @@ object SubscriptionPresetsData {
             ),
             tagsRes = listOf(R.string.tag_entertainment)
         ),
+        // [NOWE 1/20]
+        ServicePreset(
+            serviceName = "Crunchyroll",
+            plans = listOf(
+                SubscriptionPlanPreset("crunchyroll_fan", R.string.plan_standard, 25.00, "Miesiąc"),
+                SubscriptionPlanPreset("crunchyroll_mega_fan", R.string.plan_premium, 30.00, "Miesiąc")
+            ),
+            tagsRes = listOf(R.string.tag_entertainment)
+        ),
+        // [NOWE 2/20]
+        ServicePreset(
+            serviceName = "CDA Premium",
+            plans = listOf(
+                SubscriptionPlanPreset("cda_premium_standard", R.string.plan_standard, 23.99, "Miesiąc")
+            ),
+            tagsRes = listOf(R.string.tag_entertainment)
+        ),
 
         // --- MUZYKA / AUDIO / KSIĄŻKI (ENTERTAINMENT & EDUCATION) ---
         ServicePreset(
@@ -108,6 +125,14 @@ object SubscriptionPresetsData {
                 SubscriptionPlanPreset("spotify_individual", R.string.plan_individual, 23.99, "Miesiąc"),
                 SubscriptionPlanPreset("spotify_student", R.string.plan_student, 12.99, "Miesiąc"),
                 SubscriptionPlanPreset("spotify_family", R.string.plan_family, 37.99, "Miesiąc")
+            ),
+            tagsRes = listOf(R.string.tag_entertainment)
+        ),
+        // [NOWE] Marvel Unlimited
+        ServicePreset(
+            serviceName = "Marvel Unlimited",
+            plans = listOf(
+                SubscriptionPlanPreset("marvel_unlimited_monthly", R.string.plan_monthly, 45.00, "Miesiąc")
             ),
             tagsRes = listOf(R.string.tag_entertainment)
         ),
@@ -166,6 +191,24 @@ object SubscriptionPresetsData {
             ),
             tagsRes = listOf(R.string.tag_entertainment, R.string.tag_education)
         ),
+        // [NOWE 3/20] - DODANE ZGODNIE Z PROŚBĄ
+        ServicePreset(
+            serviceName = "BookBeat",
+            plans = listOf(
+                SubscriptionPlanPreset("bookbeat_basic", R.string.plan_basic, 19.99, "Miesiąc"),
+                SubscriptionPlanPreset("bookbeat_standard", R.string.plan_standard, 29.99, "Miesiąc"),
+                SubscriptionPlanPreset("bookbeat_premium", R.string.plan_premium, 49.99, "Miesiąc")
+            ),
+            tagsRes = listOf(R.string.tag_entertainment, R.string.tag_education)
+        ),
+        // [NOWE 4/20]
+        ServicePreset(
+            serviceName = "YouTube Music",
+            plans = listOf(
+                SubscriptionPlanPreset("yt_music_individual", R.string.plan_individual, 21.99, "Miesiąc")
+            ),
+            tagsRes = listOf(R.string.tag_entertainment)
+        ),
 
         // --- ZAKUPY I DOSTAWY (SHOPPING / DELIVERY) ---
         ServicePreset(
@@ -210,6 +253,22 @@ object SubscriptionPresetsData {
             serviceName = "Uber One",
             plans = listOf(
                 SubscriptionPlanPreset("uber_one_monthly", R.string.plan_monthly, 12.99, "Miesiąc")
+            ),
+            tagsRes = listOf(R.string.tag_shopping)
+        ),
+        // [NOWE 5/20]
+        ServicePreset(
+            serviceName = "Wolt+",
+            plans = listOf(
+                SubscriptionPlanPreset("wolt_plus_monthly", R.string.plan_monthly, 14.99, "Miesiąc")
+            ),
+            tagsRes = listOf(R.string.tag_shopping)
+        ),
+        // [NOWE 6/20]
+        ServicePreset(
+            serviceName = "Pyszne.pl Premium",
+            plans = listOf(
+                SubscriptionPlanPreset("pyszne_premium_monthly", R.string.plan_monthly, 12.99, "Miesiąc")
             ),
             tagsRes = listOf(R.string.tag_shopping)
         ),
@@ -263,6 +322,23 @@ object SubscriptionPresetsData {
                 SubscriptionPlanPreset("geforce_now_ultimate", R.string.plan_premium, 99.00, "Miesiąc")
             ),
             tagsRes = listOf(R.string.tag_gaming)
+        ),
+        // [NOWE 7/20]
+        ServicePreset(
+            serviceName = "GTA+",
+            plans = listOf(
+                SubscriptionPlanPreset("gta_plus_monthly", R.string.plan_monthly, 36.00, "Miesiąc")
+            ),
+            tagsRes = listOf(R.string.tag_gaming)
+        ),
+        // [NOWE 8/20]
+        ServicePreset(
+            serviceName = "Discord Nitro",
+            plans = listOf(
+                SubscriptionPlanPreset("discord_nitro_classic", R.string.plan_basic, 19.99, "Miesiąc"),
+                SubscriptionPlanPreset("discord_nitro_full", R.string.plan_standard, 47.99, "Miesiąc")
+            ),
+            tagsRes = listOf(R.string.tag_gaming, R.string.tag_entertainment)
         ),
 
         // --- PRODUKTYWNOŚĆ, DESIGN I CHMURA (PRODUCTIVITY) ---
@@ -322,6 +398,46 @@ object SubscriptionPresetsData {
             ),
             tagsRes = listOf(R.string.tag_productivity)
         ),
+        // [NOWE 9/20]
+        ServicePreset(
+            serviceName = "NordVPN",
+            plans = listOf(
+                SubscriptionPlanPreset("nordvpn_monthly", R.string.plan_monthly, 49.99, "Miesiąc")
+            ),
+            tagsRes = listOf(R.string.tag_productivity)
+        ),
+        // [NOWE 10/20]
+        ServicePreset(
+            serviceName = "Dropbox",
+            plans = listOf(
+                SubscriptionPlanPreset("dropbox_plus", R.string.plan_standard, 45.00, "Miesiąc")
+            ),
+            tagsRes = listOf(R.string.tag_productivity)
+        ),
+        // [NOWE 11/20]
+        ServicePreset(
+            serviceName = "Notion Plus",
+            plans = listOf(
+                SubscriptionPlanPreset("notion_plus_monthly", R.string.plan_standard, 40.00, "Miesiąc")
+            ),
+            tagsRes = listOf(R.string.tag_productivity)
+        ),
+        // [NOWE 12/20]
+        ServicePreset(
+            serviceName = "GitHub Copilot",
+            plans = listOf(
+                SubscriptionPlanPreset("github_copilot_individual", R.string.plan_individual, 40.00, "Miesiąc")
+            ),
+            tagsRes = listOf(R.string.tag_productivity, R.string.tag_education)
+        ),
+        // [NOWE 13/20]
+        ServicePreset(
+            serviceName = "Claude Pro",
+            plans = listOf(
+                SubscriptionPlanPreset("claude_pro", R.string.plan_individual, 85.00, "Miesiąc")
+            ),
+            tagsRes = listOf(R.string.tag_productivity, R.string.tag_education)
+        ),
 
         // --- EDUKACJA (EDUCATION) ---
         ServicePreset(
@@ -329,6 +445,22 @@ object SubscriptionPresetsData {
             plans = listOf(
                 SubscriptionPlanPreset("duolingo_individual", R.string.plan_individual, 34.99, "Miesiąc"),
                 SubscriptionPlanPreset("duolingo_family", R.string.plan_family, 52.99, "Miesiąc")
+            ),
+            tagsRes = listOf(R.string.tag_education)
+        ),
+        // [NOWE 14/20]
+        ServicePreset(
+            serviceName = "Coursera Plus",
+            plans = listOf(
+                SubscriptionPlanPreset("coursera_plus_monthly", R.string.plan_standard, 235.00, "Miesiąc")
+            ),
+            tagsRes = listOf(R.string.tag_education)
+        ),
+        // [NOWE 15/20]
+        ServicePreset(
+            serviceName = "Brilliant.org",
+            plans = listOf(
+                SubscriptionPlanPreset("brilliant_premium", R.string.plan_standard, 59.99, "Miesiąc")
             ),
             tagsRes = listOf(R.string.tag_education)
         ),
@@ -363,7 +495,6 @@ object SubscriptionPresetsData {
             ),
             tagsRes = listOf(R.string.tag_news)
         ),
-
         // --- SPORT / ZDROWIE / ROZRYWKA (HEALTH & LIFESTYLE) ---
         ServicePreset(
             serviceName = "MultiSport",
@@ -407,6 +538,38 @@ object SubscriptionPresetsData {
                 SubscriptionPlanPreset("flo_monthly", R.string.plan_monthly, 39.99, "Miesiąc")
             ),
             tagsRes = listOf(R.string.tag_health)
+        ),
+        // [NOWE 17/20]
+        ServicePreset(
+            serviceName = "Strava",
+            plans = listOf(
+                SubscriptionPlanPreset("strava_premium_monthly", R.string.plan_monthly, 32.99, "Miesiąc")
+            ),
+            tagsRes = listOf(R.string.tag_health)
+        ),
+        // [NOWE 18/20]
+        ServicePreset(
+            serviceName = "Gymsteer",
+            plans = listOf(
+                SubscriptionPlanPreset("gymsteer_standard", R.string.plan_standard, 50.00, "Miesiąc")
+            ),
+            tagsRes = listOf(R.string.tag_health)
+        ),
+        // [NOWE 19/20]
+        ServicePreset(
+            serviceName = "F1 TV Pro",
+            plans = listOf(
+                SubscriptionPlanPreset("f1tv_pro_monthly", R.string.plan_monthly, 35.99, "Miesiąc")
+            ),
+            tagsRes = listOf(R.string.tag_entertainment, R.string.tag_health)
+        ),
+        // [NOWE 20/20]
+        ServicePreset(
+            serviceName = "Bumble Premium",
+            plans = listOf(
+                SubscriptionPlanPreset("bumble_premium_monthly", R.string.plan_monthly, 59.99, "Miesiąc")
+            ),
+            tagsRes = listOf(R.string.tag_lifestyle)
         )
     )
 }

@@ -19,6 +19,7 @@ object AppViewModelProvider {
             SubscriptionViewModel(
                 subscriptionRepository = app.container.subscriptionRepository,
                 tagRepository = app.container.tagRepository,
+                paymentRepository = app.container.paymentRepository,
                 tagDao = app.container.database.tagDao(),
                 settingsManager = SettingsManager(app.applicationContext)
             )

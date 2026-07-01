@@ -29,6 +29,13 @@ import androidx.compose.ui.platform.LocalLocale
 import pl.lab2.subtrack.data.resolvePlanName
 import java.util.Calendar
 
+// Funkcja pomocnicza do oczyszczania nazwy planu z metadanych ikony customowej
+private fun cleanCustomPlanName(rawPlan: String): String {
+    if (!rawPlan.contains("|")) return rawPlan
+    val nameBeforePipe = rawPlan.substringBefore("|").trim()
+    // Jeśli pole tekstowe planu było puste, zwracamy np. "Własna" lub pusty ciąg, zależnie od preferencji
+    return nameBeforePipe.ifEmpty { "Plan niestandardowy" }
+}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
@@ -155,8 +162,15 @@ fun SubscriptionItem(
 ) {
     val context = LocalContext.current
 
+    // Ekstrakcja czystej nazwy planu (zarówno dla presetów, jak i customowych)
     val displayedPlanName = remember(subscription.plan) {
-        resolvePlanName(subscription.plan, context)
+        val cleanPlan = cleanCustomPlanName(subscription.plan)
+        // Jeśli to był czysty preset, przechodzimy przez standardowy resolver lokalizacyjny
+        if (subscription.plan.contains("|") || subscription.plan.startsWith("custom_")) {
+            cleanPlan
+        } else {
+            resolvePlanName(subscription.plan, context)
+        }
     }
 
     // Obliczamy różnicę dni opierając się wyłącznie na czystych datach (północy)
@@ -223,7 +237,13 @@ fun SubscriptionItem(
             }
 
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                SubscriptionIcon(serviceName = subscription.name, modifier = Modifier.size(44.dp))
+                // TUTAJ: Poprawnie przekazujemy surowy ciąg, z którego SubscriptionIcon sam wyciągnie "custom_*" po pipe
+                SubscriptionIcon(
+                    serviceName = subscription.name,
+                    planKey = subscription.plan,
+                    modifier = Modifier.size(44.dp)
+                )
+
                 Spacer(modifier = Modifier.width(16.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
