@@ -1,28 +1,42 @@
 package pl.lab2.subtrack.ui
 
+import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import pl.lab2.subtrack.Subscription
+import pl.lab2.subtrack.data.SettingsManager
+import pl.lab2.subtrack.data.local.dao.TagDao
+import pl.lab2.subtrack.data.local.entities.PaymentHistory
+import pl.lab2.subtrack.data.local.entities.SubscriptionStatus
 import pl.lab2.subtrack.data.local.entities.Tag
-import pl.lab2.subtrack.data.local.entities.PaymentHistory // <-- Upewnij się, że importujesz encję historii
+import pl.lab2.subtrack.data.local.entities.UserSubscription
+import pl.lab2.subtrack.data.local.repositories.PaymentRepository
 import pl.lab2.subtrack.data.local.repositories.SubscriptionRepository
 import pl.lab2.subtrack.data.local.repositories.TagRepository
-import pl.lab2.subtrack.data.local.repositories.PaymentRepository // <-- NOWY IMPORT
 import pl.lab2.subtrack.toSubscription
 import java.util.Calendar
 import java.util.Locale
-import pl.lab2.subtrack.data.SettingsManager
+
+// --- ENUMERACJE GLOBALNE ---
 
 enum class AppThemeMode {
     SYSTEM, LIGHT, DARK
+}
+
+enum class StatsViewType {
+    BY_SUBSCRIPTION, BY_CATEGORY
 }
 
 enum class AppLanguage(val code: String) {
@@ -31,46 +45,61 @@ enum class AppLanguage(val code: String) {
     CHINESE("zh")
 }
 
-private fun calculateNextPaymentDate(startDate: Long, billingCycle: String): Long {
-    val calendar = Calendar.getInstance().apply {
-        timeInMillis = startDate
-        set(Calendar.HOUR_OF_DAY, 0)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-    }
+// --- KLASA ENTIY DLA WYKRESU ---
 
-    val today = Calendar.getInstance().apply {
-        set(Calendar.HOUR_OF_DAY, 0)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-    }
+data class PieChartEntry(
+    val name: String,
+    val value: Double,
+    val color: Color
+)
 
-    while (!calendar.after(today)) {
-        when (billingCycle.lowercase(Locale.ROOT)) {
-            "tydzień", "week", "weekly" -> calendar.add(Calendar.WEEK_OF_YEAR, 1)
-            "kwartał", "quarter" -> calendar.add(Calendar.MONTH, 3)
-            "rok", "year", "yearly", "roczny", "rocznie" -> calendar.add(Calendar.YEAR, 1)
-            else -> calendar.add(Calendar.MONTH, 1)
-        }
-    }
-    return calendar.timeInMillis
-}
+// --- VIEWMODEL ---
 
 class SubscriptionViewModel(
     private val subscriptionRepository: SubscriptionRepository,
     private val tagRepository: TagRepository,
-    private val paymentRepository: PaymentRepository, // <-- NOWOŚĆ: Wstrzykiwanie repozytorium płatności
-    private val tagDao: pl.lab2.subtrack.data.local.dao.TagDao,
+    private val paymentRepository: PaymentRepository,
+    private val tagDao: TagDao,
     private val settingsManager: SettingsManager
 ) : ViewModel() {
+
+    // --- PALETY KOLORYSTYCZNE (PREMIUM FINTECH) ---
+
+    private val premiumPalette = listOf(
+        Color(0xFF4361EE), // Głęboki cyjan / indygo
+        Color(0xFF3A0CA3), // Ciemny, szlachetny fiolet
+        Color(0xFF7209B7), // Wyrazisty fiolet
+        Color(0xFFF72585), // Stonowany róż
+        Color(0xFF4CC9F0), // Jasny błękit lodowy
+        Color(0xFF2EC4B6), // Elegancki szmaragdowy/turkus
+        Color(0xFF20A4F3)  // Klasyczny niebieski
+    )
+
+    private val categoryPalette = listOf(
+        Color(0xFF2EC4B6), // Elegancki szmaragdowy
+        Color(0xFF7209B7), // Szlachetny fiolet
+        Color(0xFFFF9F1C), // Ciepły pomarańcz
+        Color(0xFF4361EE), // Indygo
+        Color(0xFFF72585), // Stonowana magenta
+        Color(0xFF4CC9F0)  // Lodowy błękit
+    )
+
+    // --- STANY KONTROLI WIDOKU (STATYSTYKI) ---
+
+    var currentViewType by mutableStateOf(StatsViewType.BY_SUBSCRIPTION)
+        private set
+
+    fun toggleViewType(viewType: StatsViewType) {
+        currentViewType = viewType
+    }
+
+    // --- PODSTAWOWE STRUMIENIE DANYCH (ROOM) ---
 
     val subscriptions: StateFlow<List<Subscription>> = subscriptionRepository.getActiveSubscriptionsWithTagsStream()
         .map { list ->
             list.map { entity ->
                 val sub = entity.toSubscription()
-                android.util.Log.d("DEBUG_VIEW", "Ładowanie suba: ${sub.name}, nextPayment: ${sub.nextPaymentDate}, notif: ${sub.notificationSetting}")
+                Log.d("DEBUG_VIEW", "Ładowanie suba: ${sub.name}, nextPayment: ${sub.nextPaymentDate}, notif: ${sub.notificationSetting}")
                 sub
             }
         }
@@ -80,49 +109,71 @@ class SubscriptionViewModel(
             initialValue = emptyList()
         )
 
-    // MOTYW APLIKACJI
-    private val _themeMode = MutableStateFlow(AppThemeMode.SYSTEM)
-    val themeMode: StateFlow<AppThemeMode> = _themeMode.asStateFlow()
+    // --- STRUMIENIE STATYSTYK (FINANCIAL STATS) ---
 
-    fun setThemeMode(mode: AppThemeMode) {
-        _themeMode.value = mode
-    }
-
-    // JĘZYK APLIKACJI
-    private val _language = MutableStateFlow(AppLanguage.POLISH)
-    val language: StateFlow<AppLanguage> = _language.asStateFlow()
-
-    fun setLanguage(lang: AppLanguage) {
-        _language.value = lang
-    }
-
-    val isNotificationsEnabledGlobal: StateFlow<Boolean> = settingsManager.isNotificationsEnabledGlobal
+    val totalMonthlyCost: StateFlow<Double> = subscriptions
+        .map { list -> list.sumOf { it.monthlyEquivalent } }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = true
+            initialValue = 0.0
         )
 
-    val globalReminderHours: StateFlow<Set<Int>> = settingsManager.globalReminderHours
+    val pieChartData: StateFlow<List<PieChartEntry>> = subscriptions
+        .map { subList ->
+            subList.mapIndexed { index, sub ->
+                PieChartEntry(
+                    name = sub.name,
+                    value = sub.monthlyEquivalent,
+                    color = premiumPalette[index % premiumPalette.size]
+                )
+            }
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = setOf(24)
+            initialValue = emptyList()
         )
 
-    fun setGlobalNotificationsEnabled(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsManager.setGlobalNotificationsEnabled(enabled)
+    val categoryChartData: StateFlow<List<PieChartEntry>> = subscriptions
+        .map { subList ->
+            val categoryMap = mutableMapOf<String, Double>()
+
+            subList.forEach { sub ->
+                val subTags = sub.tags
+                if (subTags.isEmpty()) {
+                    categoryMap["Inne"] = categoryMap.getOrDefault("Inne", 0.0) + sub.monthlyEquivalent
+                } else {
+                    // Matematyczny rozdział proporcjonalny ceny na przypisane kategorie
+                    val proportionalPrice = sub.monthlyEquivalent / subTags.size
+                    subTags.forEach { tag ->
+                        categoryMap[tag] = categoryMap.getOrDefault(tag, 0.0) + proportionalPrice
+                    }
+                }
+            }
+
+            categoryMap.entries.mapIndexed { index, entry ->
+                PieChartEntry(
+                    name = entry.key,
+                    value = entry.value,
+                    color = categoryPalette[index % categoryPalette.size]
+                )
+            }
         }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    // --- STRUMIEŃ HISTORII PŁATNOŚCI DLA DETALI ---
+
+    fun getPaymentsForSubscription(subscriptionId: Long): kotlinx.coroutines.flow.Flow<List<PaymentHistory>> {
+        return paymentRepository.getPaymentsForSubscriptionStream(subscriptionId)
     }
 
-    fun setGlobalReminderHours(hours: Set<Int>) {
-        viewModelScope.launch {
-            settingsManager.setGlobalReminderHours(hours)
-        }
-    }
+    // --- OPERACJE CRUD NA SUBSKRYPCJACH ---
 
-    // --- POPRAWIONE I ROZBUDOWANE DODAWANIE SUBSKRYPCJI Z HISTORIĄ ---
     fun addSubscription(
         name: String,
         plan: String,
@@ -139,7 +190,7 @@ class SubscriptionViewModel(
         viewModelScope.launch {
             val nextDate = calculateNextPaymentDate(startDate, billingCycle)
 
-            val entity = pl.lab2.subtrack.data.local.entities.UserSubscription(
+            val entity = UserSubscription(
                 id = 0,
                 name = name,
                 planKey = plan,
@@ -147,50 +198,38 @@ class SubscriptionViewModel(
                 billingCycle = billingCycle,
                 startDate = startDate,
                 nextPaymentDate = nextDate,
-                status = pl.lab2.subtrack.data.local.entities.SubscriptionStatus.ACTIVE,
+                status = SubscriptionStatus.ACTIVE,
                 isTrial = isTrial,
                 trialOption = trialOption,
                 notificationSetting = notificationSetting
             )
 
             val tagEntities = tags.map { Tag(name = it) }
-
-            // 1. Wstawiamy subskrypcję do bazy i odbieramy jej unikalne ID wygenerowane przez Room
             val insertedSubscriptionId = subscriptionRepository.insertSubscriptionWithTags(entity, tagEntities, tagDao)
 
-            // 2. Generowanie historii transakcji wstecznej od startDate do momentu przed nextPaymentDate
+            // Generowanie wstecznej historii transakcji
             val historyCalendar = Calendar.getInstance().apply {
                 timeInMillis = startDate
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
+                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
             }
 
             val targetNextPaymentDate = Calendar.getInstance().apply {
                 timeInMillis = nextDate
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
+                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
             }
 
-// Pętla od daty startowej dodaje wpisy historyczne krok po kroku
             while (historyCalendar.before(targetNextPaymentDate)) {
                 val paymentRecord = PaymentHistory(
                     id = 0,
                     subscriptionId = insertedSubscriptionId,
                     paymentDate = historyCalendar.timeInMillis,
-
-                    // --- POPRAWIONE PARAMETRY ZGODNIE Z TWOIM MODELEM ---
                     serviceName = name.trim(),
                     planName = plan.substringBefore("|").trim().ifEmpty { "Plan niestandardowy" },
-                    price = parsedPrice // Tutaj ląduje Twoja kwota Double
+                    price = parsedPrice
                 )
 
                 paymentRepository.insertPayment(paymentRecord)
 
-                // Przesuwamy kalendarz historii o jeden cykl
                 when (billingCycle.lowercase(Locale.ROOT)) {
                     "tydzień", "week", "weekly" -> historyCalendar.add(Calendar.WEEK_OF_YEAR, 1)
                     "kwartał", "quarter" -> historyCalendar.add(Calendar.MONTH, 3)
@@ -201,22 +240,6 @@ class SubscriptionViewModel(
         }
     }
 
-    // USUWANIE SUBSKRYPCJI
-    fun deleteSubscription(id: String) {
-        val numericId = id.toLongOrNull() ?: return
-        viewModelScope.launch {
-            val subWithTags = subscriptionRepository.getSubscriptionWithTagsStream(numericId).first()
-            subWithTags?.subscription?.let {
-                subscriptionRepository.deleteSubscription(it)
-            }
-        }
-    }
-
-    fun getSubscriptionById(id: String): Subscription? {
-        return subscriptions.value.find { it.id == id.toLongOrNull() }
-    }
-
-    // EDYCJA SUBSKRYPCJI
     fun updateSubscription(
         id: String,
         name: String,
@@ -235,7 +258,7 @@ class SubscriptionViewModel(
         viewModelScope.launch {
             val nextDate = calculateNextPaymentDate(startDate, billingCycle)
 
-            val updatedEntity = pl.lab2.subtrack.data.local.entities.UserSubscription(
+            val updatedEntity = UserSubscription(
                 id = subscriptionId,
                 name = name,
                 planKey = plan,
@@ -243,7 +266,7 @@ class SubscriptionViewModel(
                 billingCycle = billingCycle,
                 startDate = startDate,
                 nextPaymentDate = nextDate,
-                status = pl.lab2.subtrack.data.local.entities.SubscriptionStatus.ACTIVE,
+                status = SubscriptionStatus.ACTIVE,
                 isTrial = isTrial,
                 trialOption = trialOption,
                 notificationSetting = notificationSetting
@@ -254,45 +277,70 @@ class SubscriptionViewModel(
         }
     }
 
-    val totalMonthlyCost: StateFlow<Double> = subscriptions
-        .map { list ->
-            list.sumOf { it.monthlyEquivalent }
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = 0.0
-        )
-
-    val pieChartData: StateFlow<List<PieChartEntry>> = subscriptions
-        .map { subList ->
-            val colors = listOf(
-                androidx.compose.ui.graphics.Color(0xFF6200EE),
-                androidx.compose.ui.graphics.Color(0xFF03DAC6),
-                androidx.compose.ui.graphics.Color(0xFFFFB74D),
-                androidx.compose.ui.graphics.Color(0xFFFF5252),
-                androidx.compose.ui.graphics.Color(0xFF4CAF50),
-                androidx.compose.ui.graphics.Color(0xFF2196F3),
-                androidx.compose.ui.graphics.Color(0xFF9C27B0)
-            )
-
-            subList.mapIndexed { index, sub ->
-                PieChartEntry(
-                    name = sub.name,
-                    value = sub.monthlyEquivalent,
-                    color = colors[index % colors.size]
-                )
+    fun deleteSubscription(id: String) {
+        val numericId = id.toLongOrNull() ?: return
+        viewModelScope.launch {
+            val subWithTags = subscriptionRepository.getSubscriptionWithTagsStream(numericId).first()
+            subWithTags?.subscription?.let {
+                subscriptionRepository.deleteSubscription(it)
             }
         }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-}
+    }
 
-data class PieChartEntry(
-    val name: String,
-    val value: Double,
-    val color: androidx.compose.ui.graphics.Color
-)
+    fun getSubscriptionById(id: String): Subscription? {
+        return subscriptions.value.find { it.id == id.toLongOrNull() }
+    }
+
+    // --- CONFIG SYSTEMOWY (MOTYW, JĘZYK, NOTYFIKACJE) ---
+
+    private val _themeMode = MutableStateFlow(AppThemeMode.SYSTEM)
+    val themeMode: StateFlow<AppThemeMode> = _themeMode.asStateFlow()
+
+    fun setThemeMode(mode: AppThemeMode) {
+        _themeMode.value = mode
+    }
+
+    private val _language = MutableStateFlow(AppLanguage.POLISH)
+    val language: StateFlow<AppLanguage> = _language.asStateFlow()
+
+    fun setLanguage(lang: AppLanguage) {
+        _language.value = lang
+    }
+
+    val isNotificationsEnabledGlobal: StateFlow<Boolean> = settingsManager.isNotificationsEnabledGlobal
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val globalReminderHours: StateFlow<Set<Int>> = settingsManager.globalReminderHours
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), setOf(24))
+
+    fun setGlobalNotificationsEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setGlobalNotificationsEnabled(enabled) }
+    }
+
+    fun setGlobalReminderHours(hours: Set<Int>) {
+        viewModelScope.launch { settingsManager.setGlobalReminderHours(hours) }
+    }
+
+    // --- WEWNĘTRZNE FUNKCJE POMOCNICZE (UTILITIES) ---
+
+    private fun calculateNextPaymentDate(startDate: Long, billingCycle: String): Long {
+        val calendar = Calendar.getInstance().apply {
+            timeInMillis = startDate
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+        }
+
+        val today = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+        }
+
+        while (!calendar.after(today)) {
+            when (billingCycle.lowercase(Locale.ROOT)) {
+                "tydzień", "week", "weekly" -> calendar.add(Calendar.WEEK_OF_YEAR, 1)
+                "kwartał", "quarter" -> calendar.add(Calendar.MONTH, 3)
+                "rok", "year", "yearly", "roczny", "rocznie" -> calendar.add(Calendar.YEAR, 1)
+                else -> calendar.add(Calendar.MONTH, 1)
+            }
+        }
+        return calendar.timeInMillis
+    }
+}

@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import pl.lab2.subtrack.ui.PieChartEntry
+import pl.lab2.subtrack.ui.SubscriptionViewModel
 
 @Composable
 fun FinancePieChart(

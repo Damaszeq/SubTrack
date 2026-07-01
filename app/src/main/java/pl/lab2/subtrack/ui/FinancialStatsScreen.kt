@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -23,7 +24,12 @@ fun FinancialStatsScreen(
     viewModel: SubscriptionViewModel,
     onBackClick: () -> Unit
 ) {
-    val chartData by viewModel.pieChartData.collectAsState()
+    // Dynamicznie wybieramy źródło danych w zależności od stanu przełącznika
+    val subData by viewModel.pieChartData.collectAsState()
+    val catData by viewModel.categoryChartData.collectAsState()
+
+    val currentView = viewModel.currentViewType
+    val chartData = if (currentView == StatsViewType.BY_SUBSCRIPTION) subData else catData
     val totalMonthlySpending = chartData.sumOf { it.value }
 
     Scaffold(
@@ -56,16 +62,60 @@ fun FinancialStatsScreen(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
-                .padding(horizontal = 20.dp), // Zwiększony padding boczny dla lżejszego układu
-            verticalArrangement = Arrangement.spacedBy(0.dp) // Eliminujemy wymuszony odstęp na rzecz czystej listy
+                .padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
 
-            // SEKCJA 1: Wykres jako natywny element tła (Czysty minimalizm)
+            // NOWA SEKCJA: Minimalistyczny przełącznik widoku (Premium Segmented Control)
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, bottom = 16.dp)
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    val activeColor = MaterialTheme.colorScheme.background
+                    val inactiveColor = Color.Transparent
+
+                    // Przycisk: Subskrypcje
+                    Button(
+                        onClick = { viewModel.toggleViewType(StatsViewType.BY_SUBSCRIPTION) },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (currentView == StatsViewType.BY_SUBSCRIPTION) activeColor else inactiveColor,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        ),
+                        elevation = if (currentView == StatsViewType.BY_SUBSCRIPTION) ButtonDefaults.buttonElevation(1.dp) else null,
+                        contentPadding = PaddingValues(vertical = 10.dp)
+                    ) {
+                        Text("Usługi", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
+                    }
+
+                    // Przycisk: Kategorie
+                    Button(
+                        onClick = { viewModel.toggleViewType(StatsViewType.BY_CATEGORY) },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (currentView == StatsViewType.BY_CATEGORY) activeColor else inactiveColor,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        ),
+                        elevation = if (currentView == StatsViewType.BY_CATEGORY) ButtonDefaults.buttonElevation(1.dp) else null,
+                        contentPadding = PaddingValues(vertical = 10.dp)
+                    ) {
+                        Text("Kategorie", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
+
+            // SEKCJA 1: Wykres (Automatycznie zaanimuje się na nowo przy przełączeniu danych)
             item {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 32.dp),
+                        .padding(bottom = 24.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     FinancePieChart(
@@ -76,7 +126,89 @@ fun FinancialStatsScreen(
                 }
             }
 
-            // SEKCJA 2: Sekwencja podsumowująca (Nagłówek sekcji)
+            // SEKCJA 1.5: Nowoczesny Panel Podsumowujący
+            item {
+                val mostExpensive = remember(chartData) { chartData.maxByOrNull { it.value } }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 32.dp)
+                        .clip(MaterialTheme.shapes.large)
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f))
+                        .padding(20.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(
+                                text = "PROGNOZA ROCZNA",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = String.format(LocalLocale.current.platformLocale, "%.2f zł", totalMonthlySpending * 12),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = if (currentView == StatsViewType.BY_SUBSCRIPTION) "AKTYWNE USŁUGI" else "UŻYTE KATEGORIE",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "${chartData.size}",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+
+                    if (mostExpensive != null) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 16.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = if (currentView == StatsViewType.BY_SUBSCRIPTION) "Najwyższy koszt" else "Najdroższa kategoria",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = mostExpensive.name,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Text(
+                                text = String.format(LocalLocale.current.platformLocale, "%.2f zł / mc", mostExpensive.value),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
+            }
+
+            // SEKCJA 2: Nagłówek struktury wydatków
             item {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Row(
@@ -87,22 +219,17 @@ fun FinancialStatsScreen(
                         verticalAlignment = Alignment.Bottom
                     ) {
                         Text(
-                            text = "Struktura wydatków",
+                            text = if (currentView == StatsViewType.BY_SUBSCRIPTION) "Struktura wydatków" else "Podział na kategorie",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Text(
-                            text = "${chartData.size} pozycji",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
                 }
             }
 
-            // SEKCJA 3: Lista w stylu Premium (Płaska struktura z liniami podziału)
+            // SEKCJA 3: Dynamiczna Lista (Zmienia opisy i procenty w locie)
             itemsIndexed(chartData.sortedByDescending { it.value }) { index, entry ->
                 val percentage = if (totalMonthlySpending > 0) (entry.value / totalMonthlySpending) * 100 else 0.0
 
@@ -113,7 +240,6 @@ fun FinancialStatsScreen(
                             .padding(vertical = 16.dp, horizontal = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Elegancki wskaźnik koloru w formie paska/kapsułki zamiast zwykłej kropki
                         Box(
                             modifier = Modifier
                                 .size(width = 6.dp, height = 24.dp)
@@ -145,10 +271,9 @@ fun FinancialStatsScreen(
                         )
                     }
 
-                    // Rysuj separator pod każdym elementem, pomijając ostatni na liście
                     if (index < chartData.lastIndex) {
                         HorizontalDivider(
-                            modifier = Modifier.padding(start = 22.dp), // Wcięcie separatora wyrównuje go do tekstu
+                            modifier = Modifier.padding(start = 22.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                         )
                     }
