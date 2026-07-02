@@ -1,10 +1,12 @@
 package pl.lab2.subtrack.ui
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -12,11 +14,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import pl.lab2.subtrack.ui.components.FinancePieChart
+import kotlin.collections.forEachIndexed
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,9 +31,13 @@ fun FinancialStatsScreen(
     viewModel: SubscriptionViewModel,
     onBackClick: () -> Unit
 ) {
-    // Dynamicznie wybieramy źródło danych w zależności od stanu przełącznika
+    // Reaktywne źródła danych z ViewModelu
     val subData by viewModel.pieChartData.collectAsState()
     val catData by viewModel.categoryChartData.collectAsState()
+
+    // NOWE: Dane dla wykresu słupkowego w czasie
+    val timeData by viewModel.timeChartData.collectAsState()
+    val currentPeriod by viewModel.selectedPeriod.collectAsState()
 
     val currentView = viewModel.currentViewType
     val chartData = if (currentView == StatsViewType.BY_SUBSCRIPTION) subData else catData
@@ -66,12 +77,56 @@ fun FinancialStatsScreen(
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
 
-            // NOWA SEKCJA: Minimalistyczny przełącznik widoku (Premium Segmented Control)
+            // --- SEKCJA NOWA: WYKRES WYDATKÓW W CZASIE + FILTRY ---
+            item {
+                Text(
+                    text = "Historia wydatków",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 12.dp, start = 4.dp)
+                )
+
+                // Żetony wyboru okresu (3m / 6m / Rok)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SubscriptionViewModel.TimePeriod.values().forEach { period ->
+                        val isSelected = currentPeriod == period
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { viewModel.changeTimePeriod(period) },
+                            label = {
+                                Text(
+                                    text = period.label,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.Center
+                                )
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                    }
+                }
+
+                // Komponent wykresu osi czasu
+                FinanceTimeChart(
+                    data = timeData,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 28.dp)
+                )
+            }
+
+            // --- SEKCJA 1: PRZEŁĄCZNIK WIDOKU STRUKTURY (Usługi / Kategorie) ---
             item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp, bottom = 16.dp)
+                        .padding(bottom = 16.dp)
                         .clip(MaterialTheme.shapes.medium)
                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
                         .padding(4.dp),
@@ -110,7 +165,7 @@ fun FinancialStatsScreen(
                 }
             }
 
-            // SEKCJA 1: Wykres (Automatycznie zaanimuje się na nowo przy przełączeniu danych)
+            // SEKCJA 2: Wykres Kołowy Struktury Budżetu
             item {
                 Box(
                     modifier = Modifier
@@ -126,7 +181,7 @@ fun FinancialStatsScreen(
                 }
             }
 
-            // SEKCJA 1.5: Nowoczesny Panel Podsumowujący
+            // SEKCJA 3: Nowoczesny Panel Podsumowujący (Prognozy)
             item {
                 val mostExpensive = remember(chartData) { chartData.maxByOrNull { it.value } }
 
@@ -208,7 +263,7 @@ fun FinancialStatsScreen(
                 }
             }
 
-            // SEKCJA 2: Nagłówek struktury wydatków
+            // SEKCJA 4: Nagłówek struktury wydatków
             item {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Row(
@@ -229,7 +284,7 @@ fun FinancialStatsScreen(
                 }
             }
 
-            // SEKCJA 3: Dynamiczna Lista (Zmienia opisy i procenty w locie)
+            // SEKCJA 5: Dynamiczna Lista rozbicia procentowego
             itemsIndexed(chartData.sortedByDescending { it.value }) { index, entry ->
                 val percentage = if (totalMonthlySpending > 0) (entry.value / totalMonthlySpending) * 100 else 0.0
 
@@ -281,7 +336,90 @@ fun FinancialStatsScreen(
             }
 
             item {
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+    }
+}
+
+// --- DEDYKOWANY KOMPONENT: WYKRES SŁUPKOWY HISTORII WYDATKÓW (CANVAS) ---
+@Composable
+fun FinanceTimeChart(
+    data: List<SubscriptionViewModel.TimeChartEntry>,
+    modifier: Modifier = Modifier,
+    barColor: Color = MaterialTheme.colorScheme.primary
+) {
+    val maxAmount = data.maxOfOrNull { it.amount }?.takeIf { it > 0 } ?: 1.0
+    val locale = LocalLocale.current.platformLocale
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(16.dp)
+            )
+            .padding(16.dp)
+    ) {
+        // Okno wykresu Canvas
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(140.dp)
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val canvasWidth = size.width
+                val canvasHeight = size.height
+
+                val barCount = data.size
+                if (barCount == 0) return@Canvas
+
+                val totalSpacing = (barCount - 1) * 32f // Odstępy między słupkami w pikselach
+                val barWidth = (canvasWidth - totalSpacing) / barCount
+
+                data.forEachIndexed { index, entry ->
+                    val barHeight = (entry.amount / maxAmount) * canvasHeight
+
+                    val xOffset = index * (barWidth + 32f)
+                    val yOffset = canvasHeight - barHeight.toFloat()
+
+                    // Rysowanie zaokrąglonego słupka wydatków
+                    drawRoundRect(
+                        color = if (entry.amount > 0) barColor else barColor.copy(alpha = 0.15f),
+                        topLeft = Offset(xOffset, yOffset),
+                        size = Size(barWidth, barHeight.toFloat()),
+                        cornerRadius = CornerRadius(12f, 12f)
+                    )
+                }
+            }
+        }
+
+        // Dolna oś (Etykiety miesięcy oraz podsumowania kwot)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            data.forEach { entry ->
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = entry.label,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = String.format(locale, "%.0f zł", entry.amount),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1
+                    )
+                }
             }
         }
     }

@@ -26,8 +26,11 @@ import pl.lab2.subtrack.data.local.repositories.PaymentRepository
 import pl.lab2.subtrack.data.local.repositories.SubscriptionRepository
 import pl.lab2.subtrack.data.local.repositories.TagRepository
 import pl.lab2.subtrack.toSubscription
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.flow.combine
 
 // --- ENUMERACJE GLOBALNE ---
 
@@ -342,5 +345,75 @@ class SubscriptionViewModel(
             }
         }
         return calendar.timeInMillis
+    }
+
+    // Definicja dostępnych okresów
+    enum class TimePeriod(val months: Int, val label: String) {
+        LAST_3_MONTHS(3, "3 miesiące"),
+        LAST_6_MONTHS(6, "6 miesięcy"),
+        LAST_YEAR(12, "Rok")
+    }
+
+    // Klasa reprezentująca pojedynczy słupek/punkt na wykresie
+    data class TimeChartEntry(
+        val label: String, // np. "05.2026" lub "Maj"
+        val amount: Double // suma wydatków w tym miesiącu
+    )
+
+    // Inside SubscriptionViewModel:
+    private val _selectedPeriod = MutableStateFlow(TimePeriod.LAST_6_MONTHS)
+    val selectedPeriod: StateFlow<TimePeriod> = _selectedPeriod.asStateFlow()
+
+    val timeChartData: StateFlow<List<TimeChartEntry>> = combine(
+        subscriptions,                  // Strumień aktywnych subskrypcji Flow<List<UserSubscription>>
+        paymentRepository.getAllPaymentsStream(), // Strumień historii Flow<List<PaymentHistory>>
+        _selectedPeriod
+    ) { subList, payments, period ->
+        val calendar = Calendar.getInstance()
+        val currentYearMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(calendar.time)
+
+        // 1. Przygotowanie struktur na dane
+        val sdfKey = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+        val sdfLabel = SimpleDateFormat("MM/yy", Locale.getDefault())
+
+        val resultList = mutableListOf<TimeChartEntry>()
+
+        // Ustawiamy kalendarz na najstarszy miesiąc w wybranym okresie
+        val runCal = Calendar.getInstance().apply {
+            add(Calendar.MONTH, -period.months + 1)
+        }
+
+        // Grupowanie HISTORII płatności po miesiącach (dla miesięcy przeszłych)
+        val historyGroupedByMonth = payments.groupBy { sdfKey.format(Date(it.paymentDate)) }
+
+        // 2. Iterujemy przez każdy miesiąc w wybranym zakresie (np. ostatnich 6 miesięcy)
+        while (!runCal.after(calendar)) {
+            val monthKey = sdfKey.format(runCal.time)
+            val label = sdfLabel.format(runCal.time)
+
+            val totalForMonth = if (monthKey == currentYearMonth) {
+                // --- DLA BIEŻĄCEGO MIESIĄCA: Liczymy prognozę na podstawie aktywnych subskrypcji ---
+                subList.sumOf { sub ->
+                    // Używamy wyliczonego ekwiwalentu miesięcznego, aby zachować spójność z wykresem kołowym
+                    sub.monthlyEquivalent
+                }
+            } else {
+                // --- DLA MINIONYCH MIESIĘCY: Wyciągamy realną historię z bazy ---
+                historyGroupedByMonth[monthKey]?.sumOf { it.price } ?: 0.0
+            }
+
+            resultList.add(TimeChartEntry(label, totalForMonth))
+            runCal.add(Calendar.MONTH, 1) // Przejdź do kolejnego miesiąca
+        }
+
+        resultList
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    fun changeTimePeriod(period: TimePeriod) {
+        _selectedPeriod.value = period
     }
 }

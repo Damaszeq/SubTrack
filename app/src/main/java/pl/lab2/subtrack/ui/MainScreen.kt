@@ -1,6 +1,10 @@
 package pl.lab2.subtrack.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -8,13 +12,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -29,13 +38,12 @@ import androidx.compose.ui.platform.LocalLocale
 import pl.lab2.subtrack.data.resolvePlanName
 import java.util.Calendar
 
-// Funkcja pomocnicza do oczyszczania nazwy planu z metadanych ikony customowej
 private fun cleanCustomPlanName(rawPlan: String): String {
     if (!rawPlan.contains("|")) return rawPlan
     val nameBeforePipe = rawPlan.substringBefore("|").trim()
-    // Jeśli pole tekstowe planu było puste, zwracamy np. "Własna" lub pusty ciąg, zależnie od preferencji
     return nameBeforePipe.ifEmpty { "Plan niestandardowy" }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
@@ -49,6 +57,9 @@ fun MainScreen(
     val subscriptions by viewModel.subscriptions.collectAsState()
     val totalMonthlyCost by viewModel.totalMonthlyCost.collectAsState()
 
+    // Stan kontrolujący czy okno README jest aktualnie otwarte (domyślnie zamknięte)
+    var isReadmeVisible by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -58,6 +69,16 @@ fun MainScreen(
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold
                     )
+                },
+                // DODANE: Przycisk Help w lewym górnym rogu ekranu
+                navigationIcon = {
+                    IconButton(onClick = { isReadmeVisible = !isReadmeVisible }) {
+                        Icon(
+                            imageVector = Icons.Default.HelpOutline,
+                            contentDescription = "Pomoc i instrukcja",
+                            tint = if (isReadmeVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
                 },
                 actions = {
                     IconButton(onClick = onNotificationsClick) {
@@ -92,6 +113,16 @@ fun MainScreen(
                     .padding(bottom = 80.dp)
                     .verticalScroll(rememberScrollState())
             ) {
+                // Animowana sekcja README - wysuwa się po naciśnięciu ikony w lewym górnym rogu
+                AnimatedVisibility(
+                    visible = isReadmeVisible,
+                    enter = expandVertically(),
+                    exit = shrinkVertically()
+                ) {
+                    AppReadmeCard(onCloseClick = { isReadmeVisible = false })
+                }
+
+                // Lista subskrypcji
                 subscriptions.forEach { sub ->
                     SubscriptionItem(
                         subscription = sub,
@@ -156,16 +187,90 @@ fun MainScreen(
 }
 
 @Composable
+fun AppReadmeCard(
+    onCloseClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = "Pomoc",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Witaj w SubTrack!",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(
+                    onClick = onCloseClick,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Zamknij przewodnik",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = "Twoje centrum kontroli nad subskrypcjami premium. Aplikacja ułatwia codzienne zarządzanie powtarzającymi się płatnościami:",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            val bulletPoints = listOf(
+                "📈 **Statystyki w czasie:** Kliknij w dolny panel z kwotą, aby zobaczyć zaawansowaną prognozę wydatków oraz strukturę kategorii.",
+                "🔔 **Powiadomienia:** System automatycznie ostrzeże Cię przed zbliżającym się terminem odnowienia usługi lub końcem okresu próbnego (Trial).",
+                "🎨 **Elastyczność:** Dodawaj usługi z gotowych szablonów lub twórz własne, niestandardowe plany za pomocą przycisku +."
+            )
+
+            bulletPoints.forEach { point ->
+                Text(
+                    text = point,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 2.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun SubscriptionItem(
     subscription: Subscription,
     onClick: () -> Unit
 ) {
     val context = LocalContext.current
 
-    // Ekstrakcja czystej nazwy planu (zarówno dla presetów, jak i customowych)
     val displayedPlanName = remember(subscription.plan) {
         val cleanPlan = cleanCustomPlanName(subscription.plan)
-        // Jeśli to był czysty preset, przechodzimy przez standardowy resolver lokalizacyjny
         if (subscription.plan.contains("|") || subscription.plan.startsWith("custom_")) {
             cleanPlan
         } else {
@@ -173,7 +278,6 @@ fun SubscriptionItem(
         }
     }
 
-    // Obliczamy różnicę dni opierając się wyłącznie na czystych datach (północy)
     val daysLeft = remember(subscription.nextPaymentDate) {
         val todayCal = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 0)
@@ -194,7 +298,6 @@ fun SubscriptionItem(
         (diffInMs / (1000 * 60 * 60 * 24)).toInt()
     }
 
-    // Formatowanie daty bezpośrednio z obiektu bazy danych
     val dateFormatter = remember { java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()) }
     val formattedDate = dateFormatter.format(java.util.Date(subscription.nextPaymentDate))
 
@@ -237,7 +340,6 @@ fun SubscriptionItem(
             }
 
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                // TUTAJ: Poprawnie przekazujemy surowy ciąg, z którego SubscriptionIcon sam wyciągnie "custom_*" po pipe
                 SubscriptionIcon(
                     serviceName = subscription.name,
                     planKey = subscription.plan,

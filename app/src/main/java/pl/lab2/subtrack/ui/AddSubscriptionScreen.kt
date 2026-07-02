@@ -197,9 +197,13 @@ fun AddSubscriptionScreen(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-            // ------------------ TRYB 1: WYBÓR Z SZABLONU ------------------
+// ------------------ TRYB 1: WYBÓR Z SZABLONU ------------------
             if (!isCustomMode) {
-                Text(text = stringResource(id = R.string.choose_service_label), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    text = stringResource(id = R.string.choose_service_label),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -264,10 +268,16 @@ fun AddSubscriptionScreen(
 
                 val processedPresets = remember(filteredList) { filteredList.chunked(3) }
 
-                Box(modifier = Modifier.fillMaxWidth().heightIn(max = 180.dp).verticalScroll(rememberScrollState())) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                // POPRAWKA: Zwiększono max z 180.dp do 280.dp, aby siatka zajmowała widocznie więcej miejsca
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 280.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { // Delikatnie zwiększony odstęp między wierszami
                         processedPresets.forEach { rowItems ->
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 for (i in 0 until 3) {
                                     if (i < rowItems.size) {
                                         val preset = rowItems[i]
@@ -280,17 +290,36 @@ fun AddSubscriptionScreen(
                                                 plan = ""
                                                 price = ""
                                             },
-                                            modifier = Modifier.weight(1f).aspectRatio(1.7f),
-                                            shape = RoundedCornerShape(12.dp),
+                                            // POPRAWKA: Zmiana aspectRatio z 1.7f na 1.25f (wyższe, bardziej kwadratowe kafelki)
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .aspectRatio(1.25f),
+                                            shape = RoundedCornerShape(14.dp), // Odrobinę mocniejsze zaokrąglenie dla nowego formatu
                                             colors = CardDefaults.cardColors(
                                                 containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                                             ),
                                             border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
                                         ) {
-                                            Column(modifier = Modifier.fillMaxSize().padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                                                SubscriptionIcon(serviceName = preset.serviceName, modifier = Modifier.size(34.dp))
-                                                Spacer(modifier = Modifier.height(4.dp))
-                                                Text(text = preset.serviceName, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            Column(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .padding(8.dp), // Zwiększony padding wewnętrzny (z 4.dp do 8.dp)
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.Center
+                                            ) {
+                                                SubscriptionIcon(
+                                                    serviceName = preset.serviceName,
+                                                    modifier = Modifier.size(38.dp) // Delikatnie powiększona ikona dla zachowania proporcji
+                                                )
+                                                Spacer(modifier = Modifier.height(8.dp)) // Większy odstęp między ikoną a tekstem
+                                                Text(
+                                                    text = preset.serviceName,
+                                                    style = MaterialTheme.typography.labelMedium, // Zmieniono z labelSmall na labelMedium
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                    textAlign = TextAlign.Center,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
                                             }
                                         }
                                     } else { Spacer(modifier = Modifier.weight(1f)) }
@@ -323,7 +352,6 @@ fun AddSubscriptionScreen(
                                 text = { Text("$localizedPlanName (${planPreset.price} zł)") },
                                 onClick = {
                                     selectedPlan = planPreset
-                                    // POPRAWKA: Przekazujemy klucz techniczny jako nazwę planu do bazy, aby pola nie znikały
                                     plan = localizedPlanName
                                     price = planPreset.price.toString()
                                     billingCycleResId = when (planPreset.billingCycle.lowercase()) {
