@@ -4,7 +4,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 enum class SubscriptionStatus {
-    ACTIVE, SUSPENDED, DEAD
+    ACTIVE, SUSPENDED, DEAD, ARCHIVED
 }
 
 @Entity(tableName = "user_subscriptions")
@@ -21,5 +21,6 @@ data class UserSubscription(
     val isTrial: Boolean = false,
     val trialOption: String = "",
     val hasCustomReminders: Boolean = false,
-    val notificationSetting: String = "true"
+    val notificationSetting: String = "true",
+    val endDate: Long? = null
 )

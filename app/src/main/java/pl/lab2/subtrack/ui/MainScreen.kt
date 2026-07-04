@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
@@ -52,6 +53,7 @@ fun MainScreen(
     onDetailsClick: (String) -> Unit,
     onNotificationsClick: () -> Unit,
     onSettingsClick: () -> Unit = {},
+    onArchiveClick: () -> Unit, // DODANE: Parametr nawigacji do ekranu archiwum
     onTotalSumClick: () -> Unit
 ) {
     val subscriptions by viewModel.subscriptions.collectAsState()
@@ -70,14 +72,24 @@ fun MainScreen(
                         fontWeight = FontWeight.ExtraBold
                     )
                 },
-                // DODANE: Przycisk Help w lewym górnym rogu ekranu
                 navigationIcon = {
-                    IconButton(onClick = { isReadmeVisible = !isReadmeVisible }) {
-                        Icon(
-                            imageVector = Icons.Default.HelpOutline,
-                            contentDescription = "Pomoc i instrukcja",
-                            tint = if (isReadmeVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { isReadmeVisible = !isReadmeVisible }) {
+                            Icon(
+                                imageVector = Icons.Default.HelpOutline,
+                                contentDescription = "Pomoc i instrukcja",
+                                tint = if (isReadmeVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                        IconButton(onClick = onArchiveClick) {
+                            Icon(
+                                imageVector = Icons.Default.Archive,
+                                contentDescription = "Zobacz archiwum",
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
                     }
                 },
                 actions = {
@@ -100,7 +112,7 @@ fun MainScreen(
                     actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
-        },
+        }
     ) { innerPadding ->
         Box(
             modifier = Modifier

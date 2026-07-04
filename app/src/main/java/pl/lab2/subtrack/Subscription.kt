@@ -1,5 +1,8 @@
 package pl.lab2.subtrack
 
+import pl.lab2.subtrack.data.local.entities.SubscriptionStatus
+import pl.lab2.subtrack.data.local.entities.UserSubscription
+
 data class Subscription(
     val id: Long? = null,
     val name: String,
@@ -11,7 +14,11 @@ data class Subscription(
     val nextPaymentDate: Long = System.currentTimeMillis(),
     val isTrial: Boolean = false,
     val trialOption: String = "",
-    val notificationSetting: String = "true"
+    val notificationSetting: String = "true",
+
+    // NOWE POLA SYNCHRONIZUJĄCE Z ENCJĄ BAZODANOWĄ:
+    val status: SubscriptionStatus = SubscriptionStatus.ACTIVE,
+    val endDate: Long? = null
 ) {
     val monthlyEquivalent: Double
         get() = when (billingCycle.lowercase()) {
@@ -35,13 +42,17 @@ fun pl.lab2.subtrack.data.local.entities.SubscriptionWithTags.toSubscription(): 
         nextPaymentDate = subscription.nextPaymentDate,
         isTrial = subscription.isTrial,
         trialOption = subscription.trialOption,
-        notificationSetting = subscription.notificationSetting
+        notificationSetting = subscription.notificationSetting,
+
+        //Przekazujemy nowe stany do UI
+        status = subscription.status,
+        endDate = subscription.endDate
     )
 }
 
 // Mapowanie z modelu domenowego (UI) do bazy danych (Room)
-fun Subscription.toUserSubscription(): pl.lab2.subtrack.data.local.entities.UserSubscription {
-    return pl.lab2.subtrack.data.local.entities.UserSubscription(
+fun Subscription.toUserSubscription(): UserSubscription {
+    return UserSubscription(
         id = id ?: 0L,
         name = name,
         planKey = plan,
@@ -49,9 +60,12 @@ fun Subscription.toUserSubscription(): pl.lab2.subtrack.data.local.entities.User
         billingCycle = billingCycle,
         startDate = startDate,
         nextPaymentDate = nextPaymentDate,
-        status = pl.lab2.subtrack.data.local.entities.SubscriptionStatus.ACTIVE,
         isTrial = isTrial,
         trialOption = trialOption,
-        notificationSetting = notificationSetting
+        notificationSetting = notificationSetting,
+
+        // POPRAWKA: Dynamicznie mapujemy status i datę zakończenia zamiast wpisywać ACTIVE na sztywno
+        status = status,
+        endDate = endDate
     )
 }

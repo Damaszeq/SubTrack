@@ -35,7 +35,7 @@ import pl.lab2.subtrack.ui.SubscriptionDetailsScreen
 import pl.lab2.subtrack.ui.NotificationsScreen
 import pl.lab2.subtrack.ui.SettingsScreen
 import pl.lab2.subtrack.ui.SubscriptionViewModel
-import pl.lab2.subtrack.ui.NotificationViewModel // DODANY IMPORT
+import pl.lab2.subtrack.ui.NotificationViewModel
 import pl.lab2.subtrack.ui.SubTrackTheme
 import pl.lab2.subtrack.ui.AppThemeMode
 import pl.lab2.subtrack.ui.AppLanguage
@@ -43,6 +43,7 @@ import pl.lab2.subtrack.ui.EditSubscriptionScreen
 import pl.lab2.subtrack.notification.NotificationScheduler
 import pl.lab2.subtrack.ui.AppViewModelProvider
 import pl.lab2.subtrack.ui.FinancialStatsScreen
+import pl.lab2.subtrack.ui.ArchiveScreen // DODANY IMPORT
 import java.util.Locale
 
 @Composable
@@ -68,9 +69,8 @@ class MainActivity : ComponentActivity() {
     private val notificationViewModel: NotificationViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
-// 1. Pobieramy aplikację i jej kontener zależności
+        // 1. Pobieramy aplikację i jej kontener zależności
         val app = application as SubTrackApplication
 
         // 2. Inicjalizujemy scheduler, przekazując context oraz repozytorium płatności dla historii
@@ -94,7 +94,7 @@ class MainActivity : ComponentActivity() {
                     LocalizationWrapper(currentLanguage = currentLanguage) {
                         AppNavigation(
                             subViewModel = subscriptionViewModel,
-                            notifViewModel = notificationViewModel, // PRZEKAZANIE DO GRAFU
+                            notifViewModel = notificationViewModel,
                             currentLanguage = currentLanguage
                         )
                     }
@@ -105,6 +105,7 @@ class MainActivity : ComponentActivity() {
 }
 
 const val ROUTE_STATS = "financial_stats"
+
 @Composable
 fun AppNavigation(
     subViewModel: SubscriptionViewModel = viewModel(factory = AppViewModelProvider.Factory),
@@ -125,8 +126,8 @@ fun AppNavigation(
                 onDetailsClick = { subId -> navController.navigate("details/$subId") },
                 onNotificationsClick = { navController.navigate("notifications") },
                 onSettingsClick = { navController.navigate("settings") },
+                onArchiveClick = { navController.navigate("archive") }, // DODANE: obsługa przejścia do archiwum
                 onTotalSumClick = { navController.navigate(ROUTE_STATS) }
-
             )
         }
 
@@ -178,6 +179,7 @@ fun AppNavigation(
                 )
             }
         }
+
         // 6. EKRAN EDYCJI
         composable(
             route = "edit_subscription/{subId}",
@@ -205,10 +207,23 @@ fun AppNavigation(
             )
         }
 
+        // 7. EKRAN STATYSTYK
         composable(ROUTE_STATS) {
             FinancialStatsScreen(
                 viewModel = subViewModel,
-                onBackClick = { navController.popBackStack() } // Powrót strzałką wstecz
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        // 8. EKRAN ARCHIWUM
+        composable("archive") {
+            ArchiveScreen(
+                viewModel = subViewModel,
+                onBackClick = { navController.popBackStack() },
+                onSubscriptionClick = { subId ->
+                    // Pozwalamy wejść w szczegóły również z poziomu archiwum
+                    navController.navigate("details/$subId")
+                }
             )
         }
     }

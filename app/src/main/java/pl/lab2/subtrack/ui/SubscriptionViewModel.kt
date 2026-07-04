@@ -112,10 +112,27 @@ class SubscriptionViewModel(
             initialValue = emptyList()
         )
 
+    // NOWY STRUMIEŃ: Pobieranie zarchiwizowanych subskrypcji dla ekranu ArchiveScreen
+    val archivedSubscriptions: StateFlow<List<Subscription>> = subscriptionRepository.getArchivedSubscriptionsWithTagsStream()
+        .map { list ->
+            list.map { entity ->
+                entity.toSubscription()
+            }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
     // --- STRUMIENIE STATYSTYK (FINANCIAL STATS) ---
 
     val totalMonthlyCost: StateFlow<Double> = subscriptions
-        .map { list -> list.sumOf { it.monthlyEquivalent } }
+        .map { list ->
+            list
+                .filter { it.status == SubscriptionStatus.ACTIVE }
+                .sumOf { it.monthlyEquivalent }
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -204,7 +221,8 @@ class SubscriptionViewModel(
                 status = SubscriptionStatus.ACTIVE,
                 isTrial = isTrial,
                 trialOption = trialOption,
-                notificationSetting = notificationSetting
+                notificationSetting = notificationSetting,
+                endDate = null
             )
 
             val tagEntities = tags.map { Tag(name = it) }
@@ -272,7 +290,8 @@ class SubscriptionViewModel(
                 status = SubscriptionStatus.ACTIVE,
                 isTrial = isTrial,
                 trialOption = trialOption,
-                notificationSetting = notificationSetting
+                notificationSetting = notificationSetting,
+                endDate = null
             )
 
             val tagEntities = tags.map { Tag(name = it) }
@@ -280,6 +299,20 @@ class SubscriptionViewModel(
         }
     }
 
+    // LOGICZNA ARCHIWIZACJA (Zakończenie subskrypcji)
+    fun archiveSubscription(id: String) {
+        val numericId = id.toLongOrNull() ?: return
+        viewModelScope.launch {
+            val subWithTags = subscriptionRepository.getSubscriptionWithTagsStream(numericId).first()
+            subWithTags?.subscription?.let { entity ->
+                // Ustawiamy datę zakończenia usługi na moment bieżącego okresu płatności (trwa do najbliższej płatności)
+                val calculatedEndDate = entity.nextPaymentDate
+                subscriptionRepository.archiveSubscription(numericId, calculatedEndDate)
+            }
+        }
+    }
+
+    // TRWAŁE USUNIĘCIE (Permanentne czyszczenie błędnych wpisów)
     fun deleteSubscription(id: String) {
         val numericId = id.toLongOrNull() ?: return
         viewModelScope.launch {
@@ -291,7 +324,9 @@ class SubscriptionViewModel(
     }
 
     fun getSubscriptionById(id: String): Subscription? {
+        // Przeszukujemy zarówno aktywne jak i zarchiwizowane, by zapobiec pustemu ekranowi szczegółów po archiwizacji
         return subscriptions.value.find { it.id == id.toLongOrNull() }
+            ?: archivedSubscriptions.value.find { it.id == id.toLongOrNull() }
     }
 
     // --- CONFIG SYSTEMOWY (MOTYW, JĘZYK, NOTYFIKACJE) ---

@@ -23,6 +23,16 @@ interface SubscriptionRepository {
     fun getActiveSubscriptionsWithTagsStream(): Flow<List<SubscriptionWithTags>>
 
     /**
+     * Retrieve all the archived subscriptions with their tags from the the given data source.
+     */
+    fun getArchivedSubscriptionsWithTagsStream(): Flow<List<SubscriptionWithTags>>
+
+    /**
+     * Logically archive a subscription by changing its status and setting the end date.
+     */
+    suspend fun archiveSubscription(id: Long, endDate: Long)
+
+    /**
      * Retrieve a subscription with tags from the given data source that matches with the [id].
      */
     fun getSubscriptionWithTagsStream(id: Long): Flow<SubscriptionWithTags?>
@@ -33,7 +43,7 @@ interface SubscriptionRepository {
     suspend fun insertSubscription(subscription: UserSubscription): Long
 
     /**
-     * Delete subscription from the data source
+     * Delete subscription from the data source (Permanent deletion)
      */
     suspend fun deleteSubscription(subscription: UserSubscription)
 
@@ -69,28 +79,34 @@ interface SubscriptionRepository {
 }
 
 class OfflineSubscriptionRepository(private val subscriptionDao: SubscriptionDao) : SubscriptionRepository {
-    override fun getAllSubscriptionsWithTagsStream(): Flow<List<SubscriptionWithTags>> = 
+    override fun getAllSubscriptionsWithTagsStream(): Flow<List<SubscriptionWithTags>> =
         subscriptionDao.getAllSubscriptionsWithTags()
 
-    override fun getActiveSubscriptionsWithTagsStream(): Flow<List<SubscriptionWithTags>> = 
+    override fun getActiveSubscriptionsWithTagsStream(): Flow<List<SubscriptionWithTags>> =
         subscriptionDao.getActiveSubscriptionsWithTags()
 
-    override fun getSubscriptionWithTagsStream(id: Long): Flow<SubscriptionWithTags?> = 
+    override fun getArchivedSubscriptionsWithTagsStream(): Flow<List<SubscriptionWithTags>> =
+        subscriptionDao.getArchivedSubscriptionsWithTags()
+
+    override suspend fun archiveSubscription(id: Long, endDate: Long) =
+        subscriptionDao.archiveSubscription(id, endDate)
+
+    override fun getSubscriptionWithTagsStream(id: Long): Flow<SubscriptionWithTags?> =
         subscriptionDao.getSubscriptionWithTagsFlow(id)
 
-    override suspend fun insertSubscription(subscription: UserSubscription): Long = 
+    override suspend fun insertSubscription(subscription: UserSubscription): Long =
         subscriptionDao.insertSubscription(subscription)
 
-    override suspend fun deleteSubscription(subscription: UserSubscription) = 
+    override suspend fun deleteSubscription(subscription: UserSubscription) =
         subscriptionDao.deleteSubscription(subscription)
 
-    override suspend fun updateSubscription(subscription: UserSubscription) = 
+    override suspend fun updateSubscription(subscription: UserSubscription) =
         subscriptionDao.updateSubscription(subscription)
 
-    override suspend fun insertSubscriptionTagCrossRef(crossRef: SubscriptionTagCrossRef) = 
+    override suspend fun insertSubscriptionTagCrossRef(crossRef: SubscriptionTagCrossRef) =
         subscriptionDao.insertSubscriptionTagCrossRef(crossRef)
 
-    override suspend fun deleteSubscriptionTagCrossRef(crossRef: SubscriptionTagCrossRef) = 
+    override suspend fun deleteSubscriptionTagCrossRef(crossRef: SubscriptionTagCrossRef) =
         subscriptionDao.deleteSubscriptionTagCrossRef(crossRef)
 
     override suspend fun deleteTagsForSubscription(subscriptionId: Long) =

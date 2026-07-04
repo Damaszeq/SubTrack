@@ -9,10 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,6 +24,7 @@ import pl.lab2.subtrack.R
 import pl.lab2.subtrack.data.resolvePlanName
 import pl.lab2.subtrack.ui.components.SubscriptionIcon
 import androidx.compose.ui.platform.LocalLocale
+import pl.lab2.subtrack.data.local.entities.SubscriptionStatus
 
 data class PaymentHistoryMock(
     val date: String,
@@ -43,13 +41,19 @@ fun SubscriptionDetailsScreen(
     onEditClick: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val subscriptions by viewModel.subscriptions.collectAsState()
-    val subscription = subscriptions.find { it.id == subId?.toLongOrNull() }
+
+    val subscription = remember(subId, viewModel.subscriptions.collectAsState().value, viewModel.archivedSubscriptions.collectAsState().value) {
+        viewModel.getSubscriptionById(subId ?: "")
+    }
+
     val dateFormatter = remember { SimpleDateFormat("dd.MM.yyyy", Locale("pl", "PL")) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    val isArchived = subscription?.status == SubscriptionStatus.ARCHIVED
 
     // DYNAMICZNE OBLICZANIE KOLEJNEJ PŁATNOŚCI
     val nextPaymentFormatted = remember(subscription?.nextPaymentDate, subscription?.billingCycle) {
-        if (subscription == null) "" else {
+        if (subscription == null || isArchived) "" else {
             val now = System.currentTimeMillis()
             val calendar = java.util.Calendar.getInstance().apply {
                 timeInMillis = subscription.nextPaymentDate
@@ -82,27 +86,52 @@ fun SubscriptionDetailsScreen(
             val history = mutableListOf<PaymentHistoryMock>()
             val calendar = java.util.Calendar.getInstance()
 
-            // Zaczynamy od daty startu
             calendar.timeInMillis = subscription.startDate
-            val now = System.currentTimeMillis()
+            val limitDate = if (isArchived && subscription.endDate != null) subscription.endDate else System.currentTimeMillis()
 
-            // Generujemy historyczne daty, dopóki nie dojdziemy do dzisiaj
-            while (calendar.timeInMillis <= now) {
+            while (calendar.timeInMillis <= limitDate) {
                 history.add(0, PaymentHistoryMock(
                     date = dateFormatter.format(calendar.time),
                     price = subscription.price
                 ))
 
-                // Przesuwamy o jeden cykl w przód
                 when (subscription.billingCycle.lowercase()) {
                     "tydzień", "week" -> calendar.add(java.util.Calendar.WEEK_OF_YEAR, 1)
                     "kwartał", "quarter" -> calendar.add(java.util.Calendar.MONTH, 3)
                     "rok", "year" -> calendar.add(java.util.Calendar.YEAR, 1)
-                    else -> calendar.add(java.util.Calendar.MONTH, 1) // domyślnie miesiąc
+                    else -> calendar.add(java.util.Calendar.MONTH, 1)
                 }
             }
             history
         } else emptyList()
+    }
+
+    // POTWIERDZENIE TRWAŁEGO USUNIĘCIA
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Trwałe usunięcie") },
+            text = { Text("Czy na pewno chcesz permanentnie usunąć tę subskrypcję? Spowoduje to całkowite wyczyszczenie jej z historii i wykresów finansowych.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        onBackClick()
+                        subscription?.id?.let { subId ->
+                            viewModel.deleteSubscription(subId.toString())
+                        }
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Usuń trwale")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Anuluj")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -115,15 +144,12 @@ fun SubscriptionDetailsScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { subscription?.id?.let { onEditClick(it.toString()) } }) {
-                        Icon(Icons.Default.Edit, contentDescription = stringResource(id = R.string.edit))
-                    }
-                    IconButton(onClick = {
-                        onBackClick()
-                        subscription?.id?.let { subId ->
-                            viewModel.deleteSubscription(subId.toString())
+                    if (!isArchived) {
+                        IconButton(onClick = { subscription?.id?.let { onEditClick(it.toString()) } }) {
+                            Icon(Icons.Default.Edit, contentDescription = stringResource(id = R.string.edit))
                         }
-                    }) {
+                    }
+                    IconButton(onClick = { showDeleteDialog = true }) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = stringResource(R.string.delete_desc)
@@ -137,6 +163,46 @@ fun SubscriptionDetailsScreen(
                     actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
+        },
+        // ZMIANA: Przycisk archiwizacji przypięty na stałe na dole ekranu (zamiast wewnątrz scrollowanej listy)
+        bottomBar = {
+            if (subscription != null && !isArchived) {
+                Surface(
+                    tonalElevation = 2.dp,
+                    shadowElevation = 8.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Button(
+                        onClick = {
+                            subscription.id?.let { subId ->
+                                viewModel.archiveSubscription(subId.toString())
+                                onBackClick()
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Archive,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Zakończ i zarchiwizuj",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
         }
     ) { innerPadding ->
         if (subscription == null) {
@@ -146,7 +212,6 @@ fun SubscriptionDetailsScreen(
             return@Scaffold
         }
 
-        // Tłumaczenie nazwy planu z klucza technicznego na zlokalizowany tekst
         val displayedPlanName = resolvePlanName(subscription.plan, context)
 
         LazyColumn(
@@ -157,41 +222,37 @@ fun SubscriptionDetailsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 // GŁÓWNA KARTA SUBSKRYPCJI
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
-                    elevation = CardDefaults.cardElevation(4.dp)
+                    elevation = CardDefaults.cardElevation(4.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isArchived) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface
+                    )
                 ) {
-                    // Box pozwala na nakładanie komponentów na siebie i pozycjonowanie w rogach
                     Box(modifier = Modifier.fillMaxWidth()) {
-
                         if (subscription.tags.isNotEmpty()) {
                             Column(
-                                // Pozycjonujemy całą kolumnę w prawym górnym rogu karty
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
-                                    .padding(top = 16.dp, end = 20.dp), // Odstęp od krawędzi karty
-                                // Ustalamy niewielki odstęp pionowy (np. 4.dp) pomiędzy tagami
+                                    .padding(top = 16.dp, end = 20.dp),
                                 verticalArrangement = Arrangement.spacedBy(4.dp),
-                                // Wyrównujemy teksty w kolumnie do prawej krawędzi, żeby ładnie wyglądały przy różnej długości słów
                                 horizontalAlignment = Alignment.End
                             ) {
-                                // Iterujemy po wszystkich tagach z listy
                                 subscription.tags.forEach { tag ->
                                     Text(
                                         text = tag.uppercase(LocalLocale.current.platformLocale),
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f) // Subtelny, przezroczysty napis
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                                     )
                                 }
                             }
-                        } // <--- TUTAJ BRAKOWAŁO TEGO NAWIASU ZAMYKAJĄCEGO BLOK IF
+                        }
 
-                        // Dotychczasowa zawartość karty (niezmieniona, wycentrowana)
                         Column(
                             modifier = Modifier.padding(24.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -211,7 +272,6 @@ fun SubscriptionDetailsScreen(
                                 fontWeight = FontWeight.Bold
                             )
 
-                            // Wyświetlanie przetłumaczonego planu zamiast klucza bazy
                             Text(
                                 text = displayedPlanName,
                                 style = MaterialTheme.typography.bodyMedium,
@@ -220,7 +280,6 @@ fun SubscriptionDetailsScreen(
 
                             HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
 
-                            // Wyciągnięcie i przetłumaczenie flagi powiadomień ("true"/"false" -> "Tak"/"Nie")
                             val isNotifEnabled = subscription.notificationSetting == "true"
                             val notificationsText = if (isNotifEnabled) "Tak" else "Nie"
 
@@ -255,14 +314,13 @@ fun SubscriptionDetailsScreen(
                                     )
                                     InfoColumn(
                                         label = "Powiadomienia",
-                                        value = notificationsText,
+                                        value = if (isArchived) "Wyłączone" else notificationsText,
                                         modifier = Modifier.weight(1f),
-                                        alpha = if (!isNotifEnabled) 0.4f else 1f
+                                        alpha = if (!isNotifEnabled || isArchived) 0.4f else 1f
                                     )
                                 }
                             }
 
-                            // DATA KOLEJNEJ PŁATNOŚCI DODANA DO CARD
                             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f))
 
                             Row(
@@ -270,17 +328,31 @@ fun SubscriptionDetailsScreen(
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = "Kolejna płatność: ",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = nextPaymentFormatted,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                                if (isArchived && subscription.endDate != null) {
+                                    Text(
+                                        text = "Subskrypcja zakończona: ",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                    Text(
+                                        text = dateFormatter.format(Date(subscription.endDate)),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                } else {
+                                    Text(
+                                        text = "Kolejna płatność: ",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = nextPaymentFormatted,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
                         }
                     }
@@ -288,38 +360,40 @@ fun SubscriptionDetailsScreen(
             }
 
             // SEKCJA OKRESU PRÓBNEGO
-            item {
-                AnimatedVisibility(visible = subscription.isTrial) {
-                    OutlinedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.outlinedCardColors(
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
-                        ),
-                        border = BorderStroke(0.dp, Color.Transparent)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+            if (!isArchived) {
+                item {
+                    AnimatedVisibility(visible = subscription.isTrial) {
+                        OutlinedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.outlinedCardColors(
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
+                            ),
+                            border = BorderStroke(0.dp, Color.Transparent)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.padding(end = 12.dp)
-                            )
-                            Column {
-                                Text(
-                                    text = "Aktywny okres próbny (Trial)",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.tertiary
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.tertiary,
+                                    modifier = Modifier.padding(end = 12.dp)
                                 )
-                                Text(
-                                    text = subscription.trialOption,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Column {
+                                    Text(
+                                        text = "Aktywny okres próbny (Trial)",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.tertiary
+                                    )
+                                    Text(
+                                        text = subscription.trialOption,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }
@@ -328,7 +402,7 @@ fun SubscriptionDetailsScreen(
 
             // SEKCJA HISTORII PŁATNOŚCI
             item {
-                Column(modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)) {
+                Column(modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)) {
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
@@ -345,7 +419,7 @@ fun SubscriptionDetailsScreen(
             }
 
             item {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
