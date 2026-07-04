@@ -263,19 +263,18 @@ fun AddSubscriptionScreen(
                         val matchesSearch = preset.serviceName.contains(presetSearchQuery, ignoreCase = true)
                         val matchesTag = selectedTagResId == null || preset.tagsRes.contains(selectedTagResId)
                         matchesSearch && matchesTag
-                    }.sortedBy { it.serviceName }
+                    }.sortedByDescending { it.popularityWeight }
                 }
 
                 val processedPresets = remember(filteredList) { filteredList.chunked(3) }
 
-                // POPRAWKA: Zwiększono max z 180.dp do 280.dp, aby siatka zajmowała widocznie więcej miejsca
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = 280.dp)
                         .verticalScroll(rememberScrollState())
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { // Delikatnie zwiększony odstęp między wierszami
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         processedPresets.forEach { rowItems ->
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 for (i in 0 until 3) {
@@ -290,11 +289,10 @@ fun AddSubscriptionScreen(
                                                 plan = ""
                                                 price = ""
                                             },
-                                            // POPRAWKA: Zmiana aspectRatio z 1.7f na 1.25f (wyższe, bardziej kwadratowe kafelki)
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .aspectRatio(1.25f),
-                                            shape = RoundedCornerShape(14.dp), // Odrobinę mocniejsze zaokrąglenie dla nowego formatu
+                                            shape = RoundedCornerShape(14.dp),
                                             colors = CardDefaults.cardColors(
                                                 containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                                             ),
@@ -303,18 +301,18 @@ fun AddSubscriptionScreen(
                                             Column(
                                                 modifier = Modifier
                                                     .fillMaxSize()
-                                                    .padding(8.dp), // Zwiększony padding wewnętrzny (z 4.dp do 8.dp)
+                                                    .padding(8.dp),
                                                 horizontalAlignment = Alignment.CenterHorizontally,
                                                 verticalArrangement = Arrangement.Center
                                             ) {
                                                 SubscriptionIcon(
                                                     serviceName = preset.serviceName,
-                                                    modifier = Modifier.size(38.dp) // Delikatnie powiększona ikona dla zachowania proporcji
+                                                    modifier = Modifier.size(38.dp)
                                                 )
-                                                Spacer(modifier = Modifier.height(8.dp)) // Większy odstęp między ikoną a tekstem
+                                                Spacer(modifier = Modifier.height(8.dp))
                                                 Text(
                                                     text = preset.serviceName,
-                                                    style = MaterialTheme.typography.labelMedium, // Zmieniono z labelSmall na labelMedium
+                                                    style = MaterialTheme.typography.labelMedium,
                                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                                     textAlign = TextAlign.Center,
                                                     maxLines = 1,

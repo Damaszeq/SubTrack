@@ -10,5 +10,6 @@ data class SubscriptionPlanPreset(
 data class ServicePreset(
     val serviceName: String,
     val plans: List<SubscriptionPlanPreset>,
-    val tagsRes: List<Int>
+    val tagsRes: List<Int>,
+    val popularityWeight: Int = 0 // Im wyższa wartość, tym wyżej na liście
 )
