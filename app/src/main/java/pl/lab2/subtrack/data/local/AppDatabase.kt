@@ -12,15 +12,18 @@ import pl.lab2.subtrack.data.local.entities.PaymentHistory
 import pl.lab2.subtrack.data.local.entities.SubscriptionTagCrossRef
 import pl.lab2.subtrack.data.local.entities.Tag
 import pl.lab2.subtrack.data.local.entities.UserSubscription
+import pl.lab2.subtrack.data.local.dao.NotificationHistoryDao
+import pl.lab2.subtrack.data.local.entities.NotificationHistory
 
 @Database(
     entities = [
         UserSubscription::class,
         PaymentHistory::class,
         Tag::class,
-        SubscriptionTagCrossRef::class
+        SubscriptionTagCrossRef::class,
+        NotificationHistory::class
     ],
-    version = 4, // Podbita wersja bazy danych ze względu na dodanie pola endDate
+    version = 5, //Tabela powiadomien
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -28,6 +31,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun subscriptionDao(): SubscriptionDao
     abstract fun paymentHistoryDao(): PaymentHistoryDao
     abstract fun tagDao(): TagDao
+
+    abstract fun notificationHistoryDao(): NotificationHistoryDao
 
     companion object {
         @Volatile

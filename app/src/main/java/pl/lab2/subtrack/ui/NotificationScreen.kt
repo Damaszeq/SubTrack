@@ -8,20 +8,17 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.app.NotificationCompat
-import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,26 +26,33 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import pl.lab2.subtrack.R
+import pl.lab2.subtrack.data.local.entities.NotificationHistory
 import pl.lab2.subtrack.models.NotificationItem
-import pl.lab2.subtrack.models.NotificationType
+import pl.lab2.subtrack.ui.components.SubscriptionIcon
+
+// ============================================================================
+// GŁÓWNY EKRAN POWIADOMIEŃ
+// ============================================================================
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsScreen(
     onBackClick: () -> Unit,
-    notificationViewModel: NotificationViewModel = viewModel(),
-    // POPRAWKA 1: Przekazujemy SubscriptionViewModel jako parametr (tak jak na innych ekranach)
-    subscriptionViewModel: SubscriptionViewModel = viewModel(factory = AppViewModelProvider.Factory)
+    notificationViewModel: NotificationViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
     val notifications by notificationViewModel.notifications.collectAsState()
+    val hasUnread by notificationViewModel.hasUnreadNotifications.collectAsState()
     val context = LocalContext.current
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -61,7 +65,6 @@ fun NotificationsScreen(
                 permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
-        notificationViewModel.checkAndGenerateNotifications(context, subscriptionViewModel)
     }
 
     Scaffold(
@@ -70,7 +73,8 @@ fun NotificationsScreen(
                 title = {
                     Text(
                         text = stringResource(id = R.string.notifications_title),
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.ExtraBold
                     )
                 },
                 navigationIcon = {
@@ -81,18 +85,30 @@ fun NotificationsScreen(
                         )
                     }
                 },
+                actions = {
+                    if (hasUnread) {
+                        IconButton(onClick = { notificationViewModel.markAllAsRead() }) {
+                            Icon(
+                                imageVector = Icons.Default.ClearAll,
+                                contentDescription = stringResource(id = R.string.mark_all_as_read_desc)
+                            )
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { notificationViewModel.triggerTestNotification(context) },
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary,
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(id = R.string.trigger_push_desc))
             }
@@ -117,18 +133,17 @@ fun NotificationsScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 items(
                     items = notifications,
-                    // POPRAWKA 2: Bezpieczny klucz uniemożliwiający błędy stanów przy przeładowaniu listy
-                    key = { it.subscriptionName + "_" + it.daysLeft + "_" + it.timestamp }
+                    key = { it.id }
                 ) { notification ->
 
                     val dismissState = rememberSwipeToDismissBoxState(
                         confirmValueChange = { dismissValue ->
-                            if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
+                            if (dismissValue == SwipeToDismissBoxValue.EndToStart || dismissValue == SwipeToDismissBoxValue.StartToEnd) {
                                 notificationViewModel.deleteNotification(notification.id)
                                 true
                             } else {
@@ -140,28 +155,29 @@ fun NotificationsScreen(
 
                     SwipeToDismissBox(
                         state = dismissState,
-                        enableDismissFromStartToEnd = false,
+                        enableDismissFromStartToEnd = true,
                         enableDismissFromEndToStart = true,
                         backgroundContent = {
+                            // CAŁKOWITE USUNIĘCIE KOSZA I CZERWONEGO KOLORU
+                            // Pusty Box z przezroczystym tłem gwarantuje czysty swipe
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .background(Color(0xFFE53935), shape = CardDefaults.shape)
-                                    .padding(horizontal = 20.dp),
-                                contentAlignment = Alignment.CenterEnd
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = stringResource(id = R.string.delete),
-                                    tint = Color.White
-                                )
-                            }
+                                    .background(Color.Transparent)
+                            )
                         },
                         content = {
-                            NotificationItemRow(
-                                notification = notification,
-                                onRowClick = { notificationViewModel.markAsRead(notification.id) }
-                            )
+                            // Wymuszenie przezroczystości kontenera otaczającego, aby nie przebijał czerwony kolor systemowy
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color.Transparent)
+                            ) {
+                                NotificationItemRow(
+                                    notification = notification,
+                                    onMarkReadClick = { notificationViewModel.markAsRead(notification) }
+                                )
+                            }
                         }
                     )
                 }
@@ -170,41 +186,15 @@ fun NotificationsScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+// ============================================================================
+// ELEMENT LISTY (KARTA POWIADOMIENIA)
+// ============================================================================
+
 @Composable
 fun NotificationItemRow(
-    notification: NotificationItem,
-    onRowClick: () -> Unit
+    notification: NotificationHistory,
+    onMarkReadClick: () -> Unit
 ) {
-    val subName = notification.subscriptionName ?: stringResource(id = R.string.placeholder_service_name)
-    val priceValue = notification.priceTriggered ?: 0.0
-
-    val titleText = when (notification.type) {
-        NotificationType.PAYMENT_REMINDER -> {
-            when (notification.daysLeft) {
-                0 -> stringResource(id = R.string.payment_today)
-                1 -> stringResource(id = R.string.payment_tomorrow)
-                else -> stringResource(id = R.string.mock_title_payment_approaching)
-            }
-        }
-        NotificationType.TRIAL_EXPIRING -> stringResource(id = R.string.mock_title_trial_ending)
-        NotificationType.SYSTEM_ALERT -> stringResource(id = R.string.mock_title_price_update)
-    }
-
-    val messageText = when (notification.type) {
-        NotificationType.PAYMENT_REMINDER -> {
-            val days = notification.daysLeft ?: 1
-            val formattedPrice = stringResource(id = R.string.price_format, priceValue)
-            stringResource(id = R.string.dynamic_msg_payment, days, formattedPrice, subName)
-        }
-        NotificationType.TRIAL_EXPIRING -> {
-            stringResource(id = R.string.dynamic_msg_trial, subName)
-        }
-        NotificationType.SYSTEM_ALERT -> {
-            stringResource(id = R.string.mock_msg_system)
-        }
-    }
-
     val timestampText = when {
         System.currentTimeMillis() - notification.timestamp < 60 * 60 * 1000 -> stringResource(id = R.string.time_today)
         System.currentTimeMillis() - notification.timestamp < 30 * 60 * 60 * 1000 -> stringResource(id = R.string.time_yesterday)
@@ -212,18 +202,19 @@ fun NotificationItemRow(
         else -> stringResource(id = R.string.time_3_days_ago)
     }
 
+    val containerColor = if (!notification.isRead) {
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+    }
+
     Card(
-        onClick = onRowClick,
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (notification.isRead)
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-            else
-                MaterialTheme.colorScheme.surfaceContainerHighest
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (notification.isRead) 0.dp else 1.dp
-        )
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = !notification.isRead) { onMarkReadClick() },
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -231,65 +222,73 @@ fun NotificationItemRow(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val (icon: ImageVector, backgroundColor: Color) = when (notification.type) {
-                NotificationType.PAYMENT_REMINDER -> {
-                    if ((notification.daysLeft ?: 1) <= 1) {
-                        Icons.Default.NotificationsActive to Color(0xFFE53935)
-                    } else {
-                        Icons.Default.Notifications to Color(0xFFFF9800)
-                    }
-                }
-                NotificationType.TRIAL_EXPIRING -> Icons.Default.Error to Color(0xFFE53935)
-                NotificationType.SYSTEM_ALERT -> Icons.Default.Notifications to MaterialTheme.colorScheme.secondary
-            }
-
+            // Sekcja 1: Logotyp usługi
             Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .background(
-                        color = if (!notification.isRead) backgroundColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f),
-                        shape = CircleShape
-                    ),
+                modifier = Modifier.size(36.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = if (!notification.isRead) Color.White else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.size(18.dp)
+                SubscriptionIcon(
+                    serviceName = notification.serviceName,
+                    modifier = Modifier.size(32.dp)
                 )
             }
 
             Spacer(modifier = Modifier.width(12.dp))
 
+            // Sekcja 2: Tytuł i opis
             Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = titleText,
-                        fontWeight = if (!notification.isRead) FontWeight.Bold else FontWeight.Normal,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = if (!notification.isRead) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                    Text(
-                        text = timestampText,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                    )
-                }
+                Text(
+                    text = notification.title,
+                    fontWeight = if (!notification.isRead) FontWeight.Bold else FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = if (!notification.isRead) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = messageText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f)
+                    text = notification.message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (!notification.isRead) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Sekcja 3: Czas i kropka statusu nieprzeczytanego
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.align(Alignment.CenterVertically)
+            ) {
+                Text(
+                    text = timestampText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    maxLines = 1
+                )
+
+                if (!notification.isRead) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary)
+                    )
+                } else {
+                    Spacer(modifier = Modifier.height(14.dp))
+                }
             }
         }
     }
 }
+
+// ============================================================================
+// POWIADOMIENIA SYSTEMOWE
+// ============================================================================
 
 fun showSystemNotification(context: Context, notificationItem: NotificationItem) {
     val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -306,35 +305,10 @@ fun showSystemNotification(context: Context, notificationItem: NotificationItem)
         notificationManager.createNotificationChannel(channel)
     }
 
-    val subName = notificationItem.subscriptionName ?: context.getString(R.string.placeholder_service_name)
-    val priceValue = notificationItem.priceTriggered ?: 0.0
-
-    val titleText = when (notificationItem.type) {
-        NotificationType.PAYMENT_REMINDER -> {
-            when (notificationItem.daysLeft) {
-                0 -> context.getString(R.string.payment_today)
-                1 -> context.getString(R.string.payment_tomorrow)
-                else -> context.getString(R.string.mock_title_payment_approaching)
-            }
-        }
-        NotificationType.TRIAL_EXPIRING -> context.getString(R.string.mock_title_trial_ending)
-        NotificationType.SYSTEM_ALERT -> context.getString(R.string.mock_title_price_update)
-    }
-
-    val messageText = when (notificationItem.type) {
-        NotificationType.PAYMENT_REMINDER -> {
-            val days = notificationItem.daysLeft ?: 1
-            val formattedPrice = context.getString(R.string.price_format, priceValue)
-            context.getString(R.string.dynamic_msg_payment, days, formattedPrice, subName)
-        }
-        NotificationType.TRIAL_EXPIRING -> context.getString(R.string.dynamic_msg_trial, subName)
-        NotificationType.SYSTEM_ALERT -> context.getString(R.string.mock_msg_system)
-    }
-
     val builder = NotificationCompat.Builder(context, channelId)
         .setSmallIcon(android.R.drawable.ic_dialog_info)
-        .setContentTitle(titleText)
-        .setContentText(messageText)
+        .setContentTitle(notificationItem.subscriptionName)
+        .setContentText(if (notificationItem.daysLeft == 1) "Płatność jutro!" else "Zbliża się płatność.")
         .setPriority(NotificationCompat.PRIORITY_DEFAULT)
         .setAutoCancel(true)
 

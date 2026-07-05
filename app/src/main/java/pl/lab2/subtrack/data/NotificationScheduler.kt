@@ -6,64 +6,64 @@ import kotlinx.coroutines.flow.first
 import pl.lab2.subtrack.data.NotificationWorker
 import pl.lab2.subtrack.data.SettingsManager
 import pl.lab2.subtrack.data.local.entities.PaymentHistory
+import pl.lab2.subtrack.data.local.entities.NotificationHistory
 import pl.lab2.subtrack.data.local.repositories.SubscriptionRepository
 import pl.lab2.subtrack.data.local.repositories.PaymentRepository
+import pl.lab2.subtrack.data.local.repositories.NotificationHistoryRepository
 import pl.lab2.subtrack.models.NotificationItem
 import pl.lab2.subtrack.models.NotificationType
 import pl.lab2.subtrack.toSubscription
 import pl.lab2.subtrack.ui.showSystemNotification
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import java.util.Calendar
+import java.util.Locale
 
-// ZMIANA: Dodajemy PaymentRepository jako drugi parametr konstruktora
 class NotificationScheduler(
     private val context: Context,
-    private val paymentRepository: PaymentRepository
+    private val paymentRepository: PaymentRepository,
+    private val notificationHistoryRepository: NotificationHistoryRepository
 ) {
 
     private val settingsManager = SettingsManager(context)
+    private val plLocale = Locale("pl", "PL")
 
     suspend fun checkSubscriptionsAndNotify(repository: SubscriptionRepository) {
         try {
-            // 1. Sprawdzamy globalny wyłącznik powiadomień
             val isGlobalEnabled = settingsManager.isNotificationsEnabledGlobal.first()
             if (!isGlobalEnabled) {
                 android.util.Log.d("SUBTRACK_SCHEDULER", "Powiadomienia globalne są wyłączone w ustawieniach.")
                 return
             }
 
-            // 2. Pobieramy preferowane terminy przypomnień
             val preferredHours = settingsManager.globalReminderHours.first()
-
             val entitiesWithTags = repository.getActiveSubscriptionsWithTagsStream().first()
-            val currentTime = System.currentTimeMillis()
 
             for (subWithTagsEntity in entitiesWithTags) {
                 val sub = subWithTagsEntity.toSubscription()
+                val originalEntity = subWithTagsEntity.subscription
 
                 if (sub.notificationSetting == "true") {
-                    // Sprowadzamy czas bieżący do północy dnia dzisiejszego
-                    val todayCal = java.util.Calendar.getInstance().apply {
-                        set(java.util.Calendar.HOUR_OF_DAY, 0)
-                        set(java.util.Calendar.MINUTE, 0)
-                        set(java.util.Calendar.SECOND, 0)
-                        set(java.util.Calendar.MILLISECOND, 0)
+                    val todayCal = Calendar.getInstance().apply {
+                        set(Calendar.HOUR_OF_DAY, 0)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
                     }
 
-                    // Sprowadzamy datę płatności do północy
-                    val subCal = java.util.Calendar.getInstance().apply {
+                    val subCal = Calendar.getInstance().apply {
                         timeInMillis = sub.nextPaymentDate
-                        set(java.util.Calendar.HOUR_OF_DAY, 0)
-                        set(java.util.Calendar.MINUTE, 0)
-                        set(java.util.Calendar.SECOND, 0)
-                        set(java.util.Calendar.MILLISECOND, 0)
+                        set(Calendar.HOUR_OF_DAY, 0)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
                     }
 
                     val diffInMs = subCal.timeInMillis - todayCal.timeInMillis
-                    val diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMs).toInt()
+                    var diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMs).toInt()
                     val diffInHours = diffInDays * 24
 
-                    // 3. DYNAMICZNY WARUNEK POWIADOMIENIA
+                    // 1. SPRAWDZANIE I WYSYŁANIE AKTUALNYCH POWIADOMIEŃ
                     val isTimeMatched = preferredHours.any { hour ->
                         diffInHours == hour || (hour == 24 && diffInDays == 1)
                     }
@@ -78,34 +78,63 @@ class NotificationScheduler(
                             timestamp = System.currentTimeMillis(),
                             isRead = false
                         )
+
                         showSystemNotification(context, notification)
+
+                        val notifTitle = "Nadchodzi płatność za ${sub.name}"
+                        val notifMessage = if (sub.isTrial) {
+                            "Twój okres próbny kończy się za $diffInDays dni! Zostanie pobrana opłata: ${String.format(plLocale, "%.2f", sub.price)} zł."
+                        } else {
+                            "Przypomnienie: Za $diffInDays dni pobierzemy z Twojego konta ${String.format(plLocale, "%.2f", sub.price)} zł."
+                        }
+
+                        val historyNotification = NotificationHistory(
+                            subscriptionId = originalEntity.id,
+                            serviceName = originalEntity.name,
+                            title = notifTitle,
+                            message = notifMessage,
+                            timestamp = System.currentTimeMillis()
+                        )
+
+                        notificationHistoryRepository.insertNotification(historyNotification)
+                        android.util.Log.d("SUBTRACK_NOTIF_LOG", "Zapisano powiadomienie dla ${originalEntity.name} do historii w bazie.")
                     }
 
-                    // 4. AUTOMATYCZNE ODNAWIANIE DATY PŁATNOŚCI + ZAPIS DO HISTORII
-                    // Wykonuje się dopiero dzień PO dacie płatności (gdy diffInDays < 0)
-                    if (diffInDays < 0) {
-                        val originalEntity = subWithTagsEntity.subscription
+                    // 2. AUTOMATYCZNE ODNAWIANIE ZALEGŁYCH PŁATNOŚCI (ZABEZPIECZONE PĘTLĄ WHILE)
+                    var updatedNextPaymentDate = originalEntity.nextPaymentDate
+                    var tempDiffInDays = diffInDays
 
-                        // ZAPIS DO HISTORII PŁATNOŚCI
-                        // Tworzymy historyczny rekord opierając się na danych subskrypcji, która właśnie minęła
+                    while (tempDiffInDays < 0) {
                         val historyEntry = PaymentHistory(
                             subscriptionId = originalEntity.id,
                             serviceName = originalEntity.name,
                             planName = sub.plan,
                             price = originalEntity.price,
-                            paymentDate = originalEntity.nextPaymentDate // zapisujemy oficjalną datę terminu płatności
+                            paymentDate = updatedNextPaymentDate
                         )
 
-                        // Wstawiamy wpis do tabeli payment_history
                         paymentRepository.insertPayment(historyEntry)
-                        android.util.Log.d("SUBTRACK_HISTORY", "Automatycznie dodano płatność dla ${originalEntity.name} do historii.")
+                        android.util.Log.d("SUBTRACK_HISTORY", "Automatycznie dodano zaległą płatność dla ${originalEntity.name} do historii.")
 
-                        // AKTUALIZACJA TERMINU NA KOLEJNY OKRES
-                        val updatedNextPaymentDate = incrementPaymentDate(originalEntity.nextPaymentDate, originalEntity.billingCycle)
+                        // Przesunięcie terminu o kolejny cykl rozliczeniowy
+                        updatedNextPaymentDate = incrementPaymentDate(updatedNextPaymentDate, originalEntity.billingCycle)
+
+                        // Ponowne przeliczenie różnicy dni dla pętli while
+                        val nextSubCal = Calendar.getInstance().apply {
+                            timeInMillis = updatedNextPaymentDate
+                            set(Calendar.HOUR_OF_DAY, 0)
+                            set(Calendar.MINUTE, 0)
+                            set(Calendar.SECOND, 0)
+                            set(Calendar.MILLISECOND, 0)
+                        }
+                        tempDiffInDays = TimeUnit.MILLISECONDS.toDays(nextSubCal.timeInMillis - todayCal.timeInMillis).toInt()
+                    }
+
+                    // Zapisujemy nową datę do bazy tylko jeśli faktycznie nastąpiła zmiana cyklu
+                    if (updatedNextPaymentDate != originalEntity.nextPaymentDate) {
                         val renewedSubscription = originalEntity.copy(
                             nextPaymentDate = updatedNextPaymentDate
                         )
-
                         repository.updateSubscription(renewedSubscription)
                         android.util.Log.d("SUBTRACK_AUTORENEW", "Przesunięto termin subskrypcji ${originalEntity.name} na dzień: $updatedNextPaymentDate")
                     }
@@ -116,7 +145,6 @@ class NotificationScheduler(
         }
     }
 
-    // Konfiguracja i rejestracja cyklicznego WorkManagera (raz na 24 godziny)
     fun scheduleDailyNotificationCheck() {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
@@ -139,20 +167,20 @@ class NotificationScheduler(
     }
 
     private fun incrementPaymentDate(currentNextPayment: Long, billingCycle: String): Long {
-        val calendar = java.util.Calendar.getInstance().apply {
+        val calendar = Calendar.getInstance().apply {
             timeInMillis = currentNextPayment
-            set(java.util.Calendar.HOUR_OF_DAY, 0)
-            set(java.util.Calendar.MINUTE, 0)
-            set(java.util.Calendar.SECOND, 0)
-            set(java.util.Calendar.MILLISECOND, 0)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
         }
 
-        when (billingCycle.lowercase(java.util.Locale.ROOT)) {
-            "monthly", "miesięczny", "miesięcznie" -> calendar.add(java.util.Calendar.MONTH, 1)
-            "yearly", "roczny", "rocznie", "rok", "year" -> calendar.add(java.util.Calendar.YEAR, 1)
-            "weekly", "tygodniowy", "tygodniowo", "tydzień", "week" -> calendar.add(java.util.Calendar.WEEK_OF_YEAR, 1)
-            "kwartał", "quarter" -> calendar.add(java.util.Calendar.MONTH, 3)
-            else -> calendar.add(java.util.Calendar.MONTH, 1)
+        when (billingCycle.lowercase(Locale.ROOT)) {
+            "monthly", "miesięczny", "miesięcznie" -> calendar.add(Calendar.MONTH, 1)
+            "yearly", "roczny", "rocznie", "rok", "year" -> calendar.add(Calendar.YEAR, 1)
+            "weekly", "tygodniowy", "tygodniowo", "tydzień", "week" -> calendar.add(Calendar.WEEK_OF_YEAR, 1)
+            "kwartał", "quarter" -> calendar.add(Calendar.MONTH, 3)
+            else -> calendar.add(Calendar.MONTH, 1)
         }
         return calendar.timeInMillis
     }

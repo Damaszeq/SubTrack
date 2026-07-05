@@ -1,102 +1,89 @@
 package pl.lab2.subtrack.ui
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import pl.lab2.subtrack.models.NotificationItem
-import pl.lab2.subtrack.models.NotificationType
-import java.util.UUID
-import java.util.concurrent.TimeUnit
+import pl.lab2.subtrack.data.local.entities.NotificationHistory
+import pl.lab2.subtrack.data.local.repositories.NotificationHistoryRepository
 
-class NotificationViewModel : ViewModel() {
+class NotificationViewModel(
+    private val repository: NotificationHistoryRepository
+) : ViewModel() {
 
-    private val _notifications = MutableStateFlow<List<NotificationItem>>(emptyList())
-    val notifications: StateFlow<List<NotificationItem>> = _notifications.asStateFlow()
-
-    fun markAsRead(notificationId: String) {
-        _notifications.update { list ->
-            list.map {
-                if (it.id == notificationId) it.copy(isRead = true) else it
-            }
-        }
-    }
-
-    fun deleteNotification(notificationId: String) {
-        _notifications.update { list ->
-            list.filterNot { it.id == notificationId }
-        }
-    }
-
-    fun checkAndGenerateNotifications(context: Context, subscriptionViewModel: SubscriptionViewModel) {
-        viewModelScope.launch {
-            try {
-                val activeSubs = subscriptionViewModel.subscriptions.value ?: emptyList()
-                val currentTime = System.currentTimeMillis()
-                val newNotificationsList = mutableListOf<NotificationItem>()
-
-                for (sub in activeSubs) {
-                    val isEnabled = sub.notificationSetting == "true"
-
-                    if (isEnabled) {
-                        val nextPayment = sub.nextPaymentDate
-                        val price = sub.price
-                        val name = sub.name
-
-                        val diffInMs = nextPayment - currentTime
-                        // Obliczamy różnicę czasu w dniach
-                        val diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMs).toInt()
-
-                        // Logika: Generuj powiadomienie, gdy płatność nastąpi za 0, 1, 2 lub 3 dni
-                        if (diffInDays in 0..3) {
-                            val notification = NotificationItem(
-                                id = UUID.randomUUID().toString(),
-                                subscriptionName = name,
-                                type = if (sub.isTrial) NotificationType.TRIAL_EXPIRING else NotificationType.PAYMENT_REMINDER,
-                                priceTriggered = price,
-                                daysLeft = diffInDays,
-                                timestamp = System.currentTimeMillis(),
-                                isRead = false
-                            )
-                            newNotificationsList.add(notification)
-
-                            showSystemNotification(context, notification)
-                        }
-                    }
-                }
-
-                _notifications.update { currentList ->
-                    val filteredCurrent = currentList.filterNot { old ->
-                        newNotificationsList.any { new -> new.subscriptionName == old.subscriptionName }
-                    }
-                    newNotificationsList + filteredCurrent
-                }
-
-            } catch (e: Exception) {
-                android.util.Log.e("SUBTRACK_NOTIF_ERROR", "Błąd podczas walidacji terminów płatności: ${e.message}", e)
-            }
-        }
-    }
-
-    fun triggerTestNotification(context: Context) {
-        val testNotification = NotificationItem(
-            id = UUID.randomUUID().toString(),
-            subscriptionName = "Netflix (Test)",
-            type = NotificationType.PAYMENT_REMINDER,
-            priceTriggered = 43.00,
-            daysLeft = 1,
-            timestamp = System.currentTimeMillis(),
-            isRead = false
+    // Pobieramy historię bezpośrednio z bazy danych Room jako StateFlow
+    val notifications: StateFlow<List<NotificationHistory>> = repository.getAllNotifications()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
         )
 
-        _notifications.update { currentList ->
-            listOf(testNotification) + currentList
-        }
+    // Moduł kropki sprawdza, czy na liście znajduje się chociaż jedno nieprzeczytane powiadomienie
+    val hasUnreadNotifications: StateFlow<Boolean> = notifications
+        .map { list -> list.any { !it.isRead } }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
 
-        showSystemNotification(context, testNotification)
+    // Oznaczanie pojedynczego powiadomienia jako przeczytane
+    fun markAsRead(notification: NotificationHistory) {
+        viewModelScope.launch {
+            repository.updateNotification(notification.copy(isRead = true))
+        }
+    }
+
+    // Oznaczanie wszystkich nieprzeczytanych powiadomień jako przeczytane
+    fun markAllAsRead() {
+        viewModelScope.launch {
+            notifications.value.forEach { notification ->
+                if (!notification.isRead) {
+                    repository.updateNotification(notification.copy(isRead = true))
+                }
+            }
+        }
+    }
+
+    fun deleteNotification(notificationId: Long) {
+        viewModelScope.launch {
+            repository.deleteNotificationById(notificationId)
+        }
+    }
+
+    fun clearAllHistory() {
+        viewModelScope.launch {
+            repository.clearAllHistory()
+        }
+    }
+
+    fun triggerTestNotification(androidContext: android.content.Context) {
+        viewModelScope.launch {
+            val testNotification = NotificationHistory(
+                subscriptionId = null,
+                serviceName = "Netflix (Test)",
+                title = "Nadchodzi płatność za Netflix (Test)",
+                message = "Przypomnienie: Za 1 dni pobierzemy z Twojego konta 43,00 zł.",
+                timestamp = System.currentTimeMillis(),
+                isRead = false // Nowe powiadomienie domyślnie nieprzeczytane
+            )
+
+            repository.insertNotification(testNotification)
+
+            val legacyItem = pl.lab2.subtrack.models.NotificationItem(
+                id = java.util.UUID.randomUUID().toString(),
+                subscriptionName = testNotification.serviceName,
+                type = pl.lab2.subtrack.models.NotificationType.PAYMENT_REMINDER,
+                priceTriggered = 43.00,
+                daysLeft = 1,
+                timestamp = testNotification.timestamp,
+                isRead = false
+            )
+            showSystemNotification(androidContext, legacyItem)
+        }
     }
 }

@@ -158,6 +158,7 @@
     <string name="total_monthly_expenses">Suma wydatków (miesięcznie)</string>
     <string name="lang_chinesse" >Chiński</string>
 
+
     <!-- Kategorie (Tags) -->
     <string name="tag_entertainment">Rozrywka</string>
     <string name="tag_productivity">Produktywność</string>
@@ -187,4 +188,5 @@
     <string name="trial_ends_tomorrow">Koniec jutro</string>
     <string name="trial_ends_in_days">Koniec za %1$d dni</string>
     <string name="tag_lifestyle">Lifestyle</string>
+    <string name="mark_all_as_read_desc">Oznacz jako przeczytane</string>
 </resources>

@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -39,38 +38,59 @@ import androidx.compose.ui.platform.LocalLocale
 import pl.lab2.subtrack.data.resolvePlanName
 import java.util.Calendar
 
+// ============================================================================
+// FUNKCJE POMOCNICZE / UTIL FUNCTIONS
+// ============================================================================
+
 private fun cleanCustomPlanName(rawPlan: String): String {
     if (!rawPlan.contains("|")) return rawPlan
     val nameBeforePipe = rawPlan.substringBefore("|").trim()
     return nameBeforePipe.ifEmpty { "Plan niestandardowy" }
 }
 
+// ============================================================================
+// GŁÓWNY EKRAN APLIKACJI (COMPOSABLE SCREEN)
+// ============================================================================
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     viewModel: SubscriptionViewModel,
+    notifViewModel: NotificationViewModel,
     onAddClick: () -> Unit,
     onDetailsClick: (String) -> Unit,
     onNotificationsClick: () -> Unit,
     onSettingsClick: () -> Unit = {},
-    onArchiveClick: () -> Unit, // DODANE: Parametr nawigacji do ekranu archiwum
+    onArchiveClick: () -> Unit,
     onTotalSumClick: () -> Unit
 ) {
     val subscriptions by viewModel.subscriptions.collectAsState()
     val totalMonthlyCost by viewModel.totalMonthlyCost.collectAsState()
+    val hasUnreadNotifications by notifViewModel.hasUnreadNotifications.collectAsState(initial = false)
 
-    // Stan kontrolujący czy okno README jest aktualnie otwarte (domyślnie zamknięte)
     var isReadmeVisible by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(
-                        text = stringResource(id = R.string.app_name),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.ExtraBold
-                    )
+                    // SEKCJA: Dwuokolorowe logo SubTrack odzwierciedlające ikonę aplikacji
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Sub",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Text(
+                            text = "Track",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.primary // Wyróżniający fiolet/indygo
+                        )
+                    }
                 },
                 navigationIcon = {
                     Row(
@@ -94,10 +114,20 @@ fun MainScreen(
                 },
                 actions = {
                     IconButton(onClick = onNotificationsClick) {
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = stringResource(id = R.string.notifications_title)
-                        )
+                        BadgedBox(
+                            badge = {
+                                if (hasUnreadNotifications) {
+                                    Badge(
+                                        containerColor = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = stringResource(id = R.string.notifications_title)
+                            )
+                        }
                     }
                     IconButton(onClick = onSettingsClick) {
                         Icon(
@@ -119,13 +149,13 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            // SEKCJA: Przewijana lista aktywnych subskrypcji
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = 80.dp)
+                    .padding(bottom = 76.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                // Animowana sekcja README - wysuwa się po naciśnięciu ikony w lewym górnym rogu
                 AnimatedVisibility(
                     visible = isReadmeVisible,
                     enter = expandVertically(),
@@ -134,7 +164,6 @@ fun MainScreen(
                     AppReadmeCard(onCloseClick = { isReadmeVisible = false })
                 }
 
-                // Lista subskrypcji
                 subscriptions.forEach { sub ->
                     SubscriptionItem(
                         subscription = sub,
@@ -143,25 +172,25 @@ fun MainScreen(
                 }
             }
 
+            // SEKCJA: Dolny panel kontrolny (Suma wydatków + Przycisk Dodawania)
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Card(
                     modifier = Modifier
                         .wrapContentWidth()
-                        .padding(bottom = 4.dp)
                         .clickable { onTotalSumClick() },
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Column(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -186,7 +215,8 @@ fun MainScreen(
                     onClick = onAddClick,
                     containerColor = MaterialTheme.colorScheme.secondary,
                     contentColor = MaterialTheme.colorScheme.onSecondary,
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(14.dp),
+                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 3.dp)
                 ) {
                     Icon(
                         Icons.Default.Add,
@@ -197,6 +227,10 @@ fun MainScreen(
         }
     }
 }
+
+// ============================================================================
+// WIDŻET KARTY POMOCY (README PREVIEW)
+// ============================================================================
 
 @Composable
 fun AppReadmeCard(
@@ -273,6 +307,10 @@ fun AppReadmeCard(
         }
     }
 }
+
+// ============================================================================
+// WIERZ POJEDYNCZEJ SUBSKRYPCJI (ELEMENT LISTY)
+// ============================================================================
 
 @Composable
 fun SubscriptionItem(

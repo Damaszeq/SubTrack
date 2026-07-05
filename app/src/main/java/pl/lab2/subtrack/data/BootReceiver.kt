@@ -8,13 +8,18 @@ import pl.lab2.subtrack.notification.NotificationScheduler
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        // Sprawdzamy, czy przyszedł sygnał o włączeniu telefonu lub aktualizacji aplikacji
         if (intent.action == Intent.ACTION_BOOT_COMPLETED || intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) {
             android.util.Log.d("SUBTRACK_BOOT", "Telefon uruchomiony lub aplikacja zaktualizowana. Rejestruję WorkManager...")
 
-            // Inicjalizujemy scheduler i wrzucamy zadanie sprawdzania subskrypcji do kolejki systemu
             val app = context.applicationContext as SubTrackApplication
-            val scheduler = NotificationScheduler(context, app.container.paymentRepository)
+
+            val scheduler = NotificationScheduler(
+                context = app,
+                paymentRepository = app.container.paymentRepository,
+                notificationHistoryRepository = app.container.notificationHistoryRepository
+            )
+
+            scheduler.scheduleDailyNotificationCheck()
         }
     }
 }

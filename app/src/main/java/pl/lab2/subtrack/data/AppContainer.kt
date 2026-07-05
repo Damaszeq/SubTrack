@@ -13,6 +13,7 @@ interface AppContainer {
     val tagRepository: TagRepository
     val notificationSettingsRepository: NotificationSettingsRepository // NOWE
     val database: AppDatabase
+    val notificationHistoryRepository: NotificationHistoryRepository
 }
 
 /**
@@ -50,5 +51,9 @@ class AppDataContainer(private val context: Context) : AppContainer {
      */
     override val notificationSettingsRepository: NotificationSettingsRepository by lazy {
         OfflineNotificationSettingsRepository(context)
+    }
+
+    override val notificationHistoryRepository: NotificationHistoryRepository by lazy {
+        NotificationHistoryRepository(AppDatabase.getDatabase(context).notificationHistoryDao())
     }
 }

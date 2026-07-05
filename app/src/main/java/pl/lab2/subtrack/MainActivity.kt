@@ -43,7 +43,7 @@ import pl.lab2.subtrack.ui.EditSubscriptionScreen
 import pl.lab2.subtrack.notification.NotificationScheduler
 import pl.lab2.subtrack.ui.AppViewModelProvider
 import pl.lab2.subtrack.ui.FinancialStatsScreen
-import pl.lab2.subtrack.ui.ArchiveScreen // DODANY IMPORT
+import pl.lab2.subtrack.ui.ArchiveScreen
 import java.util.Locale
 
 @Composable
@@ -66,20 +66,21 @@ fun LocalizationWrapper(
 
 class MainActivity : ComponentActivity() {
     private val subscriptionViewModel: SubscriptionViewModel by viewModels { AppViewModelProvider.Factory }
-    private val notificationViewModel: NotificationViewModel by viewModels()
+
+    // NAPRAWIONE: Dodano AppViewModelProvider.Factory, żeby Android wiedział, jak przekazać repozytorium do NotificationViewModel
+    private val notificationViewModel: NotificationViewModel by viewModels { AppViewModelProvider.Factory }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // 1. Pobieramy aplikację i jej kontener zależności
+
         val app = application as SubTrackApplication
 
-        // 2. Inicjalizujemy scheduler, przekazując context oraz repozytorium płatności dla historii
         val scheduler = NotificationScheduler(
             context = applicationContext,
-            paymentRepository = app.container.paymentRepository
+            paymentRepository = app.container.paymentRepository,
+            notificationHistoryRepository = app.container.notificationHistoryRepository
         )
 
-        // 3. Rejestrujemy codzienne sprawdzanie w WorkManagerze
         scheduler.scheduleDailyNotificationCheck()
 
         setContent {
@@ -109,7 +110,7 @@ const val ROUTE_STATS = "financial_stats"
 @Composable
 fun AppNavigation(
     subViewModel: SubscriptionViewModel = viewModel(factory = AppViewModelProvider.Factory),
-    notifViewModel: NotificationViewModel = viewModel(),
+    notifViewModel: NotificationViewModel = viewModel(factory = AppViewModelProvider.Factory),
     currentLanguage: AppLanguage
 ) {
     val navController = rememberNavController()
@@ -122,11 +123,12 @@ fun AppNavigation(
         composable("main") {
             MainScreen(
                 viewModel = subViewModel,
+                notifViewModel = notifViewModel,
                 onAddClick = { navController.navigate("add") },
                 onDetailsClick = { subId -> navController.navigate("details/$subId") },
                 onNotificationsClick = { navController.navigate("notifications") },
                 onSettingsClick = { navController.navigate("settings") },
-                onArchiveClick = { navController.navigate("archive") }, // DODANE: obsługa przejścia do archiwum
+                onArchiveClick = { navController.navigate("archive") },
                 onTotalSumClick = { navController.navigate(ROUTE_STATS) }
             )
         }
@@ -221,7 +223,6 @@ fun AppNavigation(
                 viewModel = subViewModel,
                 onBackClick = { navController.popBackStack() },
                 onSubscriptionClick = { subId ->
-                    // Pozwalamy wejść w szczegóły również z poziomu archiwum
                     navController.navigate("details/$subId")
                 }
             )
