@@ -38,19 +38,11 @@ import androidx.compose.ui.platform.LocalLocale
 import pl.lab2.subtrack.data.resolvePlanName
 import java.util.Calendar
 
-// ============================================================================
-// FUNKCJE POMOCNICZE / UTIL FUNCTIONS
-// ============================================================================
-
 private fun cleanCustomPlanName(rawPlan: String): String {
     if (!rawPlan.contains("|")) return rawPlan
     val nameBeforePipe = rawPlan.substringBefore("|").trim()
     return nameBeforePipe.ifEmpty { "Plan niestandardowy" }
 }
-
-// ============================================================================
-// GŁÓWNY EKRAN APLIKACJI (COMPOSABLE SCREEN)
-// ============================================================================
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,21 +66,20 @@ fun MainScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    // SEKCJA: Dwuokolorowe logo SubTrack odzwierciedlające ikonę aplikacji
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
                             text = "Sub",
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.ExtraBold,
+                            fontWeight = FontWeight.Black,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         Text(
                             text = "Track",
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.primary // Wyróżniający fiolet/indygo
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 },
@@ -149,7 +140,6 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // SEKCJA: Przewijana lista aktywnych subskrypcji
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -172,7 +162,6 @@ fun MainScreen(
                 }
             }
 
-            // SEKCJA: Dolny panel kontrolny (Suma wydatków + Przycisk Dodawania)
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -227,10 +216,6 @@ fun MainScreen(
         }
     }
 }
-
-// ============================================================================
-// WIDŻET KARTY POMOCY (README PREVIEW)
-// ============================================================================
 
 @Composable
 fun AppReadmeCard(
@@ -307,10 +292,6 @@ fun AppReadmeCard(
         }
     }
 }
-
-// ============================================================================
-// WIERZ POJEDYNCZEJ SUBSKRYPCJI (ELEMENT LISTY)
-// ============================================================================
 
 @Composable
 fun SubscriptionItem(
