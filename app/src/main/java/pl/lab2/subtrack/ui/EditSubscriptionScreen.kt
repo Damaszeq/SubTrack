@@ -16,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -50,11 +51,12 @@ fun EditSubscriptionScreen(
     var billingCycleResId by remember { mutableStateOf(R.string.cycle_month) }
     var currentTagsResIds by remember { mutableStateOf<List<Int>>(emptyList()) }
 
-    // NOWE STANY - spięte z ViewModel
     var startDateLong by remember { mutableStateOf(System.currentTimeMillis()) }
     var isTrialChecked by remember { mutableStateOf(false) }
     var selectedTrialOption by remember { mutableStateOf("Pierwszy miesiąc za 0 zł, potem standard") }
-    var notificationSetting by remember { mutableStateOf("false") }
+
+    // STAN POWIADOMIEŃ JAKO BOOLEAN
+    var isNotificationEnabled by remember { mutableStateOf(true) }
 
     // Stany UI dla widoczności dropdownów / kalendarza
     var isPlanDropdownExpanded by remember { mutableStateOf(false) }
@@ -81,13 +83,15 @@ fun EditSubscriptionScreen(
             name = sub.name
             plan = sub.plan
             price = sub.price.toString()
-
             startDateLong = sub.startDate
             isTrialChecked = sub.isTrial
             if (sub.trialOption.isNotBlank()) {
                 selectedTrialOption = sub.trialOption
             }
-            notificationSetting = sub.notificationSetting
+
+            // PEWNE MAPOWANIE: Jeśli tekst to "Wyłączone", suwak będzie odznaczony (false).
+            // W każdym innym przypadku (np. "1 dzień przed") suwak będzie włączony (true).
+            isNotificationEnabled = !sub.notificationSetting.equals("Wyłączone", ignoreCase = true)
 
             val subNameLower = sub.name.lowercase().trim()
             val foundService = presets.find { preset ->
@@ -132,16 +136,30 @@ fun EditSubscriptionScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(text = stringResource(id = R.string.edit_desc), fontWeight = FontWeight.Bold) },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Sub",
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        Text(
+                            text = "Track",
+                            color = Color(0xFF2EC4B6),
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(imageVector = Icons.Default.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
@@ -159,8 +177,8 @@ fun EditSubscriptionScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f))
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -198,7 +216,7 @@ fun EditSubscriptionScreen(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // DROPDOWN PLANU (Wielojęzyczny)
+            // DROPDOWN PLANU
             ExposedDropdownMenuBox(
                 expanded = isPlanDropdownExpanded,
                 onExpandedChange = { if (selectedService != null) isPlanDropdownExpanded = !isPlanDropdownExpanded }
@@ -227,14 +245,13 @@ fun EditSubscriptionScreen(
                         onDismissRequest = { isPlanDropdownExpanded = false }
                     ) {
                         selectedService?.plans?.forEach { planPreset ->
-                            // POPRAWKA: Dynamiczne tłumaczenie nazwy planu na żądany język interfejsu
                             val localizedPlanName = stringResource(id = planPreset.planNameRes)
 
                             DropdownMenuItem(
                                 text = { Text(stringResource(id = R.string.preset_plan_format, localizedPlanName, planPreset.price)) },
                                 onClick = {
                                     selectedPlan = planPreset
-                                    plan = context.getString(planPreset.planNameRes) // Zapis do stanu zlokalizowanego tekstu
+                                    plan = context.getString(planPreset.planNameRes)
                                     price = planPreset.price.toString()
                                     billingCycleResId = when (planPreset.billingCycle.lowercase()) {
                                         "tydzień", "week" -> R.string.cycle_week
@@ -250,7 +267,7 @@ fun EditSubscriptionScreen(
                 }
             }
 
-            // Układ dwukolumnowy dla Ceny i Cyklu rozliczeniowego
+            // Cena i Cykl
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -306,13 +323,12 @@ fun EditSubscriptionScreen(
                 }
             }
 
-            // Daty rozpoczęcia oraz sekcji suwaka powiadomień
+            // Data rozpoczęcia oraz sekcja Switcha powiadomień
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Bezpieczne opakowanie pola w Box z obsługą kliknięcia na całym obszarze
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -355,15 +371,15 @@ fun EditSubscriptionScreen(
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = if (notificationSetting == "true") stringResource(id = R.string.yes) else stringResource(id = R.string.no),
+                            text = if (isNotificationEnabled) stringResource(id = R.string.yes) else stringResource(id = R.string.no),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     Switch(
-                        checked = notificationSetting == "true",
+                        checked = isNotificationEnabled,
                         onCheckedChange = { isChecked ->
-                            notificationSetting = isChecked.toString()
+                            isNotificationEnabled = isChecked
                         }
                     )
                 }
@@ -424,7 +440,7 @@ fun EditSubscriptionScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // PRZYCISKI AKCJI Dolnej
+            // PRZYCISKI AKCJI
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -445,6 +461,7 @@ fun EditSubscriptionScreen(
                         val finalTags = selectedService?.tagsRes?.map { context.getString(it) }
                             ?: currentTagsResIds.map { context.getString(it) }
 
+                        // WYWOŁANIE Z POPRAWNĄ ZMIENNĄ BOOLEAN
                         viewModel.updateSubscription(
                             id = subscriptionId,
                             name = name,
@@ -455,7 +472,7 @@ fun EditSubscriptionScreen(
                             startDate = startDateLong,
                             isTrial = isTrialChecked,
                             trialOption = selectedTrialOption,
-                            notificationSetting = notificationSetting
+                            isNotificationEnabled = isNotificationEnabled
                         )
                         onBackClick()
                     },

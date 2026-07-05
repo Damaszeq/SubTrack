@@ -193,6 +193,7 @@ class SubscriptionViewModel(
     }
 
     // --- OPERACJE CRUD NA SUBSKRYPCJACH ---
+// --- OPERACJE CRUD NA SUBSKRYPCJACH ---
 
     fun addSubscription(
         name: String,
@@ -203,9 +204,11 @@ class SubscriptionViewModel(
         startDate: Long,
         isTrial: Boolean,
         trialOption: String,
-        notificationSetting: String
+        isNotificationEnabled: Boolean // Zmieniono z notificationSetting: String
     ) {
         val parsedPrice = priceText.replace(",", ".").trim().toDoubleOrNull() ?: 0.0
+        // Mapowanie wartości logicznej na stringa bezpośrednio przed zapisem
+        val finalNotificationSetting = if (isNotificationEnabled) "1 dzień przed" else "Wyłączone"
 
         viewModelScope.launch {
             val nextDate = calculateNextPaymentDate(startDate, billingCycle)
@@ -221,14 +224,13 @@ class SubscriptionViewModel(
                 status = SubscriptionStatus.ACTIVE,
                 isTrial = isTrial,
                 trialOption = trialOption,
-                notificationSetting = notificationSetting,
+                notificationSetting = finalNotificationSetting,
                 endDate = null
             )
 
             val tagEntities = tags.map { Tag(name = it) }
             val insertedSubscriptionId = subscriptionRepository.insertSubscriptionWithTags(entity, tagEntities, tagDao)
 
-            // Generowanie wstecznej historii transakcji
             val historyCalendar = Calendar.getInstance().apply {
                 timeInMillis = startDate
                 set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
@@ -271,10 +273,12 @@ class SubscriptionViewModel(
         startDate: Long,
         isTrial: Boolean,
         trialOption: String,
-        notificationSetting: String
+        isNotificationEnabled: Boolean // Zmieniono z notificationSetting: String
     ) {
         val parsedPrice = priceText.replace(",", ".").trim().toDoubleOrNull() ?: 0.0
         val subscriptionId = id.toLongOrNull() ?: return
+        // Mapowanie wartości logicznej na stringa bezpośrednio przed edycją
+        val finalNotificationSetting = if (isNotificationEnabled) "1 dzień przed" else "Wyłączone"
 
         viewModelScope.launch {
             val nextDate = calculateNextPaymentDate(startDate, billingCycle)
@@ -290,7 +294,7 @@ class SubscriptionViewModel(
                 status = SubscriptionStatus.ACTIVE,
                 isTrial = isTrial,
                 trialOption = trialOption,
-                notificationSetting = notificationSetting,
+                notificationSetting = finalNotificationSetting,
                 endDate = null
             )
 

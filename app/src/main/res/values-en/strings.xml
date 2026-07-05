@@ -188,5 +188,7 @@
     <string name="trial_ends_tomorrow">Ends tomorrow</string>
     <string name="trial_ends_in_days">Ends in %1$d days</string>
     <string name="mark_all_as_read_desc">标记为已读</string>
+    <string name="on">已开启</string>
+    <string name="off">已禁用</string>
 
 </resources>

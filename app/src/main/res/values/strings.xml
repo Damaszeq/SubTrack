@@ -189,4 +189,6 @@
     <string name="trial_ends_in_days">Koniec za %1$d dni</string>
     <string name="tag_lifestyle">Lifestyle</string>
     <string name="mark_all_as_read_desc">Oznacz jako przeczytane</string>
+    <string name="on">Włączone</string>
+    <string name="off">Wyłączone</string>
 </resources>

@@ -164,7 +164,6 @@ fun SubscriptionDetailsScreen(
                 )
             )
         },
-        // ZMIANA: Przycisk archiwizacji przypięty na stałe na dole ekranu (zamiast wewnątrz scrollowanej listy)
         bottomBar = {
             if (subscription != null && !isArchived) {
                 Surface(
@@ -280,8 +279,10 @@ fun SubscriptionDetailsScreen(
 
                             HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
 
-                            val isNotifEnabled = subscription.notificationSetting == "true"
-                            val notificationsText = if (isNotifEnabled) "Tak" else "Nie"
+                            // POPRAWKA: Prawidłowe sprawdzenie stanu tekstowego bazy danych.
+                            // Ignorujemy wielkość liter i sprawdzamy czy wartość nie jest równa "Wyłączone".
+                            val isNotifEnabled = !subscription.notificationSetting.equals("Wyłączone", ignoreCase = true)
+                            val notificationsText = if (isNotifEnabled) stringResource(id = R.string.on) else stringResource(id = R.string.off)
 
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
@@ -313,7 +314,7 @@ fun SubscriptionDetailsScreen(
                                         modifier = Modifier.weight(1f)
                                     )
                                     InfoColumn(
-                                        label = "Powiadomienia",
+                                        label = stringResource(id = R.string.subscription_notifications_label),
                                         value = if (isArchived) "Wyłączone" else notificationsText,
                                         modifier = Modifier.weight(1f),
                                         alpha = if (!isNotifEnabled || isArchived) 0.4f else 1f

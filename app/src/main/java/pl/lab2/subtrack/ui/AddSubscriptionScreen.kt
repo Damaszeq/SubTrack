@@ -55,7 +55,6 @@ fun AddSubscriptionScreen(
 
     var isCustomMode by remember { mutableStateOf(false) }
 
-    // Podstawowe stany pól formularza
     var selectedService by remember { mutableStateOf<ServicePreset?>(null) }
     var selectedPlan by remember { mutableStateOf<SubscriptionPlanPreset?>(null) }
     var name by remember { mutableStateOf("") }
@@ -63,16 +62,18 @@ fun AddSubscriptionScreen(
     var price by remember { mutableStateOf("") }
     var billingCycleResId by remember { mutableStateOf(R.string.cycle_month) }
     var startDateLong by remember { mutableStateOf(System.currentTimeMillis()) }
-    var isNotificationEnabled by remember(globalNotifSetting) { mutableStateOf(globalNotifSetting) }
+    var isNotificationEnabled by remember { mutableStateOf(true) }
     var isTrialChecked by remember { mutableStateOf(false) }
     var selectedTrialOption by remember { mutableStateOf("Pierwszy miesiąc za 0 zł, potem standard") }
 
-    // Stan wyszukiwania i filtrowania po tagach
+    LaunchedEffect(globalNotifSetting) {
+        isNotificationEnabled = globalNotifSetting
+    }
+
     var presetSearchQuery by remember { mutableStateOf("") }
     var selectedTagResId by remember { mutableStateOf<Int?>(null) }
     var isFilterMenuExpanded by remember { mutableStateOf(false) }
 
-    // Stany dla trybu Custom
     var customSelectedIconId by remember { mutableStateOf("custom_star") }
     var customSelectedTagResId by remember { mutableStateOf<Int?>(null) }
     var isCustomTagMenuExpanded by remember { mutableStateOf(false) }
@@ -163,7 +164,6 @@ fun AddSubscriptionScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Przełącznik trybu
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -197,7 +197,6 @@ fun AddSubscriptionScreen(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-// ------------------ TRYB 1: WYBÓR Z SZABLONU ------------------
             if (!isCustomMode) {
                 Text(
                     text = stringResource(id = R.string.choose_service_label),
@@ -365,7 +364,6 @@ fun AddSubscriptionScreen(
                     }
                 }
             }
-            // ------------------ TRYB 2: SUBSKRYPCJA NIESTANDARDOWA (CUSTOM) ------------------
             else {
                 Text(text = "Konfiguracja własnej usługi", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
 
@@ -434,7 +432,6 @@ fun AddSubscriptionScreen(
                 }
             }
 
-            // ------------------ SEKCJA WSPÓLNA (Cena, Cykl rozliczeniowy) ------------------
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -479,7 +476,6 @@ fun AddSubscriptionScreen(
                 }
             }
 
-            // ------------------ SEKCJA DATA ROZPOCZĘCIA ------------------
             OutlinedTextField(
                 value = dateFormatter.format(Date(startDateLong)),
                 onValueChange = {},
@@ -490,7 +486,6 @@ fun AddSubscriptionScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // ------------------ SEKCJA INTELIGENTNY TRIAL ------------------
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
@@ -538,7 +533,6 @@ fun AddSubscriptionScreen(
                 }
             }
 
-            // ------------------ SEKCJA POWIADOMIENIA ------------------
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -555,12 +549,10 @@ fun AddSubscriptionScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // ------------------ PRZYCISK ZAPISU (ZINTEGROWANY Z VIEWMODELEM) ------------------
             Button(
                 onClick = {
                     val finalBillingCycleString = context.getString(billingCycleResId)
 
-                    // Dobieramy tagi w zależności od trybu
                     val finalTags = if (isCustomMode) {
                         customSelectedTagResId?.let { listOf(context.getString(it)) } ?: emptyList()
                     } else {
@@ -576,7 +568,7 @@ fun AddSubscriptionScreen(
                         startDate = startDateLong,
                         isTrial = isTrialChecked,
                         trialOption = if (isTrialChecked) selectedTrialOption else "",
-                        notificationSetting = if (isNotificationEnabled) "1 dzień przed" else "Wyłączone"
+                        isNotificationEnabled = isNotificationEnabled // Przekazujemy bezpośrednio stan Boolean ze Switcha
                     )
                     onBackClick()
                 },

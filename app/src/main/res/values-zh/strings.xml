@@ -189,4 +189,6 @@
     <string name="trial_ends_tomorrow">明天结束</string>
     <string name="trial_ends_in_days">%1$d 天后结束</string>
     <string name="mark_all_as_read_desc">Mark as read</string>
+    <string name="on">On</string>
+    <string name="off">Off</string>
 </resources>
