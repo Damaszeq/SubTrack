@@ -8,7 +8,7 @@ import androidx.room.TypeConverters
 import pl.lab2.subtrack.data.local.dao.PaymentHistoryDao
 import pl.lab2.subtrack.data.local.dao.SubscriptionDao
 import pl.lab2.subtrack.data.local.dao.TagDao
-import pl.lab2.subtrack.data.local.entities.PaymentHistory
+import pl.lab2.subtrack.data.local.entities.PaymentHistoryEntity
 import pl.lab2.subtrack.data.local.entities.SubscriptionTagCrossRef
 import pl.lab2.subtrack.data.local.entities.Tag
 import pl.lab2.subtrack.data.local.entities.UserSubscription
@@ -18,12 +18,12 @@ import pl.lab2.subtrack.data.local.entities.NotificationHistory
 @Database(
     entities = [
         UserSubscription::class,
-        PaymentHistory::class,
+        PaymentHistoryEntity::class,
         Tag::class,
         SubscriptionTagCrossRef::class,
         NotificationHistory::class
     ],
-    version = 5, //Tabela powiadomien
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -31,7 +31,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun subscriptionDao(): SubscriptionDao
     abstract fun paymentHistoryDao(): PaymentHistoryDao
     abstract fun tagDao(): TagDao
-
     abstract fun notificationHistoryDao(): NotificationHistoryDao
 
     companion object {

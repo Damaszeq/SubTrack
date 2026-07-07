@@ -2,43 +2,44 @@ package pl.lab2.subtrack.data.local.repositories
 
 import kotlinx.coroutines.flow.Flow
 import pl.lab2.subtrack.data.local.dao.PaymentHistoryDao
-import pl.lab2.subtrack.data.local.entities.PaymentHistory
+import pl.lab2.subtrack.data.local.entities.PaymentHistoryEntity
+import pl.lab2.subtrack.data.local.entities.SubscriptionWithHistory
 
 /**
- * Repository that provides insert and retrieve of [PaymentHistory] from a given data source.
+ * Repository that provides insert and retrieve of [PaymentHistoryEntity] from a given data source.
  */
 interface PaymentRepository {
     /**
-     * Retrieve all the payments from the the given data source.
+     * Retrieve all the payments from the given data source.
      */
-    fun getAllPaymentsStream(): Flow<List<PaymentHistory>>
+    fun getAllPaymentsStream(): Flow<List<PaymentHistoryEntity>>
 
     /**
      * Retrieve payments for a specific subscription from the given data source.
      */
-    fun getPaymentsForSubscriptionStream(subscriptionId: Long): Flow<List<PaymentHistory>>
+    fun getPaymentsForSubscriptionStream(subscriptionId: Long): Flow<List<PaymentHistoryEntity>>
 
     /**
-     * Retrieve total spending in a range from the given data source.
+     * Retrieve a subscription along with its full payment history.
      */
-    fun getTotalSpendingInRangeStream(startDate: Long, endDate: Long): Flow<Double?>
+    fun getSubscriptionWithHistoryStream(subscriptionId: Long): Flow<SubscriptionWithHistory?>
 
     /**
-     * Insert payment in the data source
+     * Insert payment in the data source.
      */
-    suspend fun insertPayment(payment: PaymentHistory): Long
+    suspend fun insertPayment(payment: PaymentHistoryEntity)
 }
 
 class OfflinePaymentRepository(private val paymentHistoryDao: PaymentHistoryDao) : PaymentRepository {
-    override fun getAllPaymentsStream(): Flow<List<PaymentHistory>> = 
+    override fun getAllPaymentsStream(): Flow<List<PaymentHistoryEntity>> =
         paymentHistoryDao.getAllPayments()
 
-    override fun getPaymentsForSubscriptionStream(subscriptionId: Long): Flow<List<PaymentHistory>> = 
+    override fun getPaymentsForSubscriptionStream(subscriptionId: Long): Flow<List<PaymentHistoryEntity>> =
         paymentHistoryDao.getPaymentsForSubscription(subscriptionId)
 
-    override fun getTotalSpendingInRangeStream(startDate: Long, endDate: Long): Flow<Double?> = 
-        paymentHistoryDao.getTotalSpendingInRange(startDate, endDate)
+    override fun getSubscriptionWithHistoryStream(subscriptionId: Long): Flow<SubscriptionWithHistory?> =
+        paymentHistoryDao.getSubscriptionWithHistory(subscriptionId)
 
-    override suspend fun insertPayment(payment: PaymentHistory): Long = 
+    override suspend fun insertPayment(payment: PaymentHistoryEntity) =
         paymentHistoryDao.insertPayment(payment)
 }

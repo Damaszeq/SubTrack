@@ -5,7 +5,7 @@ import androidx.work.*
 import kotlinx.coroutines.flow.first
 import pl.lab2.subtrack.data.NotificationWorker
 import pl.lab2.subtrack.data.SettingsManager
-import pl.lab2.subtrack.data.local.entities.PaymentHistory
+import pl.lab2.subtrack.data.local.entities.PaymentHistoryEntity // <-- ZMIANA: Nowa encja bazy
 import pl.lab2.subtrack.data.local.entities.NotificationHistory
 import pl.lab2.subtrack.data.local.repositories.SubscriptionRepository
 import pl.lab2.subtrack.data.local.repositories.PaymentRepository
@@ -43,7 +43,9 @@ class NotificationScheduler(
                 val sub = subWithTagsEntity.toSubscription()
                 val originalEntity = subWithTagsEntity.subscription
 
-                if (sub.notificationSetting == "true") {
+                val isNotifEnabled = !sub.notificationSetting.equals("Wyłączone", ignoreCase = true)
+
+                if (isNotifEnabled) {
                     val todayCal = Calendar.getInstance().apply {
                         set(Calendar.HOUR_OF_DAY, 0)
                         set(Calendar.MINUTE, 0)
@@ -100,21 +102,20 @@ class NotificationScheduler(
                         android.util.Log.d("SUBTRACK_NOTIF_LOG", "Zapisano powiadomienie dla ${originalEntity.name} do historii w bazie.")
                     }
 
-                    // 2. AUTOMATYCZNE ODNAWIANIE ZALEGŁYCH PŁATNOŚCI (ZABEZPIECZONE PĘTLĄ WHILE)
+                    // 2. AUTOMATYCZNE ODNAWIANIE ZALEGŁYCH PŁATNOŚCI (ZAPIS DO NOWEJ TABELI PO ID)
                     var updatedNextPaymentDate = originalEntity.nextPaymentDate
                     var tempDiffInDays = diffInDays
 
                     while (tempDiffInDays < 0) {
-                        val historyEntry = PaymentHistory(
-                            subscriptionId = originalEntity.id,
-                            serviceName = originalEntity.name,
-                            planName = sub.plan,
-                            price = originalEntity.price,
-                            paymentDate = updatedNextPaymentDate
+                        // ZMIANA: Budujemy obiekt nowej encji, łącząc relację poprzez originalEntity.id
+                        val historyEntry = PaymentHistoryEntity(
+                            subscriptionId = originalEntity.id, // Parowanie po kluczu głównym Long
+                            paymentDate = updatedNextPaymentDate,
+                            amountPaid = originalEntity.price
                         )
 
                         paymentRepository.insertPayment(historyEntry)
-                        android.util.Log.d("SUBTRACK_HISTORY", "Automatycznie dodano zaległą płatność dla ${originalEntity.name} do historii.")
+                        android.util.Log.d("SUBTRACK_HISTORY", "Automatycznie dodano realną płatność dla ID: ${originalEntity.id} do bazy.")
 
                         // Przesunięcie terminu o kolejny cykl rozliczeniowy
                         updatedNextPaymentDate = incrementPaymentDate(updatedNextPaymentDate, originalEntity.billingCycle)

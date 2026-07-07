@@ -24,13 +24,8 @@ import pl.lab2.subtrack.R
 import pl.lab2.subtrack.data.resolvePlanName
 import pl.lab2.subtrack.ui.components.SubscriptionIcon
 import androidx.compose.ui.platform.LocalLocale
+import pl.lab2.subtrack.data.local.entities.PaymentHistoryEntity // Nowy import realnej encji
 import pl.lab2.subtrack.data.local.entities.SubscriptionStatus
-
-data class PaymentHistoryMock(
-    val date: String,
-    val price: Double,
-    val isPaid: Boolean = true
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,6 +45,13 @@ fun SubscriptionDetailsScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     val isArchived = subscription?.status == SubscriptionStatus.ARCHIVED
+
+    // 1. OBSŁUGA STRUMIENIA REALNYCH PŁATNOŚCI Z BAZY ROOM
+    val realPayments by if (subscription != null) {
+        viewModel.getPaymentsForSubscription(subscription.id ?: 0L).collectAsState(initial = emptyList())
+    } else {
+        remember { mutableStateOf(emptyList<PaymentHistoryEntity>()) }
+    }
 
     // DYNAMICZNE OBLICZANIE KOLEJNEJ PŁATNOŚCI
     val nextPaymentFormatted = remember(subscription?.nextPaymentDate, subscription?.billingCycle) {
@@ -78,32 +80,6 @@ fun SubscriptionDetailsScreen(
             }
             dateFormatter.format(Date(calendar.timeInMillis))
         }
-    }
-
-    // Rzeczywiste płatności wyliczane na podstawie daty i ceny z obiektu Subscription
-    val payments = remember(subscription) {
-        if (subscription != null) {
-            val history = mutableListOf<PaymentHistoryMock>()
-            val calendar = java.util.Calendar.getInstance()
-
-            calendar.timeInMillis = subscription.startDate
-            val limitDate = if (isArchived && subscription.endDate != null) subscription.endDate else System.currentTimeMillis()
-
-            while (calendar.timeInMillis <= limitDate) {
-                history.add(0, PaymentHistoryMock(
-                    date = dateFormatter.format(calendar.time),
-                    price = subscription.price
-                ))
-
-                when (subscription.billingCycle.lowercase()) {
-                    "tydzień", "week" -> calendar.add(java.util.Calendar.WEEK_OF_YEAR, 1)
-                    "kwartał", "quarter" -> calendar.add(java.util.Calendar.MONTH, 3)
-                    "rok", "year" -> calendar.add(java.util.Calendar.YEAR, 1)
-                    else -> calendar.add(java.util.Calendar.MONTH, 1)
-                }
-            }
-            history
-        } else emptyList()
     }
 
     // POTWIERDZENIE TRWAŁEGO USUNIĘCIA
@@ -165,40 +141,74 @@ fun SubscriptionDetailsScreen(
             )
         },
         bottomBar = {
-            if (subscription != null && !isArchived) {
+            if (subscription != null) {
                 Surface(
                     tonalElevation = 2.dp,
                     shadowElevation = 8.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Button(
-                        onClick = {
-                            subscription.id?.let { subId ->
-                                viewModel.archiveSubscription(subId.toString())
-                                onBackClick()
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp)
-                            .height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Archive,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Zakończ i zarchiwizuj",
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                    if (!isArchived) {
+                        // Przycisk dla AKTYWNEJ subskrypcji
+                        Button(
+                            onClick = {
+                                subscription.id?.let { subId ->
+                                    viewModel.archiveSubscription(subId.toString())
+                                    onBackClick()
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                                .height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Archive,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Zakończ i zarchiwizuj",
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    } else {
+                        //Przycisk dla ZARCHIWIZOWANEJ subskrypcji -> Odarchiwizowanie
+                        Button(
+                            onClick = {
+                                subscription.id?.let { subId ->
+                                    viewModel.unarchiveSubscription(subId.toString())
+                                    onBackClick() // Wracamy do listy głównej po aktywacji
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                                .height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Unarchive,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Aktywuj ponownie usługę",
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                     }
                 }
             }
@@ -279,8 +289,6 @@ fun SubscriptionDetailsScreen(
 
                             HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
 
-                            // POPRAWKA: Prawidłowe sprawdzenie stanu tekstowego bazy danych.
-                            // Ignorujemy wielkość liter i sprawdzamy czy wartość nie jest równa "Wyłączone".
                             val isNotifEnabled = !subscription.notificationSetting.equals("Wyłączone", ignoreCase = true)
                             val notificationsText = if (isNotifEnabled) stringResource(id = R.string.on) else stringResource(id = R.string.off)
 
@@ -415,8 +423,9 @@ fun SubscriptionDetailsScreen(
                 }
             }
 
-            items(payments) { payment ->
-                PaymentHistoryItem(payment = payment)
+            // POPRAWKA: Przekazujemy teraz realne dane z bazy
+            items(realPayments) { payment ->
+                PaymentHistoryItem(payment = payment, dateFormatter = dateFormatter)
             }
 
             item {
@@ -451,8 +460,12 @@ fun InfoColumn(
     }
 }
 
+// POPRAWKA: Przebudowany widok pojedynczego elementu historii, korzystający z PaymentHistoryEntity
 @Composable
-fun PaymentHistoryItem(payment: PaymentHistoryMock) {
+fun PaymentHistoryItem(
+    payment: PaymentHistoryEntity,
+    dateFormatter: SimpleDateFormat
+) {
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp)
@@ -480,19 +493,19 @@ fun PaymentHistoryItem(payment: PaymentHistoryMock) {
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = payment.date,
+                    text = dateFormatter.format(Date(payment.paymentDate)),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = if (payment.isPaid) stringResource(id = R.string.status_paid) else stringResource(id = R.string.status_unpaid),
+                    text = stringResource(id = R.string.status_paid),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFF2C7B1E)
                 )
             }
 
             Text(
-                text = stringResource(id = R.string.minus_price_format, payment.price),
+                text = stringResource(id = R.string.minus_price_format, payment.amountPaid),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.error

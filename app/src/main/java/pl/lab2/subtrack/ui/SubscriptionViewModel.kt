@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 import pl.lab2.subtrack.Subscription
 import pl.lab2.subtrack.data.SettingsManager
 import pl.lab2.subtrack.data.local.dao.TagDao
-import pl.lab2.subtrack.data.local.entities.PaymentHistory
+import pl.lab2.subtrack.data.local.entities.PaymentHistoryEntity // Używamy tylko nowej encji
 import pl.lab2.subtrack.data.local.entities.SubscriptionStatus
 import pl.lab2.subtrack.data.local.entities.Tag
 import pl.lab2.subtrack.data.local.entities.UserSubscription
@@ -48,7 +48,7 @@ enum class AppLanguage(val code: String) {
     CHINESE("zh")
 }
 
-// --- KLASA ENTIY DLA WYKRESU ---
+// --- KLASA ENTITY DLA WYKRESU ---
 
 data class PieChartEntry(
     val name: String,
@@ -112,7 +112,6 @@ class SubscriptionViewModel(
             initialValue = emptyList()
         )
 
-    // NOWY STRUMIEŃ: Pobieranie zarchiwizowanych subskrypcji dla ekranu ArchiveScreen
     val archivedSubscriptions: StateFlow<List<Subscription>> = subscriptionRepository.getArchivedSubscriptionsWithTagsStream()
         .map { list ->
             list.map { entity ->
@@ -124,6 +123,66 @@ class SubscriptionViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+
+    // PRZYWRACANIE SUBSKRYPCJI Z ARCHIWUM (Wznowienie usługi)
+// PRZYWRACANIE SUBSKRYPCJI Z ARCHIWUM (Zabezpieczone przed duplikatami)
+    fun unarchiveSubscription(id: String) {
+        val numericId = id.toLongOrNull() ?: return
+        viewModelScope.launch {
+            val subWithTags = subscriptionRepository.getSubscriptionWithTagsStream(numericId).first()
+            subWithTags?.subscription?.let { entity ->
+
+                val today = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                }
+                val newStartDate = today.timeInMillis
+
+                // 1. Sprawdzamy dotychczasową historię płatności
+                val existingPayments = paymentRepository.getPaymentsForSubscriptionStream(entity.id).first()
+
+                val hasPaymentToday = existingPayments.any { payment ->
+                    val paymentCal = Calendar.getInstance().apply { timeInMillis = payment.paymentDate }
+                    paymentCal.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+                            paymentCal.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
+                }
+
+                // 2. Dynamicznie decydujemy o kolejnej dacie płatności
+                val newNextPaymentDate = if (!hasPaymentToday) {
+                    // Jeśli to zupełnie nowy okres i generujemy opłatę, obliczamy standardowo termin w przód
+                    calculateNextPaymentDate(newStartDate, entity.billingCycle)
+                } else {
+                    // Jeśli użytkownik tylko "miga" statusem w tym samym dniu, przywracamy jego
+                    // oryginalną datę kolejnej płatności, żeby nie przeskoczyć o kolejny miesiąc.
+                    // Jeśli stara data była z przeszłości, zabezpieczamy ją przed błędem.
+                    if (entity.nextPaymentDate > today.timeInMillis) entity.nextPaymentDate
+                    else calculateNextPaymentDate(newStartDate, entity.billingCycle)
+                }
+
+                // 3. Aktualizacja encji subskrypcji
+                val unarchivedEntity = entity.copy(
+                    status = SubscriptionStatus.ACTIVE,
+                    startDate = newStartDate,
+                    nextPaymentDate = newNextPaymentDate,
+                    endDate = null
+                )
+                subscriptionRepository.updateSubscription(unarchivedEntity)
+
+                // 4. Dodanie wpisu do historii TYLKO przy nowym okresie
+                if (!hasPaymentToday) {
+                    val currentPaymentRecord = PaymentHistoryEntity(
+                        id = 0,
+                        subscriptionId = entity.id,
+                        paymentDate = newStartDate,
+                        amountPaid = entity.price
+                    )
+                    paymentRepository.insertPayment(currentPaymentRecord)
+                    Log.d("SUBTRACK_UNARCHIVE", "Nowy okres: Dodano płatność do historii.")
+                } else {
+                    Log.d("SUBTRACK_UNARCHIVE", "Miganie statusem: Pominięto historię i zablokowano przesunięcie daty.")
+                }
+            }
+        }
+    }
 
     // --- STRUMIENIE STATYSTYK (FINANCIAL STATS) ---
 
@@ -164,7 +223,6 @@ class SubscriptionViewModel(
                 if (subTags.isEmpty()) {
                     categoryMap["Inne"] = categoryMap.getOrDefault("Inne", 0.0) + sub.monthlyEquivalent
                 } else {
-                    // Matematyczny rozdział proporcjonalny ceny na przypisane kategorie
                     val proportionalPrice = sub.monthlyEquivalent / subTags.size
                     subTags.forEach { tag ->
                         categoryMap[tag] = categoryMap.getOrDefault(tag, 0.0) + proportionalPrice
@@ -188,12 +246,11 @@ class SubscriptionViewModel(
 
     // --- STRUMIEŃ HISTORII PŁATNOŚCI DLA DETALI ---
 
-    fun getPaymentsForSubscription(subscriptionId: Long): kotlinx.coroutines.flow.Flow<List<PaymentHistory>> {
+    fun getPaymentsForSubscription(subscriptionId: Long): kotlinx.coroutines.flow.Flow<List<PaymentHistoryEntity>> {
         return paymentRepository.getPaymentsForSubscriptionStream(subscriptionId)
     }
 
     // --- OPERACJE CRUD NA SUBSKRYPCJACH ---
-// --- OPERACJE CRUD NA SUBSKRYPCJACH ---
 
     fun addSubscription(
         name: String,
@@ -204,10 +261,9 @@ class SubscriptionViewModel(
         startDate: Long,
         isTrial: Boolean,
         trialOption: String,
-        isNotificationEnabled: Boolean // Zmieniono z notificationSetting: String
+        isNotificationEnabled: Boolean
     ) {
         val parsedPrice = priceText.replace(",", ".").trim().toDoubleOrNull() ?: 0.0
-        // Mapowanie wartości logicznej na stringa bezpośrednio przed zapisem
         val finalNotificationSetting = if (isNotificationEnabled) "1 dzień przed" else "Wyłączone"
 
         viewModelScope.launch {
@@ -241,14 +297,13 @@ class SubscriptionViewModel(
                 set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
             }
 
+            // POPRAWKA: Zapisujemy historię początkową do nowej, poprawnej tabeli przy użyciu wygenerowanego ID
             while (historyCalendar.before(targetNextPaymentDate)) {
-                val paymentRecord = PaymentHistory(
+                val paymentRecord = PaymentHistoryEntity(
                     id = 0,
                     subscriptionId = insertedSubscriptionId,
                     paymentDate = historyCalendar.timeInMillis,
-                    serviceName = name.trim(),
-                    planName = plan.substringBefore("|").trim().ifEmpty { "Plan niestandardowy" },
-                    price = parsedPrice
+                    amountPaid = parsedPrice
                 )
 
                 paymentRepository.insertPayment(paymentRecord)
@@ -273,11 +328,10 @@ class SubscriptionViewModel(
         startDate: Long,
         isTrial: Boolean,
         trialOption: String,
-        isNotificationEnabled: Boolean // Zmieniono z notificationSetting: String
+        isNotificationEnabled: Boolean
     ) {
         val parsedPrice = priceText.replace(",", ".").trim().toDoubleOrNull() ?: 0.0
         val subscriptionId = id.toLongOrNull() ?: return
-        // Mapowanie wartości logicznej na stringa bezpośrednio przed edycją
         val finalNotificationSetting = if (isNotificationEnabled) "1 dzień przed" else "Wyłączone"
 
         viewModelScope.launch {
@@ -303,20 +357,17 @@ class SubscriptionViewModel(
         }
     }
 
-    // LOGICZNA ARCHIWIZACJA (Zakończenie subskrypcji)
     fun archiveSubscription(id: String) {
         val numericId = id.toLongOrNull() ?: return
         viewModelScope.launch {
             val subWithTags = subscriptionRepository.getSubscriptionWithTagsStream(numericId).first()
             subWithTags?.subscription?.let { entity ->
-                // Ustawiamy datę zakończenia usługi na moment bieżącego okresu płatności (trwa do najbliższej płatności)
                 val calculatedEndDate = entity.nextPaymentDate
                 subscriptionRepository.archiveSubscription(numericId, calculatedEndDate)
             }
         }
     }
 
-    // TRWAŁE USUNIĘCIE (Permanentne czyszczenie błędnych wpisów)
     fun deleteSubscription(id: String) {
         val numericId = id.toLongOrNull() ?: return
         viewModelScope.launch {
@@ -328,12 +379,11 @@ class SubscriptionViewModel(
     }
 
     fun getSubscriptionById(id: String): Subscription? {
-        // Przeszukujemy zarówno aktywne jak i zarchiwizowane, by zapobiec pustemu ekranowi szczegółów po archiwizacji
         return subscriptions.value.find { it.id == id.toLongOrNull() }
             ?: archivedSubscriptions.value.find { it.id == id.toLongOrNull() }
     }
 
-    // --- CONFIG SYSTEMOWY (MOTYW, JĘZYK, NOTYFIKACJE) ---
+    // --- CONFIG SYSTEMOWY ---
 
     private val _themeMode = MutableStateFlow(AppThemeMode.SYSTEM)
     val themeMode: StateFlow<AppThemeMode> = _themeMode.asStateFlow()
@@ -386,63 +436,53 @@ class SubscriptionViewModel(
         return calendar.timeInMillis
     }
 
-    // Definicja dostępnych okresów
     enum class TimePeriod(val months: Int, val label: String) {
         LAST_3_MONTHS(3, "3 miesiące"),
         LAST_6_MONTHS(6, "6 miesięcy"),
         LAST_YEAR(12, "Rok")
     }
 
-    // Klasa reprezentująca pojedynczy słupek/punkt na wykresie
     data class TimeChartEntry(
-        val label: String, // np. "05.2026" lub "Maj"
-        val amount: Double // suma wydatków w tym miesiącu
+        val label: String,
+        val amount: Double
     )
 
-    // Inside SubscriptionViewModel:
     private val _selectedPeriod = MutableStateFlow(TimePeriod.LAST_6_MONTHS)
     val selectedPeriod: StateFlow<TimePeriod> = _selectedPeriod.asStateFlow()
 
     val timeChartData: StateFlow<List<TimeChartEntry>> = combine(
-        subscriptions,                  // Strumień aktywnych subskrypcji Flow<List<UserSubscription>>
-        paymentRepository.getAllPaymentsStream(), // Strumień historii Flow<List<PaymentHistory>>
+        subscriptions,
+        paymentRepository.getAllPaymentsStream(),
         _selectedPeriod
     ) { subList, payments, period ->
         val calendar = Calendar.getInstance()
         val currentYearMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(calendar.time)
 
-        // 1. Przygotowanie struktur na dane
         val sdfKey = SimpleDateFormat("yyyy-MM", Locale.getDefault())
         val sdfLabel = SimpleDateFormat("MM/yy", Locale.getDefault())
 
         val resultList = mutableListOf<TimeChartEntry>()
 
-        // Ustawiamy kalendarz na najstarszy miesiąc w wybranym okresie
         val runCal = Calendar.getInstance().apply {
             add(Calendar.MONTH, -period.months + 1)
         }
 
-        // Grupowanie HISTORII płatności po miesiącach (dla miesięcy przeszłych)
+        // Grupowanie nowej encji po kluczu tekstowym daty
         val historyGroupedByMonth = payments.groupBy { sdfKey.format(Date(it.paymentDate)) }
 
-        // 2. Iterujemy przez każdy miesiąc w wybranym zakresie (np. ostatnich 6 miesięcy)
         while (!runCal.after(calendar)) {
             val monthKey = sdfKey.format(runCal.time)
             val label = sdfLabel.format(runCal.time)
 
             val totalForMonth = if (monthKey == currentYearMonth) {
-                // --- DLA BIEŻĄCEGO MIESIĄCA: Liczymy prognozę na podstawie aktywnych subskrypcji ---
-                subList.sumOf { sub ->
-                    // Używamy wyliczonego ekwiwalentu miesięcznego, aby zachować spójność z wykresem kołowym
-                    sub.monthlyEquivalent
-                }
+                subList.sumOf { sub -> sub.monthlyEquivalent }
             } else {
-                // --- DLA MINIONYCH MIESIĘCY: Wyciągamy realną historię z bazy ---
-                historyGroupedByMonth[monthKey]?.sumOf { it.price } ?: 0.0
+                // POPRAWKA: Zamieniono stare .price na realną kolumnę .amountPaid
+                historyGroupedByMonth[monthKey]?.sumOf { it.amountPaid } ?: 0.0
             }
 
             resultList.add(TimeChartEntry(label, totalForMonth))
-            runCal.add(Calendar.MONTH, 1) // Przejdź do kolejnego miesiąca
+            runCal.add(Calendar.MONTH, 1)
         }
 
         resultList

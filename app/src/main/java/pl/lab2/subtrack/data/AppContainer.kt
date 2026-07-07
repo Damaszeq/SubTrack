@@ -11,7 +11,7 @@ interface AppContainer {
     val subscriptionRepository: SubscriptionRepository
     val paymentRepository: PaymentRepository
     val tagRepository: TagRepository
-    val notificationSettingsRepository: NotificationSettingsRepository // NOWE
+    val notificationSettingsRepository: NotificationSettingsRepository
     val database: AppDatabase
     val notificationHistoryRepository: NotificationHistoryRepository
 }
