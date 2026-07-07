@@ -387,6 +387,7 @@ fun SubscriptionItem(
                 Spacer(modifier = Modifier.width(16.dp))
 
                 Column(horizontalAlignment = Alignment.End) {
+                    // POPRAWKA: Przekazujemy aktualną cenę triala (np. 0.00 PLN lub 1.00 PLN) ze zmiennej subscription.price
                     Text(
                         text = String.format(Locale.US, "%.2f PLN", subscription.price),
                         style = MaterialTheme.typography.titleMedium,

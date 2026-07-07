@@ -23,7 +23,7 @@ import pl.lab2.subtrack.data.local.entities.NotificationHistory
         SubscriptionTagCrossRef::class,
         NotificationHistory::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

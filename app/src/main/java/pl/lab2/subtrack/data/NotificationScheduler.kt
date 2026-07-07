@@ -5,7 +5,7 @@ import androidx.work.*
 import kotlinx.coroutines.flow.first
 import pl.lab2.subtrack.data.NotificationWorker
 import pl.lab2.subtrack.data.SettingsManager
-import pl.lab2.subtrack.data.local.entities.PaymentHistoryEntity // <-- ZMIANA: Nowa encja bazy
+import pl.lab2.subtrack.data.local.entities.PaymentHistoryEntity
 import pl.lab2.subtrack.data.local.entities.NotificationHistory
 import pl.lab2.subtrack.data.local.repositories.SubscriptionRepository
 import pl.lab2.subtrack.data.local.repositories.PaymentRepository
@@ -41,7 +41,7 @@ class NotificationScheduler(
 
             for (subWithTagsEntity in entitiesWithTags) {
                 val sub = subWithTagsEntity.toSubscription()
-                val originalEntity = subWithTagsEntity.subscription
+                var originalEntity = subWithTagsEntity.subscription // Usunięto 'val', aby móc modyfikować stan w locie
 
                 val isNotifEnabled = !sub.notificationSetting.equals("Wyłączone", ignoreCase = true)
 
@@ -74,8 +74,8 @@ class NotificationScheduler(
                         val notification = NotificationItem(
                             id = UUID.randomUUID().toString(),
                             subscriptionName = sub.name,
-                            type = if (sub.isTrial) NotificationType.TRIAL_EXPIRING else NotificationType.PAYMENT_REMINDER,
-                            priceTriggered = sub.price,
+                            type = if (originalEntity.isTrial) NotificationType.TRIAL_EXPIRING else NotificationType.PAYMENT_REMINDER,
+                            priceTriggered = originalEntity.price,
                             daysLeft = diffInDays,
                             timestamp = System.currentTimeMillis(),
                             isRead = false
@@ -84,10 +84,10 @@ class NotificationScheduler(
                         showSystemNotification(context, notification)
 
                         val notifTitle = "Nadchodzi płatność za ${sub.name}"
-                        val notifMessage = if (sub.isTrial) {
-                            "Twój okres próbny kończy się za $diffInDays dni! Zostanie pobrana opłata: ${String.format(plLocale, "%.2f", sub.price)} zł."
+                        val notifMessage = if (originalEntity.isTrial) {
+                            "Twój okres próbny kończy się za $diffInDays dni! Zostanie pobrana opłata: ${String.format(plLocale, "%.2f", originalEntity.price)} zł."
                         } else {
-                            "Przypomnienie: Za $diffInDays dni pobierzemy z Twojego konta ${String.format(plLocale, "%.2f", sub.price)} zł."
+                            "Przypomnienie: Za $diffInDays dni pobierzemy z Twojego konta ${String.format(plLocale, "%.2f", originalEntity.price)} zł."
                         }
 
                         val historyNotification = NotificationHistory(
@@ -102,20 +102,37 @@ class NotificationScheduler(
                         android.util.Log.d("SUBTRACK_NOTIF_LOG", "Zapisano powiadomienie dla ${originalEntity.name} do historii w bazie.")
                     }
 
-                    // 2. AUTOMATYCZNE ODNAWIANIE ZALEGŁYCH PŁATNOŚCI (ZAPIS DO NOWEJ TABELI PO ID)
+                    // 2. AUTOMATYCZNE ODNAWIANIE ZALEGŁYCH PŁATNOŚCI Z OBSŁUGĄ KONCA TRIALU
                     var updatedNextPaymentDate = originalEntity.nextPaymentDate
                     var tempDiffInDays = diffInDays
 
+                    // Flagi pomocnicze do śledzenia zmian struktury subskrypcji w pętli wielu okresów wstecz
+                    var currentIsTrial = originalEntity.isTrial
+                    var currentPrice = originalEntity.price
+
                     while (tempDiffInDays < 0) {
-                        // ZMIANA: Budujemy obiekt nowej encji, łącząc relację poprzez originalEntity.id
+                        // POPRAWKA: Jeśli usługa była oznaczona jako trial, to pierwsze odnowienie (koniec triala)
+                        // powinno zarejestrować pobranie ceny regularnej, a usługa staje się płatna.
+                        val amountToRegister = if (currentIsTrial) {
+                            originalEntity.regularPrice
+                        } else {
+                            currentPrice
+                        }
+
                         val historyEntry = PaymentHistoryEntity(
-                            subscriptionId = originalEntity.id, // Parowanie po kluczu głównym Long
+                            subscriptionId = originalEntity.id,
                             paymentDate = updatedNextPaymentDate,
-                            amountPaid = originalEntity.price
+                            amountPaid = amountToRegister
                         )
 
                         paymentRepository.insertPayment(historyEntry)
-                        android.util.Log.d("SUBTRACK_HISTORY", "Automatycznie dodano realną płatność dla ID: ${originalEntity.id} do bazy.")
+                        android.util.Log.d("SUBTRACK_HISTORY", "Automatycznie dodano płatność (kwota: $amountToRegister zł) dla ID: ${originalEntity.id}.")
+
+                        // Po przejściu pierwszego zaległego okresu próbnego, zmieniamy lokalny stan flag na potrzeby kolejnych iteracji pętli
+                        if (currentIsTrial) {
+                            currentIsTrial = false
+                            currentPrice = originalEntity.regularPrice
+                        }
 
                         // Przesunięcie terminu o kolejny cykl rozliczeniowy
                         updatedNextPaymentDate = incrementPaymentDate(updatedNextPaymentDate, originalEntity.billingCycle)
@@ -131,13 +148,15 @@ class NotificationScheduler(
                         tempDiffInDays = TimeUnit.MILLISECONDS.toDays(nextSubCal.timeInMillis - todayCal.timeInMillis).toInt()
                     }
 
-                    // Zapisujemy nową datę do bazy tylko jeśli faktycznie nastąpiła zmiana cyklu
+                    // Zapisujemy nową datę oraz zaktualizowany status okresu próbnego do bazy
                     if (updatedNextPaymentDate != originalEntity.nextPaymentDate) {
                         val renewedSubscription = originalEntity.copy(
-                            nextPaymentDate = updatedNextPaymentDate
+                            nextPaymentDate = updatedNextPaymentDate,
+                            isTrial = currentIsTrial, // Przypisanie nowej wartości (false)
+                            price = currentPrice     // Nadpisanie podstawowej stawki ceną regularną
                         )
                         repository.updateSubscription(renewedSubscription)
-                        android.util.Log.d("SUBTRACK_AUTORENEW", "Przesunięto termin subskrypcji ${originalEntity.name} na dzień: $updatedNextPaymentDate")
+                        android.util.Log.d("SUBTRACK_AUTORENEW", "Zakończono proces odnowienia ${originalEntity.name}. Nowa data płatności: $updatedNextPaymentDate, isTrial: $currentIsTrial, Aktualna cena cyklu: $currentPrice zł")
                     }
                 }
             }

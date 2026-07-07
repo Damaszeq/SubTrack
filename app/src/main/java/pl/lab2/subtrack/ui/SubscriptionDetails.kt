@@ -24,7 +24,7 @@ import pl.lab2.subtrack.R
 import pl.lab2.subtrack.data.resolvePlanName
 import pl.lab2.subtrack.ui.components.SubscriptionIcon
 import androidx.compose.ui.platform.LocalLocale
-import pl.lab2.subtrack.data.local.entities.PaymentHistoryEntity // Nowy import realnej encji
+import pl.lab2.subtrack.data.local.entities.PaymentHistoryEntity
 import pl.lab2.subtrack.data.local.entities.SubscriptionStatus
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -148,7 +148,6 @@ fun SubscriptionDetailsScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     if (!isArchived) {
-                        // Przycisk dla AKTYWNEJ subskrypcji
                         Button(
                             onClick = {
                                 subscription.id?.let { subId ->
@@ -179,12 +178,11 @@ fun SubscriptionDetailsScreen(
                             )
                         }
                     } else {
-                        //Przycisk dla ZARCHIWIZOWANEJ subskrypcji -> Odarchiwizowanie
                         Button(
                             onClick = {
                                 subscription.id?.let { subId ->
                                     viewModel.unarchiveSubscription(subId.toString())
-                                    onBackClick() // Wracamy do listy głównej po aktywacji
+                                    onBackClick()
                                 }
                             },
                             modifier = Modifier
@@ -233,7 +231,6 @@ fun SubscriptionDetailsScreen(
             item {
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // GŁÓWNA KARTA SUBSKRYPCJI
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
@@ -268,6 +265,7 @@ fun SubscriptionDetailsScreen(
                         ) {
                             SubscriptionIcon(
                                 serviceName = subscription.name,
+                                planKey = subscription.plan,
                                 modifier = Modifier
                                     .size(80.dp)
                                     .padding(4.dp)
@@ -300,8 +298,9 @@ fun SubscriptionDetailsScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
+                                    // POPRAWKA: Cena uwzględnia aktualną stawkę okresu próbnego
                                     InfoColumn(
-                                        label = stringResource(id = R.string.label_price),
+                                        label = if (subscription.isTrial) "Cena w okresie próbnym" else stringResource(id = R.string.label_price),
                                         value = stringResource(id = R.string.price_format, subscription.price),
                                         modifier = Modifier.weight(1f)
                                     )
@@ -350,17 +349,32 @@ fun SubscriptionDetailsScreen(
                                         color = MaterialTheme.colorScheme.error
                                     )
                                 } else {
-                                    Text(
-                                        text = "Kolejna płatność: ",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = nextPaymentFormatted,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text = if (subscription.isTrial) "Koniec okresu próbnego: " else "Kolejna płatność: ",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Text(
+                                                text = nextPaymentFormatted,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = if (subscription.isTrial) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+
+                                        // POPRAWKA: Informacja o przyszłej, regularnej płatności dopisana pod datą
+                                        if (subscription.isTrial) {
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = "Następnie: ${stringResource(id = R.string.price_format, subscription.regularPrice)} / ${subscription.billingCycle.lowercase()}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                fontWeight = FontWeight.Medium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -368,7 +382,7 @@ fun SubscriptionDetailsScreen(
                 }
             }
 
-            // SEKCJA OKRESU PRÓBNEGO
+            // SEKCJA OKRESU PRÓBNEGO (Ulepszona wizualnie informacja o stawkach)
             if (!isArchived) {
                 item {
                     AnimatedVisibility(visible = subscription.isTrial) {
@@ -378,7 +392,7 @@ fun SubscriptionDetailsScreen(
                             colors = CardDefaults.outlinedCardColors(
                                 containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
                             ),
-                            border = BorderStroke(0.dp, Color.Transparent)
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f))
                         ) {
                             Row(
                                 modifier = Modifier.padding(16.dp),
@@ -398,8 +412,15 @@ fun SubscriptionDetailsScreen(
                                         color = MaterialTheme.colorScheme.tertiary
                                     )
                                     Text(
-                                        text = subscription.trialOption,
+                                        text = if (subscription.trialOption.isNotEmpty()) subscription.trialOption else "Trwa promocyjny okres rozliczeniowy.",
                                         style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "Przyszła cena regularna: ${stringResource(id = R.string.price_format, subscription.regularPrice)}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
@@ -423,7 +444,6 @@ fun SubscriptionDetailsScreen(
                 }
             }
 
-            // POPRAWKA: Przekazujemy teraz realne dane z bazy
             items(realPayments) { payment ->
                 PaymentHistoryItem(payment = payment, dateFormatter = dateFormatter)
             }
@@ -460,7 +480,6 @@ fun InfoColumn(
     }
 }
 
-// POPRAWKA: Przebudowany widok pojedynczego elementu historii, korzystający z PaymentHistoryEntity
 @Composable
 fun PaymentHistoryItem(
     payment: PaymentHistoryEntity,

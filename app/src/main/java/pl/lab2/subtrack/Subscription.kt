@@ -7,7 +7,7 @@ data class Subscription(
     val id: Long? = null,
     val name: String,
     val plan: String,
-    val price: Double,
+    val price: Double,               // Aktualna cena (np. 1.00 PLN za pierwszy miesiąc triala)
     val billingCycle: String,
     val tags: List<String> = emptyList(),
     val startDate: Long = System.currentTimeMillis(),
@@ -15,11 +15,13 @@ data class Subscription(
     val isTrial: Boolean = false,
     val trialOption: String = "",
     val notificationSetting: String = "true",
-
-    // NOWE POLA SYNCHRONIZUJĄCE Z ENCJĄ BAZODANOWĄ:
     val status: SubscriptionStatus = SubscriptionStatus.ACTIVE,
-    val endDate: Long? = null
+    val endDate: Long? = null,
+
+    // NOWE POLE: Cena, jaka wejdzie automatycznie po zakończeniu triala
+    val regularPrice: Double = 0.0
 ) {
+    // Statystyki i wykresy biorą pod uwagę AKTUALNĄ cenę (czyli promocyjną/trialową)
     val monthlyEquivalent: Double
         get() = when (billingCycle.lowercase()) {
             "tydzień", "week" -> price * 4.33
@@ -29,13 +31,13 @@ data class Subscription(
         }
 }
 
-// Mapowanie z bazy danych (Room) do modelu domenowego (UI)
+// Mapowanie z bazy do domeny
 fun pl.lab2.subtrack.data.local.entities.SubscriptionWithTags.toSubscription(): Subscription {
     return Subscription(
         id = subscription.id,
         name = subscription.name,
         plan = subscription.planKey,
-        price = subscription.price,
+        price = subscription.price, // Aktualna cena triala z bazy
         billingCycle = subscription.billingCycle,
         tags = tags.map { it.name },
         startDate = subscription.startDate,
@@ -43,29 +45,31 @@ fun pl.lab2.subtrack.data.local.entities.SubscriptionWithTags.toSubscription(): 
         isTrial = subscription.isTrial,
         trialOption = subscription.trialOption,
         notificationSetting = subscription.notificationSetting,
-
-        //Przekazujemy nowe stany do UI
         status = subscription.status,
-        endDate = subscription.endDate
+        endDate = subscription.endDate,
+
+        // Mapowanie nowego pola z encji bazodanowej
+        regularPrice = subscription.regularPrice
     )
 }
 
-// Mapowanie z modelu domenowego (UI) do bazy danych (Room)
+// Mapowanie z domeny do bazy
 fun Subscription.toUserSubscription(): UserSubscription {
     return UserSubscription(
         id = id ?: 0L,
         name = name,
         planKey = plan,
-        price = price,
+        price = price, // Zapisujemy aktualną cenę do kolumny price
         billingCycle = billingCycle,
         startDate = startDate,
         nextPaymentDate = nextPaymentDate,
         isTrial = isTrial,
         trialOption = trialOption,
         notificationSetting = notificationSetting,
-
-        // POPRAWKA: Dynamicznie mapujemy status i datę zakończenia zamiast wpisywać ACTIVE na sztywno
         status = status,
-        endDate = endDate
+        endDate = endDate,
+
+        // Zapisujemy cenę regularną do nowej kolumny w bazie
+        regularPrice = regularPrice
     )
 }

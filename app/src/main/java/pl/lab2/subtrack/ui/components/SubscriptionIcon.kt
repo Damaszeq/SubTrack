@@ -24,12 +24,15 @@ import pl.lab2.subtrack.R
 fun SubscriptionIcon(
     serviceName: String,
     modifier: Modifier = Modifier,
-    planKey: String = "" // <-- NOWOŚĆ: Przekazujemy tutaj pole planu/ikony
+    planKey: String = "" // Pole przechowujące typ planu lub id ikony (np. "Nazwa Planu|custom_gym")
 ) {
+    // Bezpieczne wyciąganie identyfikatora ikony po znaku '|'
     val rawIconId = if (planKey.contains("|")) planKey.substringAfter("|") else planKey
     val iconId = rawIconId.lowercase().trim()
-    // --- NOWOŚĆ: Obsługa ikon niestandardowych (Custom) ---
-    if (iconId.startsWith("custom_")) {
+
+    // --- Obsługa ikon niestandardowych (Custom) ---
+    // Reagujemy TYLKO na jawny prefix "custom_" lub gdy cała nazwa usługi to jawnie "custom"
+    if (iconId.startsWith("custom_") || (iconId.isEmpty() && serviceName.lowercase().trim() == "custom")) {
         val iconVector = when (iconId) {
             "custom_star"     -> Icons.Default.Star
             "custom_gym"      -> Icons.Default.FitnessCenter
@@ -41,7 +44,7 @@ fun SubscriptionIcon(
             "custom_shopping" -> Icons.Default.ShoppingCart
             "custom_money"    -> Icons.Default.AccountBalance
             "custom_game"     -> Icons.Default.PlayArrow
-            else              -> Icons.Default.Star
+            else              -> Icons.Default.Star // Domyślny fallback
         }
 
         Icon(
@@ -49,13 +52,13 @@ fun SubscriptionIcon(
             contentDescription = "Custom Icon",
             tint = MaterialTheme.colorScheme.primary,
             modifier = modifier
-                .size(34.dp)
+                .size(48.dp)
                 .padding(4.dp)
         )
         return // Przerywamy rysowanie, nie ładujemy z sieci!
     }
 
-    // --- Dotychczasowa logika dla presetów sieciowych ---
+    // --- TWÓJ ORYGINALNY KOD SIECIOWY (NIETKNIĘTY) ---
     val baseName = if (serviceName.contains("(")) {
         serviceName.substringBefore("(").trim()
     } else {

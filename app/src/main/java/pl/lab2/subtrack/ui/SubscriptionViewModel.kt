@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 import pl.lab2.subtrack.Subscription
 import pl.lab2.subtrack.data.SettingsManager
 import pl.lab2.subtrack.data.local.dao.TagDao
-import pl.lab2.subtrack.data.local.entities.PaymentHistoryEntity // Używamy tylko nowej encji
+import pl.lab2.subtrack.data.local.entities.PaymentHistoryEntity
 import pl.lab2.subtrack.data.local.entities.SubscriptionStatus
 import pl.lab2.subtrack.data.local.entities.Tag
 import pl.lab2.subtrack.data.local.entities.UserSubscription
@@ -124,8 +124,7 @@ class SubscriptionViewModel(
             initialValue = emptyList()
         )
 
-    // PRZYWRACANIE SUBSKRYPCJI Z ARCHIWUM (Wznowienie usługi)
-// PRZYWRACANIE SUBSKRYPCJI Z ARCHIWUM (Zabezpieczone przed duplikatami)
+    // PRZYWRACANIE SUBSKRYPCJI Z ARCHIWUM (Zabezpieczone przed duplikatami)
     fun unarchiveSubscription(id: String) {
         val numericId = id.toLongOrNull() ?: return
         viewModelScope.launch {
@@ -137,7 +136,6 @@ class SubscriptionViewModel(
                 }
                 val newStartDate = today.timeInMillis
 
-                // 1. Sprawdzamy dotychczasową historię płatności
                 val existingPayments = paymentRepository.getPaymentsForSubscriptionStream(entity.id).first()
 
                 val hasPaymentToday = existingPayments.any { payment ->
@@ -146,19 +144,13 @@ class SubscriptionViewModel(
                             paymentCal.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
                 }
 
-                // 2. Dynamicznie decydujemy o kolejnej dacie płatności
                 val newNextPaymentDate = if (!hasPaymentToday) {
-                    // Jeśli to zupełnie nowy okres i generujemy opłatę, obliczamy standardowo termin w przód
                     calculateNextPaymentDate(newStartDate, entity.billingCycle)
                 } else {
-                    // Jeśli użytkownik tylko "miga" statusem w tym samym dniu, przywracamy jego
-                    // oryginalną datę kolejnej płatności, żeby nie przeskoczyć o kolejny miesiąc.
-                    // Jeśli stara data była z przeszłości, zabezpieczamy ją przed błędem.
                     if (entity.nextPaymentDate > today.timeInMillis) entity.nextPaymentDate
                     else calculateNextPaymentDate(newStartDate, entity.billingCycle)
                 }
 
-                // 3. Aktualizacja encji subskrypcji
                 val unarchivedEntity = entity.copy(
                     status = SubscriptionStatus.ACTIVE,
                     startDate = newStartDate,
@@ -167,7 +159,6 @@ class SubscriptionViewModel(
                 )
                 subscriptionRepository.updateSubscription(unarchivedEntity)
 
-                // 4. Dodanie wpisu do historii TYLKO przy nowym okresie
                 if (!hasPaymentToday) {
                     val currentPaymentRecord = PaymentHistoryEntity(
                         id = 0,
@@ -244,14 +235,13 @@ class SubscriptionViewModel(
             initialValue = emptyList()
         )
 
-    // --- STRUMIEŃ HISTORII PŁATNOŚCI DLA DETALI ---
-
     fun getPaymentsForSubscription(subscriptionId: Long): kotlinx.coroutines.flow.Flow<List<PaymentHistoryEntity>> {
         return paymentRepository.getPaymentsForSubscriptionStream(subscriptionId)
     }
 
     // --- OPERACJE CRUD NA SUBSKRYPCJACH ---
 
+    // POPRAWKA: Dodano obsługę parametru regularPrice
     fun addSubscription(
         name: String,
         plan: String,
@@ -261,7 +251,8 @@ class SubscriptionViewModel(
         startDate: Long,
         isTrial: Boolean,
         trialOption: String,
-        isNotificationEnabled: Boolean
+        isNotificationEnabled: Boolean,
+        regularPrice: Double = 0.0
     ) {
         val parsedPrice = priceText.replace(",", ".").trim().toDoubleOrNull() ?: 0.0
         val finalNotificationSetting = if (isNotificationEnabled) "1 dzień przed" else "Wyłączone"
@@ -274,6 +265,7 @@ class SubscriptionViewModel(
                 name = name,
                 planKey = plan,
                 price = parsedPrice,
+                regularPrice = regularPrice, // Przypisanie ceny regularnej po zakończeniu triala
                 billingCycle = billingCycle,
                 startDate = startDate,
                 nextPaymentDate = nextDate,
@@ -297,16 +289,21 @@ class SubscriptionViewModel(
                 set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
             }
 
-            // POPRAWKA: Zapisujemy historię początkową do nowej, poprawnej tabeli przy użyciu wygenerowanego ID
+            var isFirstPeriod = true
+
             while (historyCalendar.before(targetNextPaymentDate)) {
+                // Pierwsza opłata rejestruje cenę triala (parsedPrice), kolejne już cenę regularną
+                val actualAmount = if (isTrial && !isFirstPeriod) regularPrice else parsedPrice
+
                 val paymentRecord = PaymentHistoryEntity(
                     id = 0,
                     subscriptionId = insertedSubscriptionId,
                     paymentDate = historyCalendar.timeInMillis,
-                    amountPaid = parsedPrice
+                    amountPaid = actualAmount
                 )
 
                 paymentRepository.insertPayment(paymentRecord)
+                isFirstPeriod = false
 
                 when (billingCycle.lowercase(Locale.ROOT)) {
                     "tydzień", "week", "weekly" -> historyCalendar.add(Calendar.WEEK_OF_YEAR, 1)
@@ -318,6 +315,7 @@ class SubscriptionViewModel(
         }
     }
 
+    // POPRAWKA: Dodano obsługę parametru regularPrice przy aktualizacji subskrypcji
     fun updateSubscription(
         id: String,
         name: String,
@@ -328,7 +326,8 @@ class SubscriptionViewModel(
         startDate: Long,
         isTrial: Boolean,
         trialOption: String,
-        isNotificationEnabled: Boolean
+        isNotificationEnabled: Boolean,
+        regularPrice: Double = 0.0
     ) {
         val parsedPrice = priceText.replace(",", ".").trim().toDoubleOrNull() ?: 0.0
         val subscriptionId = id.toLongOrNull() ?: return
@@ -342,6 +341,7 @@ class SubscriptionViewModel(
                 name = name,
                 planKey = plan,
                 price = parsedPrice,
+                regularPrice = regularPrice,
                 billingCycle = billingCycle,
                 startDate = startDate,
                 nextPaymentDate = nextDate,
@@ -467,7 +467,6 @@ class SubscriptionViewModel(
             add(Calendar.MONTH, -period.months + 1)
         }
 
-        // Grupowanie nowej encji po kluczu tekstowym daty
         val historyGroupedByMonth = payments.groupBy { sdfKey.format(Date(it.paymentDate)) }
 
         while (!runCal.after(calendar)) {
@@ -477,7 +476,6 @@ class SubscriptionViewModel(
             val totalForMonth = if (monthKey == currentYearMonth) {
                 subList.sumOf { sub -> sub.monthlyEquivalent }
             } else {
-                // POPRAWKA: Zamieniono stare .price na realną kolumnę .amountPaid
                 historyGroupedByMonth[monthKey]?.sumOf { it.amountPaid } ?: 0.0
             }
 
