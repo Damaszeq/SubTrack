@@ -12,7 +12,6 @@ import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.WbSunny
-import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
@@ -43,16 +42,16 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(text = stringResource(id = R.string.settings_title), fontWeight = FontWeight.Bold) },
+                title = { Text(text = stringResource(id = R.string.settings_title), fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
@@ -62,23 +61,24 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
+            Spacer(modifier = Modifier.height(4.dp))
 
             // ================= SEKCJA 1: WYBÓR MOTYWU =================
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = stringResource(id = R.string.theme_section_title),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = MaterialTheme.colorScheme.primary
                 )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     SettingsOptionCard(
                         label = stringResource(id = R.string.theme_system),
@@ -106,64 +106,79 @@ fun SettingsScreen(
                 }
             }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.08f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
 
             // ================= SEKCJA 2: WYBÓR JĘZYKA =================
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = stringResource(id = R.string.language_section_title),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = MaterialTheme.colorScheme.primary
                 )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    SettingsOptionCard(
-                        label = stringResource(id = R.string.lang_polish),
-                        icon = Icons.Default.Translate,
-                        selected = currentLanguage == AppLanguage.POLISH,
-                        onClick = { viewModel.setLanguage(AppLanguage.POLISH) },
-                        modifier = Modifier.weight(1f)
-                    )
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        LanguageOptionCard(
+                            label = stringResource(id = R.string.lang_polish),
+                            flagEmoji = "🇵🇱",
+                            selected = currentLanguage == AppLanguage.POLISH,
+                            onClick = { viewModel.setLanguage(AppLanguage.POLISH) },
+                            modifier = Modifier.weight(1f)
+                        )
 
-                    SettingsOptionCard(
-                        label = stringResource(id = R.string.lang_english),
-                        icon = Icons.Default.Translate,
-                        selected = currentLanguage == AppLanguage.ENGLISH,
-                        onClick = { viewModel.setLanguage(AppLanguage.ENGLISH) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    SettingsOptionCard(
-                        label = stringResource(id = R.string.lang_chinesse),
-                        icon = Icons.Default.Translate,
-                        selected = currentLanguage == AppLanguage.CHINESE,
-                        onClick = { viewModel.setLanguage(AppLanguage.CHINESE) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
+                        LanguageOptionCard(
+                            label = stringResource(id = R.string.lang_english),
+                            flagEmoji = "🇬🇧",
+                            selected = currentLanguage == AppLanguage.ENGLISH,
+                            onClick = { viewModel.setLanguage(AppLanguage.ENGLISH) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        LanguageOptionCard(
+                            label = stringResource(id = R.string.lang_chinesse),
+                            flagEmoji = "🇨🇳",
+                            selected = currentLanguage == AppLanguage.CHINESE,
+                            onClick = { viewModel.setLanguage(AppLanguage.CHINESE) },
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        LanguageOptionCard(
+                            label = stringResource(id = R.string.lang_spanish),
+                            flagEmoji = "🇪🇸",
+                            selected = currentLanguage == AppLanguage.SPANISH,
+                            onClick = { viewModel.setLanguage(AppLanguage.SPANISH) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.08f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
 
             // ================= SEKCJA 3: POWIADOMIENIA GLOBALNE =================
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    text = "Domyślne powiadomienia",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = stringResource(id = R.string.settings_default_notifications),
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = MaterialTheme.colorScheme.primary
                 )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     SettingsOptionCard(
-                        label = "Wyłączone",
+                        label = stringResource(id = R.string.off),
                         icon = Icons.Default.NotificationsOff,
                         selected = !isNotificationsEnabled,
                         onClick = { viewModel.setGlobalNotificationsEnabled(false) },
@@ -171,36 +186,38 @@ fun SettingsScreen(
                     )
 
                     SettingsOptionCard(
-                        label = "Włączone",
+                        label = stringResource(id = R.string.on),
                         icon = Icons.Default.NotificationsActive,
                         selected = isNotificationsEnabled,
                         onClick = { viewModel.setGlobalNotificationsEnabled(true) },
                         modifier = Modifier.weight(1f)
                     )
-
-                    Spacer(modifier = Modifier.weight(1f))
                 }
 
                 // Dynamiczne kafelki szczegółowego czasu pokazywane tylko, gdy powiadomienia są aktywne
                 AnimatedVisibility(visible = isNotificationsEnabled) {
                     Column(
-                        modifier = Modifier.padding(top = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        modifier = Modifier.padding(top = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "Kiedy chcesz otrzymać domyślne przypomnienie?",
-                            style = MaterialTheme.typography.bodySmall,
+                            text = stringResource(id = R.string.settings_notifications_question),
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             listOf(24, 48, 72).forEach { hour ->
                                 val isSelected = globalReminderHours.contains(hour)
                                 SettingsOptionCard(
-                                    label = if (hour < 24) "$hour godz." else "${hour / 24} dni przed",
+                                    label = if (hour < 24) {
+                                        stringResource(id = R.string.settings_hours_format, hour)
+                                    } else {
+                                        stringResource(id = R.string.settings_days_format, hour / 24)
+                                    },
                                     icon = Icons.Default.Notifications,
                                     selected = isSelected,
                                     onClick = {
@@ -219,6 +236,7 @@ fun SettingsScreen(
                     }
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -231,46 +249,89 @@ fun SettingsOptionCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val strokeColor = if (selected) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.onBackground.copy(alpha = 0.15f)
-    }
+    val containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceContainerLow
+    val strokeColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+    val contentColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
 
-    val contentColor = if (selected) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-    }
-
-    Column(
+    Surface(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .border(
-                width = if (selected) 2.dp else 1.dp,
-                color = strokeColor,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .clickable(onClick = onClick)
-            .padding(vertical = 16.dp, horizontal = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick),
+        color = containerColor,
+        shape = RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            width = if (selected) 2.dp else 1.dp,
+            color = strokeColor
+        )
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = contentColor,
-            modifier = Modifier.size(28.dp)
-        )
+        Column(
+            modifier = Modifier.padding(vertical = 16.dp, horizontal = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = contentColor,
+                modifier = Modifier.size(24.dp)
+            )
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+fun LanguageOptionCard(
+    label: String,
+    flagEmoji: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceContainerLow
+    val strokeColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+
+    Surface(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick),
+        color = containerColor,
+        shape = RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            width = if (selected) 2.dp else 1.dp,
+            color = strokeColor
         )
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(vertical = 16.dp, horizontal = 16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = flagEmoji,
+                style = MaterialTheme.typography.titleLarge
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }

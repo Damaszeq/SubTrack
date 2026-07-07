@@ -13,8 +13,10 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import pl.lab2.subtrack.R
 import pl.lab2.subtrack.ui.SubscriptionViewModel
 
 @Composable
@@ -35,37 +37,29 @@ fun FinanceTimeChart(
             .padding(16.dp)
     ) {
         Text(
-            text = "Suma wydatków w czasie",
+            text = stringResource(id = R.string.chart_title_spending_over_time),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        // Główna przestrzeń wykresu
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(160.dp)
         ) {
             Canvas(modifier = Modifier.fillMaxSize()) {
-                val canvasWidth = size.width
-                val canvasHeight = size.height
-
                 val barCount = data.size
                 if (barCount == 0) return@Canvas
 
-                // Obliczanie szerokości słupków i odstępów
-                val totalSpacing = (barCount - 1) * 24f // 24px odstępu między słupkami
-                val barWidth = (canvasWidth - totalSpacing) / barCount
+                val totalSpacing = (barCount - 1) * 24f
+                val barWidth = (size.width - totalSpacing) / barCount
 
                 data.forEachIndexed { index, entry ->
-                    // Proporcjonalna wysokość słupka względem maxAmount
-                    val barHeight = (entry.amount / maxAmount) * canvasHeight
-
+                    val barHeight = (entry.amount / maxAmount) * size.height
                     val xOffset = index * (barWidth + 24f)
-                    val yOffset = canvasHeight - barHeight.toFloat()
+                    val yOffset = size.height - barHeight.toFloat()
 
-                    // Rysujemy zaokrąglony słupek (tylko góra zaokrąglona)
                     drawRoundRect(
                         color = if (entry.amount > 0) barColor else barColor.copy(alpha = 0.15f),
                         topLeft = Offset(xOffset, yOffset),
@@ -76,11 +70,8 @@ fun FinanceTimeChart(
             }
         }
 
-        // Dolna oś z etykietami (Miesiące) i kwotami pod słupkami
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             data.forEach { entry ->
@@ -94,9 +85,9 @@ fun FinanceTimeChart(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "${entry.amount.toInt()} zł",
+                        text = stringResource(id = R.string.currency_format, entry.amount.toInt()),
                         style = MaterialTheme.typography.bodySmall,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1
                     )

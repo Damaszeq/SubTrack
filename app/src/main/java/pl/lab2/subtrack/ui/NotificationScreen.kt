@@ -73,8 +73,8 @@ fun NotificationsScreen(
                 title = {
                     Text(
                         text = stringResource(id = R.string.notifications_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.ExtraBold
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
                     )
                 },
                 navigationIcon = {
@@ -96,18 +96,18 @@ fun NotificationsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { notificationViewModel.triggerTestNotification(context) },
-                containerColor = MaterialTheme.colorScheme.secondary,
-                contentColor = MaterialTheme.colorScheme.onSecondary,
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(id = R.string.trigger_push_desc))
@@ -124,8 +124,8 @@ fun NotificationsScreen(
             ) {
                 Text(
                     text = stringResource(id = R.string.notifications_empty),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         } else {
@@ -134,7 +134,7 @@ fun NotificationsScreen(
                     .fillMaxSize()
                     .padding(innerPadding),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(
                     items = notifications,
@@ -158,8 +158,6 @@ fun NotificationsScreen(
                         enableDismissFromStartToEnd = true,
                         enableDismissFromEndToStart = true,
                         backgroundContent = {
-                            // CAŁKOWITE USUNIĘCIE KOSZA I CZERWONEGO KOLORU
-                            // Pusty Box z przezroczystym tłem gwarantuje czysty swipe
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -167,7 +165,6 @@ fun NotificationsScreen(
                             )
                         },
                         content = {
-                            // Wymuszenie przezroczystości kontenera otaczającego, aby nie przebijał czerwony kolor systemowy
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -203,61 +200,64 @@ fun NotificationItemRow(
     }
 
     val containerColor = if (!notification.isRead) {
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
     } else {
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+        MaterialTheme.colorScheme.surfaceContainerLow
     }
 
-    Card(
+    val strokeColor = if (!notification.isRead) {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+    } else {
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+    }
+
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = !notification.isRead) { onMarkReadClick() },
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        color = containerColor,
+        shape = RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(width = 1.dp, color = strokeColor)
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 12.dp, vertical = 10.dp)
+                .padding(horizontal = 16.dp, vertical = 14.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Sekcja 1: Logotyp usługi
             Box(
-                modifier = Modifier.size(36.dp),
+                modifier = Modifier.size(40.dp),
                 contentAlignment = Alignment.Center
             ) {
                 SubscriptionIcon(
                     serviceName = notification.serviceName,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(36.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(14.dp))
 
-            // Sekcja 2: Tytuł i opis
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = notification.title,
                     fontWeight = if (!notification.isRead) FontWeight.Bold else FontWeight.SemiBold,
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.labelLarge,
                     color = if (!notification.isRead) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = notification.message,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (!notification.isRead) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (!notification.isRead) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
-            // Sekcja 3: Czas i kropka statusu nieprzeczytanego
             Column(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.Center,
@@ -271,7 +271,7 @@ fun NotificationItemRow(
                 )
 
                 if (!notification.isRead) {
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     Box(
                         modifier = Modifier
                             .size(8.dp)
@@ -279,7 +279,7 @@ fun NotificationItemRow(
                             .background(MaterialTheme.colorScheme.primary)
                     )
                 } else {
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }
@@ -305,10 +305,28 @@ fun showSystemNotification(context: Context, notificationItem: NotificationItem)
         notificationManager.createNotificationChannel(channel)
     }
 
+    // 1. Dynamiczne formatowanie ceny (zakładając, że przekazujesz double/float z modelu)
+    val formattedPrice = context.getString(R.string.price_format, notificationItem.price)
+
+    // 2. Budowanie pełnego, ładnego zdania na bazie Twoich string resources
+    val contentText = if (notificationItem.isTrial) {
+        context.getString(R.string.dynamic_msg_trial, notificationItem.subscriptionName)
+        // Wynik: "Twój darmowy okres próbny w Netflix kończy się jutro."
+    } else {
+        context.getString(
+            R.string.dynamic_msg_payment,
+            notificationItem.daysLeft,
+            formattedPrice,
+            notificationItem.subscriptionName
+        )
+        // Wynik: "Za 3 dzień zostanie pobrana opłata 43.00 PLN za subskrypcję Netflix."
+    }
+
     val builder = NotificationCompat.Builder(context, channelId)
         .setSmallIcon(android.R.drawable.ic_dialog_info)
-        .setContentTitle(notificationItem.subscriptionName)
-        .setContentText(if (notificationItem.daysLeft == 1) "Płatność jutro!" else "Zbliża się płatność.")
+        .setContentTitle(context.getString(R.string.app_name)) // Tytuł pusha: SubTrack
+        .setContentText(contentText)
+        .setStyle(NotificationCompat.BigTextStyle().bigText(contentText)) // Pozwala rozwinąć długi tekst w pushu
         .setPriority(NotificationCompat.PRIORITY_DEFAULT)
         .setAutoCancel(true)
 

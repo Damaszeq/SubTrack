@@ -196,10 +196,10 @@ class NotificationScheduler(
         }
 
         when (billingCycle.lowercase(Locale.ROOT)) {
-            "monthly", "miesięczny", "miesięcznie" -> calendar.add(Calendar.MONTH, 1)
-            "yearly", "roczny", "rocznie", "rok", "year" -> calendar.add(Calendar.YEAR, 1)
-            "weekly", "tygodniowy", "tygodniowo", "tydzień", "week" -> calendar.add(Calendar.WEEK_OF_YEAR, 1)
-            "kwartał", "quarter" -> calendar.add(Calendar.MONTH, 3)
+            "weekly", "tygodniowy", "tygodniowo", "tydzień", "week", "semana", "semanal" -> calendar.add(Calendar.WEEK_OF_YEAR, 1)
+            "monthly", "miesięczny", "miesięcznie", "mes", "mensual" -> calendar.add(Calendar.MONTH, 1)
+            "kwartał", "quarter", "trimestre", "trimestral" -> calendar.add(Calendar.MONTH, 3)
+            "yearly", "roczny", "rocznie", "rok", "year", "año", "anual" -> calendar.add(Calendar.YEAR, 1)
             else -> calendar.add(Calendar.MONTH, 1)
         }
         return calendar.timeInMillis

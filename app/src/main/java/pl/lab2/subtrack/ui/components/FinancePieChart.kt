@@ -14,10 +14,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalLocale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import pl.lab2.subtrack.R
 import pl.lab2.subtrack.ui.PieChartEntry
-import pl.lab2.subtrack.ui.SubscriptionViewModel
 
 @Composable
 fun FinancePieChart(
@@ -27,51 +28,33 @@ fun FinancePieChart(
 ) {
     var animationPlayed by remember { mutableStateOf(false) }
 
-    // Profesjonalna krzywa animacji stosowana w aplikacjach Google/Fintech
     val animateProgress by animateFloatAsState(
         targetValue = if (animationPlayed) 1f else 0f,
-        animationSpec = tween(
-            durationMillis = 800,
-            easing = FastOutSlowInEasing
-        )
+        animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing),
+        label = "pie_chart_animation"
     )
 
-    LaunchedEffect(key1 = true) {
-        animationPlayed = true
-    }
+    LaunchedEffect(Unit) { animationPlayed = true }
 
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
-    ) {
-        Canvas(
-            modifier = Modifier
-                .fillMaxSize() // Pozwalamy na elastyczne dopasowanie do kontenera z ekranu
-                .padding(12.dp)
-        ) {
-            val strokeWidthPx = 16.dp.toPx() // Nowoczesna, smuklejsza grubość linii
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.fillMaxSize().padding(12.dp)) {
+            val strokeWidthPx = 16.dp.toPx()
             val totalValues = data.sumOf { it.value }.toFloat()
 
             if (totalValues == 0f) {
                 drawArc(
                     color = Color.LightGray.copy(alpha = 0.2f),
-                    startAngle = 0f,
-                    sweepAngle = 360f,
-                    useCenter = false,
+                    startAngle = 0f, sweepAngle = 360f, useCenter = false,
                     style = Stroke(width = strokeWidthPx)
                 )
                 return@Canvas
             }
 
-            var startAngle = -90f // Start od samej góry
-
-            // Definiujemy odstęp (szczelinę) między wycinkami w stopniach
-            // Jeśli jest tylko jedna subskrypcja, nie robimy przerw
+            var startAngle = -90f
             val gapAngle = if (data.size > 1) 3f else 0f
 
             data.forEach { entry ->
                 val rawSweepAngle = (entry.value.toFloat() / totalValues) * 360f
-                // Odejmujemy szczelinę od całkowitego kąta segmentu, by nie zachodziły na siebie
                 val sweepAngle = (rawSweepAngle - gapAngle) * animateProgress
 
                 if (sweepAngle > 0f) {
@@ -80,31 +63,23 @@ fun FinancePieChart(
                         startAngle = startAngle,
                         sweepAngle = sweepAngle,
                         useCenter = false,
-                        style = Stroke(
-                            width = strokeWidthPx,
-                            cap = StrokeCap.Round // Zaokrąglone końce segmentów
-                        )
+                        style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
                     )
                 }
-                // Przesuwamy kąt startowy o pełną wartość, zachowując szczelinę w pamięci
                 startAngle += rawSweepAngle
             }
         }
 
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Text(
-                text = "MIESIĘCZNIE",
+                text = stringResource(id = R.string.pie_chart_label_monthly),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                fontWeight = FontWeight.Bold,
-                letterSpacing = androidx.compose.ui.unit.TextUnit.Unspecified // Lub np. 1.5.sp po zaimportowaniu
+                fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = String.format(LocalLocale.current.platformLocale, "%.2f zł", totalAmount),
+                text = String.format(LocalLocale.current.platformLocale, stringResource(id = R.string.currency_format_pie), totalAmount),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.onSurface

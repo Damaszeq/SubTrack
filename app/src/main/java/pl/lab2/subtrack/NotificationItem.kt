@@ -10,11 +10,13 @@ enum class NotificationType {
 
 data class NotificationItem(
     val id: String = UUID.randomUUID().toString(),
-    val subscriptionId: String? = null, // Powiązanie z konkretną subskrypcją
-    val subscriptionName: String? = null, // Zbuforowana nazwa dla łatwego wyświetlania
+    val subscriptionId: String? = null,
+    val subscriptionName: String? = null,
     val type: NotificationType,
-    val priceTriggered: Double? = null, // Kwota, której dotyczy alert
-    val daysLeft: Int? = null,          // Ile dni zostało (do wyliczania stringów)
+    val priceTriggered: Double? = null,
+    val daysLeft: Int? = null,
     val timestamp: Long = System.currentTimeMillis(),
-    val isRead: Boolean = false
+    val isRead: Boolean = false,
+    val price: Double = 0.0,
+    val isTrial: Boolean = false
 )

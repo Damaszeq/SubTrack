@@ -81,6 +81,21 @@
     <string name="period_30days">Every 30 days</string>
     <string name="period_quarterly">Quarterly</string>
 
+    <string name="stats_title">Statistics</string>
+    <string name="stats_history">Spending history</string>
+    <string name="stats_tab_subscriptions">Services</string>
+    <string name="stats_tab_categories">Categories</string>
+    <string name="stats_yearly_forecast">YEARLY FORECAST</string>
+    <string name="stats_active_subs">ACTIVE SERVICES</string>
+    <string name="stats_used_cats">USED CATEGORIES</string>
+    <string name="stats_highest_cost">Highest cost</string>
+    <string name="stats_most_expensive_cat">Most expensive category</string>
+    <string name="chart_title_spending_over_time">Spending over time</string>
+    <string name="currency_format">%d PLN</string>
+    <string name="stats_subs_structure">Spending structure</string>
+    <string name="stats_cat_structure">Category breakdown</string>
+    <string name="stats_percent_format">%.1f%% of total budget</string>
+
     <!-- Section 3: Dates -->
     <string name="label_start_date">Start date</string>
     <string name="label_end_date">End date</string>
@@ -96,6 +111,8 @@
     <!-- Main Button -->
     <string name="btn_save_subscription">Add subscription</string>
     <string name="en">en</string>
+    <string name="pie_chart_label_monthly">MONTHLY</string>
+    <string name="currency_format_pie">$%.2f</string>
 
     <string name="details">Details</string>
     <string name="back">Back</string>
@@ -158,8 +175,17 @@
     <string name="total_monthly_expenses">Suma wydatków (miesięcznie)</string>
     <string name="lang_chinesse">Chinesse</string>
 
+    <string name="lang_spanish">Spanish</string>
+    <string name="settings_default_notifications">Default notifications</string>
+    <string name="settings_notifications_question">When do you want to receive the default reminder?</string>
+    <string name="settings_hours_format">%1$d hrs</string>
+    <string name="settings_days_format">%1$d days before</string>
+
+
     <!-- Kategorie (Tags) -->
     <string name="tag_entertainment">Entertainment</string>
+
+
     <string name="tag_productivity">Productivity</string>
     <string name="tag_gaming">Gaming</string>
     <string name="tag_shopping">Shopping &amp; Delivery</string>

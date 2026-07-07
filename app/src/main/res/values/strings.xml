@@ -190,5 +190,27 @@
     <string name="tag_lifestyle">Lifestyle</string>
     <string name="mark_all_as_read_desc">Oznacz jako przeczytane</string>
     <string name="on">Włączone</string>
+    <string name="pie_chart_label_monthly">MIESIĘCZNIE</string>
+    <string name="currency_format_pie">%.2f zł</string>
     <string name="off">Wyłączone</string>
+    <string name="lang_spanish">Hiszpański</string>
+    <string name="settings_default_notifications">Domyślne powiadomienia</string>
+    <string name="settings_notifications_question">Kiedy chcesz otrzymać domyślne przypomnienie?</string>
+    <string name="settings_hours_format">%1$d godz.</string>
+    <string name="settings_days_format">%1$d dni przed</string>
+    <string name="stats_title">Statystyki</string>
+    <string name="stats_history">Historia wydatków</string>
+    <string name="stats_tab_subscriptions">Usługi</string>
+    <string name="stats_tab_categories">Kategorie</string>
+    <string name="stats_yearly_forecast">PROGNOZA ROCZNA</string>
+    <string name="stats_active_subs">AKTYWNE USŁUGI</string>
+    <string name="stats_used_cats">UŻYTE KATEGORIE</string>
+    <string name="stats_highest_cost">Najwyższy koszt</string>
+    <string name="stats_most_expensive_cat">Najdroższa kategoria</string>
+    <string name="stats_subs_structure">Struktura wydatków</string>
+    <string name="chart_title_spending_over_time">Suma wydatków w czasie</string>
+    <string name="currency_format">%d zł</string>
+    <string name="stats_cat_structure">Podział na kategorie</string>
+    <string name="stats_percent_format">%.1f%% całkowitego budżetu</string>
+
 </resources>

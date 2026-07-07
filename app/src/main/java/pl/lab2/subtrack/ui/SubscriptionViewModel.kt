@@ -45,7 +45,8 @@ enum class StatsViewType {
 enum class AppLanguage(val code: String) {
     POLISH("pl"),
     ENGLISH("en"),
-    CHINESE("zh")
+    CHINESE("zh"),
+    SPANISH("es")
 }
 
 // --- KLASA ENTITY DLA WYKRESU ---

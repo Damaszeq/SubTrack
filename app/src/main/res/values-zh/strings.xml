@@ -31,6 +31,8 @@
     <string name="mock_user_main">你 (主账号)</string>
     <string name="mock_user_other">王明</string>
     <string name="mock_sub_price">21.50 PLN</string>
+    <string name="dynamic_msg_payment">距离扣款还有 %1$d 天。金额：%2$s，订阅服务：%3$s。</string>
+    <string name="dynamic_msg_trial">您的 %1$s 免费试用将于明天结束。</string>
 
     <!-- Top Bar -->
     <string name="notifications_title">通知</string>
@@ -46,12 +48,32 @@
     <string name="notify_24h_sub">扣款前最后警告</string>
 
     <!-- Powiadomienia -->
-    <string name="dynamic_msg_payment">%1$d 天后将扣除 %3$s 订阅费用 %2$s。</string>
-    <string name="dynamic_msg_trial">您在 %1$s 的免费试用将于明天结束。</string>
+
     <string name="subscription_notifications_label">付款通知</string>
+    <string name="pie_chart_label_monthly">每月</string>
+    <string name="currency_format_pie">%.2f 元</string>
     <string name="yes">是</string>
     <string name="no">否</string>
+    <string name="lang_spanish">西班牙语</string>
+    <string name="settings_default_notifications">默认通知</string>
+    <string name="settings_notifications_question">您想何时收到默认提醒？</string>
+    <string name="settings_hours_format">%1$d 小时</string>
+    <string name="settings_days_format">提前 %1$d 天</string>
+    <string name="chart_title_spending_over_time">时间段支出总额</string>
+    <string name="currency_format">%d 元</string>
 
+    <string name="stats_title">统计数据</string>
+    <string name="stats_history">支出历史</string>
+    <string name="stats_tab_subscriptions">服务</string>
+    <string name="stats_tab_categories">分类</string>
+    <string name="stats_yearly_forecast">年度预测</string>
+    <string name="stats_active_subs">活跃服务</string>
+    <string name="stats_used_cats">已用分类</string>
+    <string name="stats_highest_cost">最高费用</string>
+    <string name="stats_most_expensive_cat">最昂贵的分类</string>
+    <string name="stats_subs_structure">支出结构</string>
+    <string name="stats_cat_structure">分类明细</string>
+    <string name="stats_percent_format">占总预算的 %.1f%%</string>
     <!-- Niestandardowe -->
     <string name="custom_settings_title">自定义设置</string>
     <string name="custom_settings_sub">添加自定义提醒时间</string>
