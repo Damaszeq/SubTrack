@@ -28,6 +28,10 @@ class NotificationScheduler(
     private val settingsManager = SettingsManager(context)
     private val plLocale = Locale("pl", "PL")
 
+    // ============================================================================
+    // GŁÓWNA LOGIKA SPRAWDZANIA SUBSKRYPCJI
+    // ============================================================================
+
     suspend fun checkSubscriptionsAndNotify(repository: SubscriptionRepository) {
         try {
             val isGlobalEnabled = settingsManager.isNotificationsEnabledGlobal.first()
@@ -41,7 +45,7 @@ class NotificationScheduler(
 
             for (subWithTagsEntity in entitiesWithTags) {
                 val sub = subWithTagsEntity.toSubscription()
-                var originalEntity = subWithTagsEntity.subscription // Usunięto 'val', aby móc modyfikować stan w locie
+                var originalEntity = subWithTagsEntity.subscription
 
                 val isNotifEnabled = !sub.notificationSetting.equals("Wyłączone", ignoreCase = true)
 
@@ -65,7 +69,7 @@ class NotificationScheduler(
                     var diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMs).toInt()
                     val diffInHours = diffInDays * 24
 
-                    // 1. SPRAWDZANIE I WYSYŁANIE AKTUALNYCH POWIADOMIEŃ
+                    // Sprawdzanie i wysyłanie aktualnych powiadomień
                     val isTimeMatched = preferredHours.any { hour ->
                         diffInHours == hour || (hour == 24 && diffInDays == 1)
                     }
@@ -102,17 +106,14 @@ class NotificationScheduler(
                         android.util.Log.d("SUBTRACK_NOTIF_LOG", "Zapisano powiadomienie dla ${originalEntity.name} do historii w bazie.")
                     }
 
-                    // 2. AUTOMATYCZNE ODNAWIANIE ZALEGŁYCH PŁATNOŚCI Z OBSŁUGĄ KONCA TRIALU
+                    // Automatyczne odnawianie zaległych płatności
                     var updatedNextPaymentDate = originalEntity.nextPaymentDate
                     var tempDiffInDays = diffInDays
 
-                    // Flagi pomocnicze do śledzenia zmian struktury subskrypcji w pętli wielu okresów wstecz
                     var currentIsTrial = originalEntity.isTrial
                     var currentPrice = originalEntity.price
 
                     while (tempDiffInDays < 0) {
-                        // POPRAWKA: Jeśli usługa była oznaczona jako trial, to pierwsze odnowienie (koniec triala)
-                        // powinno zarejestrować pobranie ceny regularnej, a usługa staje się płatna.
                         val amountToRegister = if (currentIsTrial) {
                             originalEntity.regularPrice
                         } else {
@@ -128,16 +129,13 @@ class NotificationScheduler(
                         paymentRepository.insertPayment(historyEntry)
                         android.util.Log.d("SUBTRACK_HISTORY", "Automatycznie dodano płatność (kwota: $amountToRegister zł) dla ID: ${originalEntity.id}.")
 
-                        // Po przejściu pierwszego zaległego okresu próbnego, zmieniamy lokalny stan flag na potrzeby kolejnych iteracji pętli
                         if (currentIsTrial) {
                             currentIsTrial = false
                             currentPrice = originalEntity.regularPrice
                         }
 
-                        // Przesunięcie terminu o kolejny cykl rozliczeniowy
                         updatedNextPaymentDate = incrementPaymentDate(updatedNextPaymentDate, originalEntity.billingCycle)
 
-                        // Ponowne przeliczenie różnicy dni dla pętli while
                         val nextSubCal = Calendar.getInstance().apply {
                             timeInMillis = updatedNextPaymentDate
                             set(Calendar.HOUR_OF_DAY, 0)
@@ -148,12 +146,11 @@ class NotificationScheduler(
                         tempDiffInDays = TimeUnit.MILLISECONDS.toDays(nextSubCal.timeInMillis - todayCal.timeInMillis).toInt()
                     }
 
-                    // Zapisujemy nową datę oraz zaktualizowany status okresu próbnego do bazy
                     if (updatedNextPaymentDate != originalEntity.nextPaymentDate) {
                         val renewedSubscription = originalEntity.copy(
                             nextPaymentDate = updatedNextPaymentDate,
-                            isTrial = currentIsTrial, // Przypisanie nowej wartości (false)
-                            price = currentPrice     // Nadpisanie podstawowej stawki ceną regularną
+                            isTrial = currentIsTrial,
+                            price = currentPrice
                         )
                         repository.updateSubscription(renewedSubscription)
                         android.util.Log.d("SUBTRACK_AUTORENEW", "Zakończono proces odnowienia ${originalEntity.name}. Nowa data płatności: $updatedNextPaymentDate, isTrial: $currentIsTrial, Aktualna cena cyklu: $currentPrice zł")
@@ -164,6 +161,10 @@ class NotificationScheduler(
             android.util.Log.e("SUBTRACK_SCHEDULER", "Błąd podczas sprawdzania subskrypcji w tle: ${e.message}", e)
         }
     }
+
+    // ============================================================================
+    // ZARZĄDZANIE WORKMANAGEREM
+    // ============================================================================
 
     fun scheduleDailyNotificationCheck() {
         val constraints = Constraints.Builder()
@@ -185,6 +186,10 @@ class NotificationScheduler(
             dailyWorkRequest
         )
     }
+
+    // ============================================================================
+    // FUNKCJE POMOCNICZE
+    // ============================================================================
 
     private fun incrementPaymentDate(currentNextPayment: Long, billingCycle: String): Long {
         val calendar = Calendar.getInstance().apply {

@@ -216,5 +216,8 @@
     <string name="mark_all_as_read_desc">标记为已读</string>
     <string name="on">已开启</string>
     <string name="off">已禁用</string>
+    <string name="currency_format_pln">%.2f zł</string>
+    <string name="currency_format_integer_pln">%.0f zł</string>
+    <string name="currency_per_month_format_pln">%.2f zł / mc</string>
 
 </resources>

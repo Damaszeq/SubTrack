@@ -6,6 +6,10 @@ import androidx.work.WorkerParameters
 import pl.lab2.subtrack.SubTrackApplication
 import pl.lab2.subtrack.notification.NotificationScheduler
 
+// ============================================================================
+// WORKER ZADANIA W TLE
+// ============================================================================
+
 class NotificationWorker(
     appContext: Context,
     workerParams: WorkerParameters
@@ -15,14 +19,12 @@ class NotificationWorker(
         return try {
             val app = applicationContext as SubTrackApplication
 
-            // Inicjalizacja schedulera z pełnym zestawem repozytoriów
             val scheduler = NotificationScheduler(
                 context = applicationContext,
                 paymentRepository = app.container.paymentRepository,
                 notificationHistoryRepository = app.container.notificationHistoryRepository
             )
 
-            // Uruchomienie głównej logiki sprawdzania subskrypcji
             scheduler.checkSubscriptionsAndNotify(app.container.subscriptionRepository)
             Result.success()
         } catch (e: Exception) {

@@ -10,38 +10,48 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-// Tworzymy delegat dostępu do DataStore (jako rozszerzenie Contextu)
+// ============================================================================
+// DELEGAT DOSTĘPU DO DATASTORE
+// ============================================================================
+
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+
+// ============================================================================
+// ZARZĄDZANIE USTAWIENIAMI APLIKACJI
+// ============================================================================
 
 class SettingsManager(private val context: Context) {
 
     companion object {
-        // Definiujemy unikalne klucze dla naszych ustawień
         val GLOBAL_NOTIFICATIONS_KEY = booleanPreferencesKey("global_notifications_enabled")
         val REMINDER_HOURS_KEY = stringSetPreferencesKey("global_reminder_hours")
     }
+
+    // ------------------------------------------------------------------------
+    // ODCZYT USTAWIEŃ (STRUMIENIE)
+    // ------------------------------------------------------------------------
 
     val isNotificationsEnabledGlobal: Flow<Boolean> = context.dataStore.data
         .map { preferences ->
             preferences[GLOBAL_NOTIFICATIONS_KEY] ?: true
         }
 
-    // Odczyt: Strumień pobierający wybrane godziny przypomnień (domyślnie "24", czyli 1 dzień przed)
-    // Zapisujemy jako Set<String>, bo DataStore Preferences nie obsługuje bezpośrednio Set<Int>
     val globalReminderHours: Flow<Set<Int>> = context.dataStore.data
         .map { preferences ->
             val stringSet = preferences[REMINDER_HOURS_KEY] ?: setOf("24")
             stringSet.mapNotNull { it.toIntOrNull() }.toSet()
         }
 
-    // Zapis: Zmiana stanu globalnego wyłącznika
+    // ------------------------------------------------------------------------
+    // ZAPIS USTAWIEŃ
+    // ------------------------------------------------------------------------
+
     suspend fun setGlobalNotificationsEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[GLOBAL_NOTIFICATIONS_KEY] = enabled
         }
     }
 
-    // Zapis: Zmiana wybranych terminów przypomnień
     suspend fun setGlobalReminderHours(hours: Set<Int>) {
         context.dataStore.edit { preferences ->
             preferences[REMINDER_HOURS_KEY] = hours.map { it.toString() }.toSet()

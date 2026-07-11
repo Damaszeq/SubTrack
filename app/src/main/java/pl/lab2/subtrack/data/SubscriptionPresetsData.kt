@@ -325,7 +325,7 @@ object SubscriptionPresetsData {
             popularityWeight = 36,
             tagsRes = listOf(R.string.tag_entertainment),
             plans = listOf(
-                SubscriptionPlanPreset("marvel_unlimited_monthly", R.string.plan_monthly, 45.00, "Miesiąc")
+                SubscriptionPlanPreset("marvel_unlimited_monthly", R.string.plan_monthly, 48.00, "Miesiąc")
             )
         ),
         ServicePreset(

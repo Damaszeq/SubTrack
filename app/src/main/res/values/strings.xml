@@ -212,5 +212,8 @@
     <string name="currency_format">%d zł</string>
     <string name="stats_cat_structure">Podział na kategorie</string>
     <string name="stats_percent_format">%.1f%% całkowitego budżetu</string>
+    <string name="currency_format_pln">%.2f zł</string>
+    <string name="currency_format_integer_pln">%.0f zł</string>
+    <string name="currency_per_month_format_pln">%.2f zł / mc</string>
 
 </resources>

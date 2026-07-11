@@ -17,13 +17,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,12 +65,12 @@ fun NotificationsScreen(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
+            TopAppBar(
                 title = {
                     Text(
                         text = stringResource(id = R.string.notifications_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleLarge
                     )
                 },
                 navigationIcon = {
@@ -95,23 +91,13 @@ fun NotificationsScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { notificationViewModel.triggerTestNotification(context) },
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(id = R.string.trigger_push_desc))
-            }
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
@@ -192,6 +178,8 @@ fun NotificationItemRow(
     notification: NotificationHistory,
     onMarkReadClick: () -> Unit
 ) {
+    var isExpanded by remember { mutableStateOf(false) }
+
     val timestampText = when {
         System.currentTimeMillis() - notification.timestamp < 60 * 60 * 1000 -> stringResource(id = R.string.time_today)
         System.currentTimeMillis() - notification.timestamp < 30 * 60 * 60 * 1000 -> stringResource(id = R.string.time_yesterday)
@@ -214,7 +202,12 @@ fun NotificationItemRow(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = !notification.isRead) { onMarkReadClick() },
+            .clickable {
+                if (!notification.isRead) {
+                    onMarkReadClick()
+                }
+                isExpanded = !isExpanded
+            },
         color = containerColor,
         shape = RoundedCornerShape(16.dp),
         border = androidx.compose.foundation.BorderStroke(width = 1.dp, color = strokeColor)
@@ -223,10 +216,12 @@ fun NotificationItemRow(
             modifier = Modifier
                 .padding(horizontal = 16.dp, vertical = 14.dp)
                 .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Top
         ) {
             Box(
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier
+                    .padding(top = 2.dp)
+                    .size(40.dp),
                 contentAlignment = Alignment.Center
             ) {
                 SubscriptionIcon(
@@ -251,8 +246,8 @@ fun NotificationItemRow(
                     text = notification.message,
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (!notification.isRead) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    maxLines = if (isExpanded) Int.MAX_VALUE else 2,
+                    overflow = if (isExpanded) TextOverflow.Clip else TextOverflow.Ellipsis
                 )
             }
 
@@ -260,8 +255,8 @@ fun NotificationItemRow(
 
             Column(
                 horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier.align(Alignment.CenterVertically)
+                verticalArrangement = Arrangement.Top,
+                modifier = Modifier.padding(top = 2.dp)
             ) {
                 Text(
                     text = timestampText,
@@ -271,15 +266,13 @@ fun NotificationItemRow(
                 )
 
                 if (!notification.isRead) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                     Box(
                         modifier = Modifier
                             .size(8.dp)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primary)
                     )
-                } else {
-                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }
@@ -305,13 +298,10 @@ fun showSystemNotification(context: Context, notificationItem: NotificationItem)
         notificationManager.createNotificationChannel(channel)
     }
 
-    // 1. Dynamiczne formatowanie ceny (zakładając, że przekazujesz double/float z modelu)
     val formattedPrice = context.getString(R.string.price_format, notificationItem.price)
 
-    // 2. Budowanie pełnego, ładnego zdania na bazie Twoich string resources
     val contentText = if (notificationItem.isTrial) {
         context.getString(R.string.dynamic_msg_trial, notificationItem.subscriptionName)
-        // Wynik: "Twój darmowy okres próbny w Netflix kończy się jutro."
     } else {
         context.getString(
             R.string.dynamic_msg_payment,
@@ -319,14 +309,13 @@ fun showSystemNotification(context: Context, notificationItem: NotificationItem)
             formattedPrice,
             notificationItem.subscriptionName
         )
-        // Wynik: "Za 3 dzień zostanie pobrana opłata 43.00 PLN za subskrypcję Netflix."
     }
 
     val builder = NotificationCompat.Builder(context, channelId)
         .setSmallIcon(android.R.drawable.ic_dialog_info)
-        .setContentTitle(context.getString(R.string.app_name)) // Tytuł pusha: SubTrack
+        .setContentTitle(context.getString(R.string.app_name))
         .setContentText(contentText)
-        .setStyle(NotificationCompat.BigTextStyle().bigText(contentText)) // Pozwala rozwinąć długi tekst w pushu
+        .setStyle(NotificationCompat.BigTextStyle().bigText(contentText))
         .setPriority(NotificationCompat.PRIORITY_DEFAULT)
         .setAutoCancel(true)
 

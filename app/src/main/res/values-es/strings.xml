@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="currency_format_pln">%.2f zł</string>
+    <string name="currency_format_integer_pln">%.0f zł</string>
+    <string name="currency_per_month_format_pln">%.2f zł / mc</string>
+</resources>
