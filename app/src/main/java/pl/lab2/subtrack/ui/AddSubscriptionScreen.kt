@@ -5,11 +5,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -19,8 +16,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -50,20 +45,24 @@ fun AddSubscriptionScreen(
     viewModel: SubscriptionViewModel,
     onBackClick: () -> Unit
 ) {
+    // ==========================================
+    // INICJALIZACJA I KONFIGURACJA STARTOWA
+    // ==========================================
     val context = LocalContext.current
     val presets = SubscriptionPresetsData.availablePresets
     val globalNotifSetting by viewModel.isNotificationsEnabledGlobal.collectAsState()
     val dateFormatter = remember { SimpleDateFormat("dd.MM.yyyy", Locale("pl", "PL")) }
 
+    // ==========================================
+    // STANY GŁÓWNE FORMULARZA
+    // ==========================================
     var isCustomMode by remember { mutableStateOf(false) }
-
     var selectedService by remember { mutableStateOf<ServicePreset?>(null) }
     var selectedPlan by remember { mutableStateOf<SubscriptionPlanPreset?>(null) }
+
     var name by remember { mutableStateOf("") }
     var plan by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
-
-    // POPRAWKA: Stan przechowujący cenę regularną (po zakończeniu triala)
     var regularPrice by remember { mutableStateOf("") }
 
     var billingCycleResId by remember { mutableStateOf(R.string.cycle_month) }
@@ -72,10 +71,14 @@ fun AddSubscriptionScreen(
     var isTrialChecked by remember { mutableStateOf(false) }
     var selectedTrialOption by remember { mutableStateOf("Pierwszy miesiąc za 0 zł, potem standard") }
 
+    // Synchroniczne ustawienie notyfikacji z globalnymi preferencjami
     LaunchedEffect(globalNotifSetting) {
         isNotificationEnabled = globalNotifSetting
     }
 
+    // ==========================================
+    // STANY WYSZUKIWARKI I TAGÓW
+    // ==========================================
     var presetSearchQuery by remember { mutableStateOf("") }
     var selectedTagResId by remember { mutableStateOf<Int?>(null) }
     var isFilterMenuExpanded by remember { mutableStateOf(false) }
@@ -94,6 +97,9 @@ fun AddSubscriptionScreen(
         }
     }
 
+    // ==========================================
+    // SZABLONY IKON WŁASNYCH I LISTY WYBORU
+    // ==========================================
     val basicIcons = remember {
         listOf(
             CustomIconPreset("custom_star", Icons.Default.Star, "Inne"),
@@ -127,6 +133,9 @@ fun AddSubscriptionScreen(
         "Własny trial (określona liczba dni wolnych)"
     )
 
+    // ==========================================
+    // DIALOG SYSTEMOWY KALENDARZA
+    // ==========================================
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(initialSelectedDateMillis = startDateLong)
         DatePickerDialog(
@@ -145,6 +154,9 @@ fun AddSubscriptionScreen(
         }
     }
 
+    // ==========================================
+    // STRUKTURA UI (SCAFFOLD)
+    // ==========================================
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -170,6 +182,8 @@ fun AddSubscriptionScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+
+            // --- PRZEŁĄCZNIK TRYBU (Z SZABLONU / WŁASNA USŁUGA) ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -177,6 +191,7 @@ fun AddSubscriptionScreen(
                 Button(
                     onClick = { isCustomMode = false },
                     modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (!isCustomMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
                     )
@@ -194,6 +209,7 @@ fun AddSubscriptionScreen(
                         regularPrice = ""
                     },
                     modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (isCustomMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
                     )
@@ -204,7 +220,9 @@ fun AddSubscriptionScreen(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
+            // --- SEKCJA MODUŁOWA W ZALEŻNOŚCI OD WYBRANEGO TRYBU ---
             if (!isCustomMode) {
+                // TRYB 1: WYBÓR Z GOTOWYCH SZABLONÓW
                 Text(
                     text = stringResource(id = R.string.choose_service_label),
                     style = MaterialTheme.typography.titleMedium,
@@ -221,6 +239,7 @@ fun AddSubscriptionScreen(
                         value = presetSearchQuery,
                         onValueChange = { presetSearchQuery = it },
                         placeholder = { Text(text = if (activeTagName != null) "Szukaj w: $activeTagName..." else "Szukaj usługi...") },
+                        leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = null) },
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.weight(1f)
@@ -264,6 +283,7 @@ fun AddSubscriptionScreen(
                     }
                 }
 
+                // Grid z dostępnymi subskrypcjami (3 kolumny)
                 val filteredList = remember(presets, presetSearchQuery, selectedTagResId) {
                     presets.filter { preset ->
                         val matchesSearch = preset.serviceName.contains(presetSearchQuery, ignoreCase = true)
@@ -359,7 +379,6 @@ fun AddSubscriptionScreen(
                                     selectedPlan = planPreset
                                     plan = localizedPlanName
 
-                                    // POPRAWKA: Inteligentne mapowanie cen w zależności od zaznaczonego triala
                                     if (isTrialChecked) {
                                         regularPrice = planPreset.price.toString()
                                         price = if (selectedTrialOption.contains("0 zł")) "0.00" else String.format(Locale.US, "%.2f", planPreset.price * 0.5)
@@ -380,8 +399,8 @@ fun AddSubscriptionScreen(
                         }
                     }
                 }
-            }
-            else {
+            } else {
+                // TRYB 2: RĘCZNA KONFIGURACJA WŁASNEJ USŁUGI
                 Text(text = "Konfiguracja własnej usługi", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
 
                 OutlinedTextField(
@@ -439,7 +458,13 @@ fun AddSubscriptionScreen(
                         FilterChip(
                             selected = isIconSelected,
                             onClick = { customSelectedIconId = iconPreset.id },
-                            label = { Icon(imageVector = iconPreset.icon, contentDescription = iconPreset.label, modifier = Modifier.size(24.dp)) },
+                            label = {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Icon(imageVector = iconPreset.icon, contentDescription = null, modifier = Modifier.size(20.dp))
+                                    Text(iconPreset.label)
+                                }
+                            },
+                            shape = RoundedCornerShape(8.dp),
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                                 selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -449,11 +474,11 @@ fun AddSubscriptionScreen(
                 }
             }
 
+            // --- PARAMETRY FINANSOWE (CENA I OKRES ROZLICZENIOWY) ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // POPRAWKA: Dynamiczna etykieta głównego pola ceny zależna od stanu isTrialChecked
                 OutlinedTextField(
                     value = price,
                     onValueChange = { price = it },
@@ -494,7 +519,7 @@ fun AddSubscriptionScreen(
                 }
             }
 
-            // POPRAWKA: Nowe pole wprowadzania ceny regularnej, widoczne tylko przy aktywnym trialu
+            // Wiersz wpisywania ceny standardowej po trialu
             AnimatedVisibility(
                 visible = isTrialChecked,
                 enter = expandVertically(),
@@ -522,8 +547,10 @@ fun AddSubscriptionScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // --- PANEL ZARZĄDZANIA OKRESEM PRÓBNYM (TRIAL) ---
             Card(
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -540,7 +567,6 @@ fun AddSubscriptionScreen(
                             checked = isTrialChecked,
                             onCheckedChange = { checked ->
                                 isTrialChecked = checked
-                                // Dostosowanie cen przy przełączeniu przełącznika w locie
                                 if (checked && selectedPlan != null) {
                                     regularPrice = selectedPlan!!.price.toString()
                                     price = if (selectedTrialOption.contains("0 zł")) "0.00" else String.format(Locale.US, "%.2f", selectedPlan!!.price * 0.5)
@@ -573,8 +599,6 @@ fun AddSubscriptionScreen(
                                         onClick = {
                                             selectedTrialOption = option
                                             isTrialDropdownExpanded = false
-
-                                            // Przepisanie cen po zmianie wariantu triala z listy
                                             if (selectedPlan != null) {
                                                 price = if (option.contains("0 zł")) "0.00" else String.format(Locale.US, "%.2f", selectedPlan!!.price * 0.5)
                                             }
@@ -587,6 +611,7 @@ fun AddSubscriptionScreen(
                 }
             }
 
+            // --- SEKCJA PRZYPOMNIEŃ PUSH ---
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -603,7 +628,7 @@ fun AddSubscriptionScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // POPRAWKA: Przekazywanie stałej wartości domyślnej lub wpisanej ceny regularnej do funkcji ViewModelu
+            // --- AKCJA ZAPISU DO BAZY DANYCH ---
             val isSaveEnabled = name.isNotBlank() && price.isNotBlank() &&
                     (!isTrialChecked || regularPrice.isNotBlank()) &&
                     (isCustomMode && customSelectedTagResId != null || !isCustomMode && selectedService != null)
@@ -611,19 +636,24 @@ fun AddSubscriptionScreen(
             Button(
                 onClick = {
                     val finalBillingCycleString = context.getString(billingCycleResId)
-
                     val finalTags = if (isCustomMode) {
                         customSelectedTagResId?.let { listOf(context.getString(it)) } ?: emptyList()
                     } else {
                         selectedService?.tagsRes?.map { context.getString(it) } ?: emptyList()
                     }
 
-                    // Konwersja ceny regularnej do przekazania
                     val cleanRegularPrice = regularPrice.toDoubleOrNull() ?: price.toDoubleOrNull() ?: 0.0
+                    val basePlanName = plan.ifEmpty { "Standard" }
+                    val finalPlan = if (isCustomMode) {
+                        val iconId = customSelectedIconId ?: "custom_star"
+                        "$basePlanName|$iconId"
+                    } else {
+                        basePlanName
+                    }
 
                     viewModel.addSubscription(
                         name = name,
-                        plan = plan.ifEmpty { "Standard" },
+                        plan = finalPlan,
                         priceText = price,
                         billingCycle = finalBillingCycleString,
                         tags = finalTags,
@@ -631,7 +661,7 @@ fun AddSubscriptionScreen(
                         isTrial = isTrialChecked,
                         trialOption = if (isTrialChecked) selectedTrialOption else "",
                         isNotificationEnabled = isNotificationEnabled,
-                        regularPrice = cleanRegularPrice // DODANE: Przekazujemy cenę po okresie próbnym
+                        regularPrice = cleanRegularPrice
                     )
                     onBackClick()
                 },

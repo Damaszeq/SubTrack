@@ -33,6 +33,7 @@ fun SubscriptionIcon(
     // --- Obsługa ikon niestandardowych (Custom) ---
     // Reagujemy TYLKO na jawny prefix "custom_" lub gdy cała nazwa usługi to jawnie "custom"
     if (iconId.startsWith("custom_") || (iconId.isEmpty() && serviceName.lowercase().trim() == "custom")) {
+        // POPRAWKA 1: Dopasowanie dokładnie do listy obiektów CustomIconPreset z ekranu dodawania
         val iconVector = when (iconId) {
             "custom_star"     -> Icons.Default.Star
             "custom_gym"      -> Icons.Default.FitnessCenter
@@ -40,25 +41,24 @@ fun SubscriptionIcon(
             "custom_code"     -> Icons.Default.Code
             "custom_car"      -> Icons.Default.DirectionsCar
             "custom_school"   -> Icons.Default.School
-            "custom_medical"  -> Icons.Default.Favorite
+            "custom_medical"  -> Icons.Default.LocalHospital // Zmiana z Favorite na LocalHospital
             "custom_shopping" -> Icons.Default.ShoppingCart
-            "custom_money"    -> Icons.Default.AccountBalance
-            "custom_game"     -> Icons.Default.PlayArrow
-            else              -> Icons.Default.Star // Domyślny fallback
+            "custom_money"    -> Icons.Default.AttachMoney   // Zmiana z AccountBalance na AttachMoney
+            "custom_game"     -> Icons.Default.Gamepad       // Zmiana z PlayArrow na Gamepad
+            else              -> Icons.Default.Star
         }
 
+        // POPRAWKA 2: Bezpieczne przekazanie modyfikatora rozmiaru z zewnątrz (np. z listy MainScreen)
         Icon(
             imageVector = iconVector,
             contentDescription = "Custom Icon",
             tint = MaterialTheme.colorScheme.primary,
-            modifier = modifier
-                .size(48.dp)
-                .padding(4.dp)
+            modifier = modifier.padding(4.dp) // Nie wymuszamy sztywno 48.dp, adaptuje się do wywołania z listy!
         )
         return // Przerywamy rysowanie, nie ładujemy z sieci!
     }
 
-    // --- TWÓJ ORYGINALNY KOD SIECIOWY (NIETKNIĘTY) ---
+    // --- TWÓJ ORYGINALNY KOD SIECIOWY (NIETKNIĘTY I ZGODNY Z API) ---
     val baseName = if (serviceName.contains("(")) {
         serviceName.substringBefore("(").trim()
     } else {

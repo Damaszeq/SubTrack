@@ -335,7 +335,24 @@ class SubscriptionViewModel(
         val finalNotificationSetting = if (isNotificationEnabled) "1 dzień przed" else "Wyłączone"
 
         viewModelScope.launch {
-            val nextDate = calculateNextPaymentDate(startDate, billingCycle)
+            val calendar = java.util.Calendar.getInstance()
+            calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+            calendar.set(java.util.Calendar.MINUTE, 0)
+            calendar.set(java.util.Calendar.SECOND, 0)
+            calendar.set(java.util.Calendar.MILLISECOND, 0)
+            val todayStart = calendar.timeInMillis
+
+            val nextDate = if (startDate >= todayStart) {
+                startDate
+            } else {
+                calculateNextPaymentDate(startDate, billingCycle)
+            }
+
+            // --- NAPRAWA BŁĘDU: Czyszczenie historii z pomyłkowej daty ---
+            if (startDate >= todayStart) {
+                // Używamy nowo dodanej metody z repozytorium płatności
+                paymentRepository.deletePaymentsBeforeDate(subscriptionId, startDate)
+            }
 
             val updatedEntity = UserSubscription(
                 id = subscriptionId,

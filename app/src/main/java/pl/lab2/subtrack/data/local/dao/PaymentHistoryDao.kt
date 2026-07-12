@@ -33,4 +33,8 @@ interface PaymentHistoryDao {
     // 5. Czyszczenie całej historii dla danego suba
     @Query("SELECT * FROM real_payment_history")
     fun getAllPayments(): Flow<List<PaymentHistoryEntity>>
+
+    // 6. Usuwanie błędnych wpisów wygenerowanych przed nowym startem subskrypcji
+    @Query("DELETE FROM real_payment_history WHERE subscriptionId = :subId AND paymentDate < :date")
+    suspend fun deletePaymentsBeforeDate(subId: Long, date: Long)
 }
