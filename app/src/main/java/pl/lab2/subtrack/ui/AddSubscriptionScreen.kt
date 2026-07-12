@@ -35,7 +35,7 @@ import java.util.*
 data class CustomIconPreset(
     val id: String,
     val icon: ImageVector,
-    val label: String
+    //val label: String
 )
 
 @SuppressLint("LocalContextGetResourceValueCall")
@@ -102,16 +102,16 @@ fun AddSubscriptionScreen(
     // ==========================================
     val basicIcons = remember {
         listOf(
-            CustomIconPreset("custom_star", Icons.Default.Star, "Inne"),
-            CustomIconPreset("custom_gym", Icons.Default.FitnessCenter, "Sport"),
-            CustomIconPreset("custom_home", Icons.Default.Home, "Dom / Rachunki"),
-            CustomIconPreset("custom_code", Icons.Default.Code, "Software"),
-            CustomIconPreset("custom_car", Icons.Default.DirectionsCar, "Transport"),
-            CustomIconPreset("custom_school", Icons.Default.School, "Edukacja"),
-            CustomIconPreset("custom_medical", Icons.Default.LocalHospital, "Zdrowie"),
-            CustomIconPreset("custom_shopping", Icons.Default.ShoppingCart, "Zakupy"),
-            CustomIconPreset("custom_money", Icons.Default.AttachMoney, "Finanse"),
-            CustomIconPreset("custom_game", Icons.Default.Gamepad, "Gry / VOD")
+            CustomIconPreset("custom_star", Icons.Default.Star),
+            CustomIconPreset("custom_gym", Icons.Default.FitnessCenter),
+            CustomIconPreset("custom_home", Icons.Default.Home),
+            CustomIconPreset("custom_code", Icons.Default.Code),
+            CustomIconPreset("custom_car", Icons.Default.DirectionsCar),
+            CustomIconPreset("custom_school", Icons.Default.School),
+            CustomIconPreset("custom_medical", Icons.Default.LocalHospital),
+            CustomIconPreset("custom_shopping", Icons.Default.ShoppingCart),
+            CustomIconPreset("custom_money", Icons.Default.AttachMoney),
+            CustomIconPreset("custom_game", Icons.Default.Gamepad)
         )
     }
 
@@ -461,7 +461,6 @@ fun AddSubscriptionScreen(
                             label = {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Icon(imageVector = iconPreset.icon, contentDescription = null, modifier = Modifier.size(20.dp))
-                                    Text(iconPreset.label)
                                 }
                             },
                             shape = RoundedCornerShape(8.dp),

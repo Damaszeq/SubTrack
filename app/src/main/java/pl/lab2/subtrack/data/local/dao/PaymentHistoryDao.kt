@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import pl.lab2.subtrack.data.local.entities.PaymentHistoryEntity
 import pl.lab2.subtrack.data.local.entities.SubscriptionWithHistory
@@ -29,6 +30,9 @@ interface PaymentHistoryDao {
     // 4. Usunięcie konkretnego wpisu z historii (jeśli dasz użytkownikowi możliwość usuwania pojedynczych miesięcy)
     @Delete
     suspend fun deletePayment(payment: PaymentHistoryEntity)
+
+    @Update
+    suspend fun updatePayment(payment: PaymentHistoryEntity)
 
     // 5. Czyszczenie całej historii dla danego suba
     @Query("SELECT * FROM real_payment_history")

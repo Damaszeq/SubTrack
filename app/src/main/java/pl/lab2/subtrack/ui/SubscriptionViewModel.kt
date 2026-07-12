@@ -511,4 +511,18 @@ class SubscriptionViewModel(
     fun changeTimePeriod(period: TimePeriod) {
         _selectedPeriod.value = period
     }
+
+    fun updateTransactionAmount(payment: PaymentHistoryEntity, newAmount: Double) {
+        viewModelScope.launch {
+            // Kopiujemy encję z nową kwotą i zapisujemy w bazie
+            paymentRepository.updatePayment(payment.copy(amountPaid = newAmount))
+        }
+    }
+
+    fun removeTransaction(payment: PaymentHistoryEntity) {
+        viewModelScope.launch {
+            paymentRepository.deletePayment(payment)
+        }
+    }
+
 }

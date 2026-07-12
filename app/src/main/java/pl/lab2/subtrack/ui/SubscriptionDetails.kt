@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -16,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -26,6 +28,7 @@ import pl.lab2.subtrack.ui.components.SubscriptionIcon
 import androidx.compose.ui.platform.LocalLocale
 import pl.lab2.subtrack.data.local.entities.PaymentHistoryEntity
 import pl.lab2.subtrack.data.local.entities.SubscriptionStatus
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,25 +38,40 @@ fun SubscriptionDetailsScreen(
     onBackClick: () -> Unit,
     onEditClick: (String) -> Unit
 ) {
+    // ==========================================
+    // 1. INICJALIZACJA, SKOPY I FORMATOWANIE
+    // ==========================================
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val dateFormatter = remember { SimpleDateFormat("dd.MM.yyyy", Locale("pl", "PL")) }
 
+    // ==========================================
+    // 2. STAN DATA-FLOW (POBIERANIE DANYCH)
+    // ==========================================
     val subscription = remember(subId, viewModel.subscriptions.collectAsState().value, viewModel.archivedSubscriptions.collectAsState().value) {
         viewModel.getSubscriptionById(subId ?: "")
     }
 
-    val dateFormatter = remember { SimpleDateFormat("dd.MM.yyyy", Locale("pl", "PL")) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-
     val isArchived = subscription?.status == SubscriptionStatus.ARCHIVED
 
-    // 1. OBSŁUGA STRUMIENIA REALNYCH PŁATNOŚCI Z BAZY ROOM
     val realPayments by if (subscription != null) {
         viewModel.getPaymentsForSubscription(subscription.id ?: 0L).collectAsState(initial = emptyList())
     } else {
         remember { mutableStateOf(emptyList<PaymentHistoryEntity>()) }
     }
 
-    // DYNAMICZNE OBLICZANIE KOLEJNEJ PŁATNOŚCI
+    // ==========================================
+    // 3. STANY INTERFEJSU (DIALOGI I GESTY)
+    // ==========================================
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var paymentToEdit by remember { mutableStateOf<PaymentHistoryEntity?>(null) }
+    var paymentToDelete by remember { mutableStateOf<PaymentHistoryEntity?>(null) }
+    var editAmountText by remember { mutableStateOf("") }
+    var activeDismissState by remember { mutableStateOf<SwipeToDismissBoxState?>(null) }
+
+    // ==========================================
+    // 4. LOGIKA WYCZENIA DATY KOLEJNEJ PŁATNOŚCI
+    // ==========================================
     val nextPaymentFormatted = remember(subscription?.nextPaymentDate, subscription?.billingCycle) {
         if (subscription == null || isArchived) "" else {
             val now = System.currentTimeMillis()
@@ -72,7 +90,7 @@ fun SubscriptionDetailsScreen(
                         cycle.contains("rok") || cycle.contains("year") || cycle.contains("年") -> {
                             add(java.util.Calendar.YEAR, 1)
                         }
-                        else -> { // Domyślnie co miesiąc
+                        else -> {
                             add(java.util.Calendar.MONTH, 1)
                         }
                     }
@@ -82,12 +100,96 @@ fun SubscriptionDetailsScreen(
         }
     }
 
-    // POTWIERDZENIE TRWAŁEGO USUNIĘCIA
+    // ==========================================
+    // 5. MODALNE DIALOGI (ALERT DIALOGS)
+    // ==========================================
+
+    // Dialog edycji kwoty transakcji
+    if (paymentToEdit != null) {
+        AlertDialog(
+            onDismissRequest = { paymentToEdit = null },
+            title = { Text(stringResource(id = R.string.dialog_edit_payment_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = stringResource(id = R.string.dialog_edit_payment_desc, dateFormatter.format(Date(paymentToEdit!!.paymentDate))),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    OutlinedTextField(
+                        value = editAmountText,
+                        onValueChange = { editAmountText = it },
+                        label = { Text(stringResource(id = R.string.dialog_edit_payment_label)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val newAmount = editAmountText.toDoubleOrNull()
+                        if (newAmount != null && paymentToEdit != null) {
+                            viewModel.updateTransactionAmount(paymentToEdit!!, newAmount)
+                        }
+                        paymentToEdit = null
+                    },
+                    enabled = editAmountText.isNotBlank() && editAmountText.toDoubleOrNull() != null
+                ) {
+                    Text(stringResource(id = R.string.save))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { paymentToEdit = null }) {
+                    Text(stringResource(id = R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // Dialog potwierdzenia usunięcia pojedynczej płatności (wywoływany gestem Swipe)
+    if (paymentToDelete != null) {
+        AlertDialog(
+            onDismissRequest = {
+                scope.launch { activeDismissState?.reset() }
+                paymentToDelete = null
+            },
+            title = { Text(stringResource(id = R.string.dialog_delete_payment_title)) },
+            text = {
+                Text(stringResource(id = R.string.dialog_delete_payment_desc, dateFormatter.format(Date(paymentToDelete!!.paymentDate))))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        paymentToDelete?.let { viewModel.removeTransaction(it) }
+                        paymentToDelete = null
+                        activeDismissState = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(stringResource(id = R.string.delete))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        scope.launch { activeDismissState?.reset() }
+                        paymentToDelete = null
+                        activeDismissState = null
+                    }
+                ) {
+                    Text(stringResource(id = R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // Dialog permanentnego usunięcia całej subskrypcji
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Trwałe usunięcie") },
-            text = { Text("Czy na pewno chcesz permanentnie usunąć tę subskrypcję? Spowoduje to całkowite wyczyszczenie jej z historii i wykresów finansowych.") },
+            title = { Text(stringResource(id = R.string.dialog_delete_sub_title)) },
+            text = { Text(stringResource(id = R.string.dialog_delete_sub_desc)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -99,17 +201,20 @@ fun SubscriptionDetailsScreen(
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Usuń trwale")
+                    Text(stringResource(id = R.string.dialog_delete_sub_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Anuluj")
+                    Text(stringResource(id = R.string.cancel))
                 }
             }
         )
     }
 
+    // ==========================================
+    // 6. GŁÓWNA STRUKTURA EKRANU (SCAFFOLD)
+    // ==========================================
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -126,10 +231,7 @@ fun SubscriptionDetailsScreen(
                         }
                     }
                     IconButton(onClick = { showDeleteDialog = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = stringResource(R.string.delete_desc)
-                        )
+                        Icon(imageVector = Icons.Default.Delete, contentDescription = stringResource(R.string.delete_desc))
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -165,17 +267,9 @@ fun SubscriptionDetailsScreen(
                                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Archive,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
+                            Icon(imageVector = Icons.Default.Archive, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Zakończ i zarchiwizuj",
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                            Text(text = stringResource(id = R.string.btn_archive), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
                         }
                     } else {
                         Button(
@@ -195,17 +289,9 @@ fun SubscriptionDetailsScreen(
                                 contentColor = MaterialTheme.colorScheme.onPrimary
                             )
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Unarchive,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
+                            Icon(imageVector = Icons.Default.Unarchive, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Aktywuj ponownie usługę",
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                            Text(text = stringResource(id = R.string.btn_unarchive), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                 }
@@ -221,6 +307,9 @@ fun SubscriptionDetailsScreen(
 
         val displayedPlanName = resolvePlanName(subscription.plan, context)
 
+        // ==========================================
+        // 7. PRZEWIJANA LISTA ELEMENTÓW (LAZYCOLUMN)
+        // ==========================================
         LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
@@ -228,6 +317,8 @@ fun SubscriptionDetailsScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+
+            // --- KARTA GŁÓWNA ZE SZCZEGÓŁAMI ---
             item {
                 Spacer(modifier = Modifier.height(4.dp))
 
@@ -240,6 +331,7 @@ fun SubscriptionDetailsScreen(
                     )
                 ) {
                     Box(modifier = Modifier.fillMaxWidth()) {
+                        // Sekcja tagów w prawym górnym rogu
                         if (subscription.tags.isNotEmpty()) {
                             Column(
                                 modifier = Modifier
@@ -259,6 +351,7 @@ fun SubscriptionDetailsScreen(
                             }
                         }
 
+                        // Informacje główne (Ikona, Nazwa, Plan)
                         Column(
                             modifier = Modifier.padding(24.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -273,20 +366,12 @@ fun SubscriptionDetailsScreen(
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            Text(
-                                text = subscription.name,
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-
-                            Text(
-                                text = displayedPlanName,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Text(text = subscription.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                            Text(text = displayedPlanName, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                             HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
 
+                            // Parametry subskrypcji w układzie siatki (Siatka 2x2)
                             val isNotifEnabled = !subscription.notificationSetting.equals("Wyłączone", ignoreCase = true)
                             val notificationsText = if (isNotifEnabled) stringResource(id = R.string.on) else stringResource(id = R.string.off)
 
@@ -294,13 +379,9 @@ fun SubscriptionDetailsScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    // POPRAWKA: Cena uwzględnia aktualną stawkę okresu próbnego
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     InfoColumn(
-                                        label = if (subscription.isTrial) "Cena w okresie próbnym" else stringResource(id = R.string.label_price),
+                                        label = if (subscription.isTrial) stringResource(id = R.string.label_price_trial) else stringResource(id = R.string.label_price),
                                         value = stringResource(id = R.string.price_format, subscription.price),
                                         modifier = Modifier.weight(1f)
                                     )
@@ -311,18 +392,15 @@ fun SubscriptionDetailsScreen(
                                     )
                                 }
 
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     InfoColumn(
-                                        label = "Data rozpoczęcia",
+                                        label = stringResource(id = R.string.label_start_date),
                                         value = dateFormatter.format(Date(subscription.startDate)),
                                         modifier = Modifier.weight(1f)
                                     )
                                     InfoColumn(
                                         label = stringResource(id = R.string.subscription_notifications_label),
-                                        value = if (isArchived) "Wyłączone" else notificationsText,
+                                        value = if (isArchived) stringResource(id = R.string.off) else notificationsText,
                                         modifier = Modifier.weight(1f),
                                         alpha = if (!isNotifEnabled || isArchived) 0.4f else 1f
                                     )
@@ -331,44 +409,26 @@ fun SubscriptionDetailsScreen(
 
                             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f))
 
+                            // Dolna sekcja statusowa (Terminy płatności / Zakończenie)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 if (isArchived && subscription.endDate != null) {
-                                    Text(
-                                        text = "Subskrypcja zakończona: ",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                    Text(
-                                        text = dateFormatter.format(Date(subscription.endDate)),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = MaterialTheme.colorScheme.error
-                                    )
+                                    Text(text = stringResource(id = R.string.sub_status_ended), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                                    Text(text = dateFormatter.format(Date(subscription.endDate)), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.error)
                                 } else {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(
-                                                text = if (subscription.isTrial) "Koniec okresu próbnego: " else "Kolejna płatność: ",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            Text(
-                                                text = nextPaymentFormatted,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                fontWeight = FontWeight.ExtraBold,
-                                                color = if (subscription.isTrial) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
-                                            )
+                                            Text(text = if (subscription.isTrial) stringResource(id = R.string.label_trial_end) else stringResource(id = R.string.label_next_payment), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Text(text = nextPaymentFormatted, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.ExtraBold, color = if (subscription.isTrial) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary)
                                         }
 
-                                        // POPRAWKA: Informacja o przyszłej, regularnej płatności dopisana pod datą
                                         if (subscription.isTrial) {
                                             Spacer(modifier = Modifier.height(2.dp))
                                             Text(
-                                                text = "Następnie: ${stringResource(id = R.string.price_format, subscription.regularPrice)} / ${subscription.billingCycle.lowercase()}",
+                                                text = stringResource(id = R.string.label_next_regular_price, stringResource(id = R.string.price_format, subscription.regularPrice), subscription.billingCycle.lowercase()),
                                                 style = MaterialTheme.typography.bodySmall,
                                                 fontWeight = FontWeight.Medium,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
@@ -382,47 +442,23 @@ fun SubscriptionDetailsScreen(
                 }
             }
 
-            // SEKCJA OKRESU PRÓBNEGO (Ulepszona wizualnie informacja o stawkach)
-            if (!isArchived) {
-                item {
+            // --- BANER INFORMACYJNY DLA TRYBU TRIAL ---
+            item {
+                if (!isArchived) {
                     AnimatedVisibility(visible = subscription.isTrial) {
                         OutlinedCard(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.outlinedCardColors(
-                                containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
-                            ),
+                            colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)),
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f))
                         ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Info,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.tertiary,
-                                    modifier = Modifier.padding(end = 12.dp)
-                                )
+                            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(imageVector = Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.padding(end = 12.dp))
                                 Column {
-                                    Text(
-                                        text = "Aktywny okres próbny (Trial)",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.tertiary
-                                    )
-                                    Text(
-                                        text = if (subscription.trialOption.isNotEmpty()) subscription.trialOption else "Trwa promocyjny okres rozliczeniowy.",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    Text(text = stringResource(id = R.string.trial_banner_title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
+                                    Text(text = if (subscription.trialOption.isNotEmpty()) subscription.trialOption else stringResource(id = R.string.trial_banner_desc_default), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "Przyszła cena regularna: ${stringResource(id = R.string.price_format, subscription.regularPrice)}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    Text(text = stringResource(id = R.string.trial_banner_future_price, stringResource(id = R.string.price_format, subscription.regularPrice)), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -430,22 +466,76 @@ fun SubscriptionDetailsScreen(
                 }
             }
 
-            // SEKCJA HISTORII PŁATNOŚCI
+            // --- NAGŁÓWEK SEKCJI HISTORII ---
             item {
                 Column(modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)) {
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = stringResource(id = R.string.payment_history),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Text(text = stringResource(id = R.string.payment_history), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
             }
 
-            items(realPayments) { payment ->
-                PaymentHistoryItem(payment = payment, dateFormatter = dateFormatter)
+            // --- INTERAKTYWNA LISTA HISTORII PŁATNOŚCI (SWIPE-TO-DISMISS) ---
+            items(realPayments, key = { it.id ?: 0L }) { payment ->
+                val dismissState = rememberSwipeToDismissBoxState(
+                    confirmValueChange = { dismissValue ->
+                        if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
+                            paymentToDelete = payment
+                            false
+                        } else {
+                            false
+                        }
+                    }
+                )
+
+                LaunchedEffect(dismissState.targetValue) {
+                    if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) {
+                        activeDismissState = dismissState
+                    }
+                }
+
+                SwipeToDismissBox(
+                    state = dismissState,
+                    enableDismissFromStartToEnd = false,
+                    backgroundContent = {
+                        val color = if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) {
+                            MaterialTheme.colorScheme.errorContainer
+                        } else Color.Transparent
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(vertical = 2.dp)
+                                .height(72.dp),
+                            contentAlignment = Alignment.CenterEnd
+                        ) {
+                            Surface(
+                                modifier = Modifier.fillMaxSize(),
+                                color = color,
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Box(modifier = Modifier.padding(end = 16.dp), contentAlignment = Alignment.CenterEnd) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = stringResource(id = R.string.swipe_delete_desc),
+                                        tint = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    content = {
+                        PaymentHistoryItem(
+                            payment = payment,
+                            dateFormatter = dateFormatter,
+                            onClick = {
+                                paymentToEdit = payment
+                                editAmountText = payment.amountPaid.toString()
+                            }
+                        )
+                    },
+                    modifier = Modifier.padding(vertical = 2.dp)
+                )
             }
 
             item {
@@ -455,6 +545,10 @@ fun SubscriptionDetailsScreen(
     }
 }
 
+// ==========================================
+// 8. POMOCNICZE KOMPONENTY REUZYWALNE
+// ==========================================
+
 @Composable
 fun InfoColumn(
     label: String,
@@ -462,30 +556,20 @@ fun InfoColumn(
     modifier: Modifier = Modifier,
     alpha: Float = 1f
 ) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.Start
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha)
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
-        )
+    Column(modifier = modifier, horizontalAlignment = Alignment.Start) {
+        Text(text = label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha))
+        Text(text = value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha))
     }
 }
 
 @Composable
 fun PaymentHistoryItem(
     payment: PaymentHistoryEntity,
-    dateFormatter: SimpleDateFormat
+    dateFormatter: SimpleDateFormat,
+    onClick: () -> Unit
 ) {
     OutlinedCard(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -511,16 +595,8 @@ fun PaymentHistoryItem(
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = dateFormatter.format(Date(payment.paymentDate)),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = stringResource(id = R.string.status_paid),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF2C7B1E)
-                )
+                Text(text = dateFormatter.format(Date(payment.paymentDate)), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text(text = stringResource(id = R.string.status_paid), style = MaterialTheme.typography.bodySmall, color = Color(0xFF2C7B1E))
             }
 
             Text(

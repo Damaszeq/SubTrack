@@ -216,4 +216,36 @@
     <string name="currency_format_pln">%.2f zł</string>
     <string name="currency_format_integer_pln">%.0f zł</string>
     <string name="currency_per_month_format_pln">%.2f zł / mc</string>
+
+        <!-- 订阅详情区域 -->
+        <string name="save">保存</string>
+        <string name="cancel">取消</string>
+        <string name="btn_archive">结束并归档</string>
+        <string name="btn_unarchive">重新激活服务</string>
+        <string name="label_price_trial">试用期价格</string>
+
+        <string name="sub_status_ended">订阅已结束：</string>
+        <string name="label_trial_end">试用期结束：</string>
+
+        <string name="label_next_regular_price">后续扣费：%1$s / %2$s</string>
+        <string name="swipe_delete_desc">删除账单</string>
+
+        <!-- 弹窗：编辑账单 -->
+        <string name="dialog_edit_payment_title">修改扣款金额</string>
+        <string name="dialog_edit_payment_desc">请输入 %1$s 这一天的修正扣款金额：</string>
+        <string name="dialog_edit_payment_label">金额 (PLN)</string>
+
+        <!-- 弹窗：从历史记录删除账单 -->
+        <string name="dialog_delete_payment_title">删除此笔扣款？</string>
+        <string name="dialog_delete_payment_desc">您确定要删除 %1$s 的此笔历史扣款记录吗？</string>
+
+        <!-- 弹窗：删除整个订阅 -->
+        <string name="dialog_delete_sub_title">永久删除</string>
+        <string name="dialog_delete_sub_desc">您确定要彻底永久删除该订阅吗？此操作将清除其所有历史账单以及财务图表数据。</string>
+        <string name="dialog_delete_sub_confirm">确认永久删除</string>
+
+        <!-- 试用期横幅 -->
+        <string name="trial_banner_title">免费试用进行中 (Trial)</string>
+        <string name="trial_banner_desc_default">目前处于优惠活动账期阶段。</string>
+        <string name="trial_banner_future_price">后续正价费用：%1$s</string>
 </resources>

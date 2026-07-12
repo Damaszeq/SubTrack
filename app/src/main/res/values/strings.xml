@@ -215,6 +215,37 @@
     <string name="currency_format_pln">%.2f zł</string>
     <string name="currency_format_integer_pln">%.0f zł</string>
     <string name="currency_per_month_format_pln">%.2f zł / mc</string>
+        <!-- Sekcja szczegółów subskrypcji -->
+        <string name="save">Zapisz</string>
+        <string name="cancel">Anuluj</string>
+        <string name="btn_archive">Zakończ i zarchiwizuj</string>
+        <string name="btn_unarchive">Aktywuj ponownie usługę</string>
+        <string name="label_price_trial">Cena w okresie próbnym</string>
+
+        <string name="sub_status_ended">Subskrypcja zakończona: </string>
+        <string name="label_trial_end">Koniec okresu próbnego: </string>
+
+        <string name="label_next_regular_price">Następnie: %1$s / %2$s</string>
+        <string name="swipe_delete_desc">Usuń płatność</string>
+
+        <!-- Dialog: Edycja płatności -->
+        <string name="dialog_edit_payment_title">Edytuj kwotę płatności</string>
+        <string name="dialog_edit_payment_desc">Wprowadź skorygowaną kwotę dla płatności z dnia %1$s:</string>
+        <string name="dialog_edit_payment_label">Kwota (PLN)</string>
+
+        <!-- Dialog: Usunięcie płatności z historii -->
+        <string name="dialog_delete_payment_title">Usunąć płatność?</string>
+        <string name="dialog_delete_payment_desc">Czy na pewno chcesz usunąć ten wpis z historii płatności z dnia %1$s?</string>
+
+        <!-- Dialog: Usunięcie całej subskrypcji -->
+        <string name="dialog_delete_sub_title">Trwałe usunięcie</string>
+        <string name="dialog_delete_sub_desc">Czy na pewno chcesz permanentnie usunąć tę subskrypcję? Spowoduje to całkowite wyczyszczenie jej z historii i wykresów finansowych.</string>
+        <string name="dialog_delete_sub_confirm">Usuń trwale</string>
+
+        <!-- Sekcja Trial Banner -->
+        <string name="trial_banner_title">Aktywny okres próbny (Trial)</string>
+        <string name="trial_banner_desc_default">Trwa promocyjny okres rozliczeniowy.</string>
+        <string name="trial_banner_future_price">Przyszła cena regularna: %1$s</string>
 
 
 </resources>

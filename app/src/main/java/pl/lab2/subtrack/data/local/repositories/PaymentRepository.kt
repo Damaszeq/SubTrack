@@ -29,6 +29,9 @@ interface PaymentRepository {
      */
     suspend fun insertPayment(payment: PaymentHistoryEntity)
 
+    suspend fun updatePayment(payment: PaymentHistoryEntity)
+    suspend fun deletePayment(payment: PaymentHistoryEntity)
+
     suspend fun deletePaymentsBeforeDate(subscriptionId: Long, date: Long)
 }
 
@@ -47,4 +50,12 @@ class OfflinePaymentRepository(private val paymentHistoryDao: PaymentHistoryDao)
 
     override suspend fun deletePaymentsBeforeDate(subscriptionId: Long, date: Long) =
         paymentHistoryDao.deletePaymentsBeforeDate(subscriptionId, date)
+
+    override suspend fun updatePayment(payment: PaymentHistoryEntity) {
+        paymentHistoryDao.updatePayment(payment)
+    }
+
+    override suspend fun deletePayment(payment: PaymentHistoryEntity) {
+        paymentHistoryDao.deletePayment(payment)
+    }
 }

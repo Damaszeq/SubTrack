@@ -220,4 +220,37 @@
     <string name="currency_format_integer_pln">%.0f zł</string>
     <string name="currency_per_month_format_pln">%.2f zł / mc</string>
 
+        <!-- Subscription details section -->
+        <string name="save">Save</string>
+        <string name="cancel">Cancel</string>
+
+        <string name="btn_archive">End and archive</string>
+        <string name="btn_unarchive">Reactivate service</string>
+        <string name="label_price_trial">Trial period price</string>
+
+        <string name="sub_status_ended">Subscription ended: </string>
+        <string name="label_trial_end">Trial end date: </string>
+
+        <string name="label_next_regular_price">Then: %1$s / %2$s</string>
+        <string name="swipe_delete_desc">Delete payment</string>
+
+        <!-- Dialog: Edit payment -->
+        <string name="dialog_edit_payment_title">Edit payment amount</string>
+        <string name="dialog_edit_payment_desc">Enter the adjusted amount for the payment on %1$s:</string>
+        <string name="dialog_edit_payment_label">Amount (PLN)</string>
+
+        <!-- Dialog: Delete payment from history -->
+        <string name="dialog_delete_payment_title">Delete payment?</string>
+        <string name="dialog_delete_payment_desc">Are you sure you want to delete this payment record from %1$s?</string>
+
+        <!-- Dialog: Delete entire subscription -->
+        <string name="dialog_delete_sub_title">Permanent deletion</string>
+        <string name="dialog_delete_sub_desc">Are you sure you want to permanently delete this subscription? This will completely clear it from history and financial charts.</string>
+        <string name="dialog_delete_sub_confirm">Delete permanently</string>
+
+        <!-- Trial Banner Section -->
+        <string name="trial_banner_title">Active Trial Period</string>
+        <string name="trial_banner_desc_default">Promotional billing period is currently active.</string>
+        <string name="trial_banner_future_price">Future regular price: %1$s</string>
+
 </resources>

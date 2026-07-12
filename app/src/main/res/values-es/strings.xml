@@ -3,4 +3,234 @@
     <string name="currency_format_pln">%.2f zł</string>
     <string name="currency_format_integer_pln">%.0f zł</string>
     <string name="currency_per_month_format_pln">%.2f zł / mc</string>
+        <!-- Sección de detalles de suscripción -->
+        <string name="save">Guardar</string>
+        <string name="cancel">Cancelar</string>
+        <string name="delete">Eliminar</string>
+        <string name="btn_archive">Finalizar y archivar</string>
+        <string name="btn_unarchive">Reactivar servicio</string>
+        <string name="label_price_trial">Precio de período de prueba</string>
+        <string name="label_start_date">Fecha de inicio</string>
+        <string name="sub_status_ended">Suscripción finalizada: </string>
+        <string name="label_trial_end">Fin del período de prueba: </string>
+        <string name="label_next_payment">Próximo pago: </string>
+        <string name="label_next_regular_price">Después: %1$s / %2$s</string>
+        <string name="swipe_delete_desc">Eliminar pago</string>
+
+        <!-- Diálogo: Editar pago -->
+        <string name="dialog_edit_payment_title">Editar monto del pago</string>
+        <string name="dialog_edit_payment_desc">Ingrese el monto corregido para el pago del día %1$s:</string>
+        <string name="dialog_edit_payment_label">Monto (PLN)</string>
+
+        <!-- Diálogo: Eliminar pago del historial -->
+        <string name="dialog_delete_payment_title">¿Eliminar pago?</string>
+        <string name="dialog_delete_payment_desc">¿Está seguro de que desea eliminar este registro de pago del día %1$s?</string>
+
+        <!-- Diálogo: Eliminar suscripción completa -->
+        <string name="dialog_delete_sub_title">Eliminación permanente</string>
+        <string name="dialog_delete_sub_desc">¿Está seguro de que desea eliminar permanentemente esta suscripción? Esto la borrará por completo del historial y de los gráficos financieros.</string>
+        <string name="dialog_delete_sub_confirm">Eliminar permanentemente</string>
+
+        <!-- Sección de banner de prueba -->
+        <string name="trial_banner_title">Período de prueba activo (Trial)</string>
+        <string name="trial_banner_desc_default">El período de facturación promocional está activo.</string>
+        <string name="trial_banner_future_price">Futuro precio regular: %1$s</string>
+
+        <string name="settings">Ajustes</string>
+        <string name="monthly_balance">Balance mensual</string>
+        <string name="app_name">SubTrack</string>
+        <string name="settings_auth">Configuración</string>
+        <string name="add_subscription">Añadir suscripción</string>
+        <string name="total_sum_label">Suma total</string>
+        <string name="placeholder_price">0.00 PLN</string>
+        <string name="placeholder_service_name">Nombre de la suscripción</string>
+        <string name="placeholder_plan">Plan / Ciclo</string>
+        <string name="currency_suffix">PLN</string>
+        <string name="details_title">Detalles</string>
+        <string name="back_desc">Volver</string>
+        <string name="edit_desc">Editar</string>
+        <string name="delete_desc">Eliminar</string>
+
+        <string name="label_total_price">Precio total</string>
+        <string name="label_cycle">Ciclo</string>
+
+        <string name="label_subaccounts">Subcuentas</string>
+        <string name="label_payment_history">Historial de pagos</string>
+
+        <string name="mock_service_name">Netflix</string>
+        <string name="mock_category">Streaming de Video</string>
+        <string name="mock_price">43.00 PLN</string>
+        <string name="mock_cycle">Mes</string>
+        <string name="mock_next_date">2024-05-12</string>
+        <string name="mock_user_main">Tú (Principal)</string>
+        <string name="mock_user_other">王明</string>
+        <string name="mock_sub_price">21.50 PLN</string>
+        <string name="pie_chart_label_monthly">MENSUAL</string>
+        <string name="currency_format_pie">%.2f €</string>
+
+        <string name="notifications_title">Notificaciones</string>
+
+        <string name="settings_header">Ajustes de recordatorios</string>
+        <string name="alerts_header">Próximas alertas</string>
+
+        <string name="notify_3days_title">3 días antes del vencimiento</string>
+        <string name="notify_3days_sub">Recordatorio previo predeterminado</string>
+        <string name="notify_24h_title">24 horas antes</string>
+        <string name="notify_24h_sub">Último aviso antes del pago</string>
+
+        <string name="dynamic_msg_payment">En %1$d día se cargará un importe de %2$s por la suscripción %3$s.</string>
+        <string name="dynamic_msg_trial">Tu período de prueba gratuito en %1$s termina mañana.</string>
+        <string name="subscription_notifications_label">Notificaciones de pago</string>
+        <string name="yes">SÍ</string>
+        <string name="no">NO</string>
+
+        <string name="custom_settings_title">Ajustes personalizados</string>
+        <string name="custom_settings_sub">Añadir plazos de recordatorio personalizados</string>
+
+        <string name="mock_notification_desc">Recordatorio: Pago en 3 días</string>
+
+        <string name="add_sub_title">Detalles de la suscripción</string>
+
+        <string name="header_service_info">Información del servicio</string>
+        <string name="label_service_name">Nombre del servicio</string>
+        <string name="label_category">Categoría</string>
+        <string name="placeholder_category">ej. Streaming de Audio</string>
+        <string name="label_total_price_field">Precio total</string>
+        <string name="currency_pln">PLN</string>
+
+        <string name="header_payment_type">Tipo de pago</string>
+        <string name="payment_cyclic">Recurrente</string>
+        <string name="payment_one_time">Pago único</string>
+        <string name="label_billing_period">Período de facturación</string>
+
+        <string name="period_monthly">Cada mes</string>
+        <string name="period_yearly">Cada año</string>
+        <string name="period_30days">Cada 30 días</string>
+        <string name="period_quarterly">Cada trimestre</string>
+
+
+        <string name="label_end_date">Fecha de finalización</string>
+        <string name="placeholder_date">AAAA-MM-DD</string>
+        <string name="support_end_date">Día de vencimiento del acceso</string>
+
+        <string name="checkbox_subaccounts">Tiene subcuentas</string>
+        <string name="label_user">Usuario</string>
+        <string name="label_price">Precio</string>
+        <string name="btn_add_subaccount">Añadir otra subcuenta</string>
+
+        <string name="btn_save_subscription">Añadir suscripción</string>
+        <string name="en">es</string>
+        <string name="details">Detalles</string>
+        <string name="back">Atrás</string>
+        <string name="edit">Editar</string>
+
+        <string name="subscription_not_found">Suscripción no encontrada</string>
+        <string name="payment_history">Historial de pagos</string>
+        <string name="status_paid">Pagado</string>
+        <string name="status_unpaid">No pagado</string>
+
+        <string name="price_format">%1$.2f PLN</string>
+        <string name="minus_price_format">-%1$.2f PLN</string>
+        <string name="settings_title">Ajustes</string>
+        <string name="theme_section_title">Seleccionar tema de la aplicación</string>
+        <string name="theme_system">Sistema</string>
+        <string name="theme_light">Claro</string>
+        <string name="theme_dark">Oscuro</string>
+        <string name="language_section_title">Seleccionar idioma</string>
+        <string name="lang_polish">Polski</string>
+        <string name="lang_english">English</string>
+        <string name="payment_today">¡Pago hoy!</string>
+        <string name="payment_tomorrow">Pago mañana</string>
+        <string name="payment_in_days">Pago en %1$d días</string>
+        <string name="payment_date_format">Pago: %1$s</string>
+
+        <string name="choose_service_label">Seleccionar servicio de la lista:</string>
+        <string name="hint_select_service_first">Primero seleccione un servicio arriba</string>
+        <string name="hint_select_plan">Seleccionar plan</string>
+        <string name="label_price_with_currency">Precio (PLN)</string>
+
+        <string name="cycle_week">Semana</string>
+        <string name="cycle_month">Mes</string>
+        <string name="cycle_quarter">Trimestre</string>
+        <string name="cycle_year">Año</string>
+
+        <string name="preset_plan_format">%1$s (%2$.2f PLN)</string>
+        <string name="btn_cancel">Cancelar</string>
+        <string name="btn_save">Guardar</string>
+        <string name="notifications_empty">No hay nuevas notificaciones.</string>
+        <string name="trigger_push_desc">Simular Push</string>
+
+        <string name="system_channel_name">Alertas de SubTrack</string>
+        <string name="system_channel_desc">Canal de notificaciones para renovaciones de suscripciones</string>
+
+        <string name="time_today">Hoy</string>
+        <string name="time_yesterday">Ayer</string>
+        <string name="time_2_days_ago">Hace 2 días</string>
+        <string name="time_3_days_ago">Hace 3 días</string>
+
+        <string name="mock_title_payment_tomorrow">¡Pago hoy o mañana!</string>
+        <string name="mock_msg_netflix">En 1 día se cargará un importe de %1$s PLN por la suscripción a Netflix.</string>
+
+        <string name="mock_title_payment_approaching">Se aproxima un pago</string>
+        <string name="mock_msg_spotify">En 3 días se cargará un importe de %1$s PLN por la suscripción a Spotify.</string>
+
+        <string name="mock_title_trial_ending">¡Fin del período de prueba!</string>
+        <string name="mock_msg_youtube">Tu período de prueba gratuito en YouTube Premium termina mañana.</string>
+
+        <string name="mock_title_price_update">Precios actualizados</string>
+        <string name="mock_msg_system">SubTrack introduce nuevas funciones de sincronización en la nube.</string>
+        <string name="total_monthly_expenses">Total de gastos (mensual)</string>
+        <string name="lang_chinesse">Chino</string>
+
+        <string name="tag_entertainment">Entretenimiento</string>
+        <string name="tag_productivity">Productividad</string>
+        <string name="tag_gaming">Gaming</string>
+        <string name="tag_shopping">Compras y Envíos</string>
+        <string name="tag_education">Educación</string>
+        <string name="tag_news">Noticias e Información</string>
+        <string name="tag_health">Deporte y Salud</string>
+        <string name="tag_automotive">Automoción</string>
+
+        <string name="plan_basic">Básico</string>
+        <string name="plan_standard">Estándar</string>
+        <string name="plan_premium">Premium</string>
+        <string name="plan_premium_4k">Premium 4K</string>
+        <string name="plan_with_ads">Con anuncios</string>
+        <string name="plan_no_ads">Sin anuncios</string>
+        <string name="plan_monthly">Mensual</string>
+        <string name="plan_yearly">Anual</string>
+        <string name="plan_individual">Individual</string>
+        <string name="plan_student">Estudiante</string>
+        <string name="plan_family">Familiar</string>
+
+        <string name="stats_title">Estadísticas</string>
+        <string name="stats_history">Historial de gastos</string>
+        <string name="stats_tab_subscriptions">Servicios</string>
+        <string name="stats_tab_categories">Categorías</string>
+        <string name="stats_yearly_forecast">PREVISIÓN ANUAL</string>
+        <string name="stats_active_subs">SERVICIOS ACTIVOS</string>
+        <string name="stats_used_cats">CATEGORÍAS USADAS</string>
+        <string name="stats_highest_cost">Coste más alto</string>
+        <string name="stats_most_expensive_cat">Categoría más cara</string>
+        <string name="stats_subs_structure">Estructura de gastos</string>
+        <string name="stats_cat_structure">Desglose por categorías</string>
+        <string name="stats_percent_format">%.1f%% del presupuesto total</string>
+
+        <string name="plan_free_delivery">Envío gratuito</string>
+
+        <string name="trial_badge">PERÍODO DE PRUEBA (TRIAL)</string>
+        <string name="trial_ends_today">Termina hoy</string>
+        <string name="trial_ends_tomorrow">Termina mañana</string>
+        <string name="trial_ends_in_days">Termina en %1$d días</string>
+        <string name="tag_lifestyle">Estilo de vida</string>
+        <string name="mark_all_as_read_desc">Marcar todo como leído</string>
+        <string name="on">Activado</string>
+        <string name="off">Desactivado</string>
+        <string name="chart_title_spending_over_time">Gastos a lo largo del tiempo</string>
+        <string name="currency_format">%d PLN</string>
+        <string name="lang_spanish">Español</string>
+        <string name="settings_default_notifications">Notificaciones predeterminadas</string>
+        <string name="settings_notifications_question">¿Cuándo desea recibir el recordatorio predeterminado?</string>
+        <string name="settings_hours_format">%1$d horas</string>
+        <string name="settings_days_format">%1$d días antes</string>
 </resources>
