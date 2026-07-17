@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -309,7 +310,13 @@ fun SubscriptionItem(
         }
     }
 
-    val daysLeft = remember(subscription.nextPaymentDate) {
+    // Określenie, czy subskrypcja zacznie się dopiero w przyszłości
+    val isFutureSub = remember(subscription.startDate) {
+        subscription.startDate > System.currentTimeMillis()
+    }
+
+    // Obliczenie dni pozostałych do rozpoczęcia (lub płatności)
+    val daysLeft = remember(subscription.nextPaymentDate, subscription.startDate, isFutureSub) {
         val todayCal = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
@@ -317,8 +324,10 @@ fun SubscriptionItem(
             set(Calendar.MILLISECOND, 0)
         }
 
+        val targetDate = if (isFutureSub) subscription.startDate else subscription.nextPaymentDate
+
         val subCal = Calendar.getInstance().apply {
-            timeInMillis = subscription.nextPaymentDate
+            timeInMillis = targetDate
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
@@ -330,18 +339,33 @@ fun SubscriptionItem(
     }
 
     val dateFormatter = remember { java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()) }
-    val formattedDate = dateFormatter.format(java.util.Date(subscription.nextPaymentDate))
+    val formattedTargetDate = dateFormatter.format(
+        java.util.Date(if (isFutureSub) subscription.startDate else subscription.nextPaymentDate)
+    )
 
-    val cardColors = if (subscription.isTrial) {
-        CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.12f))
-    } else {
-        CardDefaults.outlinedCardColors()
+    // Dynamiczna stylizacja kart (Priorytetyzacja: Przyszły start > Okres Próbny > Standard)
+    val cardColors = when {
+        isFutureSub -> {
+            CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.12f))
+        }
+        subscription.isTrial -> {
+            CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.12f))
+        }
+        else -> {
+            CardDefaults.outlinedCardColors()
+        }
     }
 
-    val cardBorder = if (subscription.isTrial) {
-        BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f))
-    } else {
-        CardDefaults.outlinedCardBorder()
+    val cardBorder = when {
+        isFutureSub -> {
+            BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+        }
+        subscription.isTrial -> {
+            BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f))
+        }
+        else -> {
+            CardDefaults.outlinedCardBorder()
+        }
     }
 
     OutlinedCard(
@@ -354,7 +378,33 @@ fun SubscriptionItem(
         border = cardBorder
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            if (subscription.isTrial) {
+            // Dodanie plakietek statusu na górze karty
+            if (isFutureSub) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = RoundedCornerShape(6.dp),
+                    modifier = Modifier.padding(bottom = 12.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp),
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = stringResource(id = R.string.future_badge),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+                }
+            } else if (subscription.isTrial) {
                 Surface(
                     color = MaterialTheme.colorScheme.tertiary,
                     contentColor = MaterialTheme.colorScheme.onTertiary,
@@ -387,47 +437,62 @@ fun SubscriptionItem(
                 Spacer(modifier = Modifier.width(16.dp))
 
                 Column(horizontalAlignment = Alignment.End) {
-                    // POPRAWKA: Przekazujemy aktualną cenę triala (np. 0.00 PLN lub 1.00 PLN) ze zmiennej subscription.price
                     Text(
                         text = String.format(Locale.US, "%.2f PLN", subscription.price),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (subscription.isTrial) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface
+                        color = when {
+                            isFutureSub -> MaterialTheme.colorScheme.primary
+                            subscription.isTrial -> MaterialTheme.colorScheme.tertiary
+                            else -> MaterialTheme.colorScheme.onSurface
+                        }
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    val paymentText = if (subscription.isTrial) {
-                        when {
-                            daysLeft == 0 -> stringResource(id = R.string.trial_ends_today)
-                            daysLeft == 1 -> stringResource(id = R.string.trial_ends_tomorrow)
-                            daysLeft < 0 -> "Zakończono okres próbny"
-                            else -> stringResource(id = R.string.trial_ends_in_days, daysLeft)
+                    // Konfiguracja tekstów płatności/startu
+                    val paymentText = when {
+                        isFutureSub -> {
+                            when {
+                                daysLeft == 0 -> stringResource(id = R.string.future_starts_today)
+                                daysLeft == 1 -> stringResource(id = R.string.future_starts_tomorrow)
+                                daysLeft < 0 -> "Rozpoczęto"
+                                else -> stringResource(id = R.string.future_starts_in_days, daysLeft)
+                            }
                         }
-                    } else if (daysLeft <= 3) {
-                        when {
-                            daysLeft == 0 -> stringResource(id = R.string.payment_today)
-                            daysLeft == 1 -> stringResource(id = R.string.payment_tomorrow)
-                            daysLeft < 0 -> "Termin minął"
-                            else -> stringResource(id = R.string.payment_in_days, daysLeft)
+                        subscription.isTrial -> {
+                            when {
+                                daysLeft == 0 -> stringResource(id = R.string.trial_ends_today)
+                                daysLeft == 1 -> stringResource(id = R.string.trial_ends_tomorrow)
+                                daysLeft < 0 -> "Zakończono okres próbny"
+                                else -> stringResource(id = R.string.trial_ends_in_days, daysLeft)
+                            }
                         }
-                    } else {
-                        stringResource(id = R.string.payment_date_format, formattedDate)
+                        daysLeft <= 3 -> {
+                            when {
+                                daysLeft == 0 -> stringResource(id = R.string.payment_today)
+                                daysLeft == 1 -> stringResource(id = R.string.payment_tomorrow)
+                                daysLeft < 0 -> "Termin minął"
+                                else -> stringResource(id = R.string.payment_in_days, daysLeft)
+                            }
+                        }
+                        else -> {
+                            stringResource(id = R.string.payment_date_format, formattedTargetDate)
+                        }
                     }
 
-                    val paymentColor = if (subscription.isTrial) {
-                        MaterialTheme.colorScheme.tertiary
-                    } else if (daysLeft <= 3) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
+                    val paymentColor = when {
+                        isFutureSub -> MaterialTheme.colorScheme.primary
+                        subscription.isTrial -> MaterialTheme.colorScheme.tertiary
+                        daysLeft <= 3 -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
                     }
 
                     Text(
                         text = paymentText,
                         style = MaterialTheme.typography.labelSmall,
                         color = paymentColor,
-                        fontWeight = if (daysLeft <= 3 || subscription.isTrial) FontWeight.SemiBold else FontWeight.Normal,
+                        fontWeight = if (daysLeft <= 3 || subscription.isTrial || isFutureSub) FontWeight.SemiBold else FontWeight.Normal,
                         maxLines = 1
                     )
                 }

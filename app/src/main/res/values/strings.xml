@@ -227,6 +227,10 @@
 
         <string name="label_next_regular_price">Następnie: %1$s / %2$s</string>
         <string name="swipe_delete_desc">Usuń płatność</string>
+    <string name="future_badge">Zaplanowana</string>
+    <string name="future_starts_today">Startuje dzisiaj!</string>
+    <string name="future_starts_tomorrow">Startuje jutro</string>
+    <string name="future_starts_in_days">Startuje za %1$d dni</string>
 
         <!-- Dialog: Edycja płatności -->
         <string name="dialog_edit_payment_title">Edytuj kwotę płatności</string>
@@ -246,6 +250,9 @@
         <string name="trial_banner_title">Aktywny okres próbny (Trial)</string>
         <string name="trial_banner_desc_default">Trwa promocyjny okres rozliczeniowy.</string>
         <string name="trial_banner_future_price">Przyszła cena regularna: %1$s</string>
+    <!-- Sekcja Future Banner (Subskrypcja zaplanowana) -->
+    <string name="future_banner_title">Zaplanowana subskrypcja</string>
+    <string name="future_banner_desc">Ta usługa rozpocznie się %1$s. Pierwsza opłata zostanie automatycznie zarejestrowana w dniu startu.</string>
 
 
 </resources>

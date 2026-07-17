@@ -216,6 +216,13 @@
     <string name="currency_format_pln">%.2f zł</string>
     <string name="currency_format_integer_pln">%.0f zł</string>
     <string name="currency_per_month_format_pln">%.2f zł / mc</string>
+    <string name="future_badge">已计划</string>
+    <string name="future_starts_today">今天开始启用！</string>
+    <string name="future_starts_tomorrow">明天开始启用</string>
+    <string name="future_starts_in_days">将在 %1$d 天后启用</string>
+    <!-- 未来订阅横幅 (未开始的订阅) -->
+    <string name="future_banner_title">待启用的计划订阅</string>
+    <string name="future_banner_desc">该服务将于 %1$s 启用。系统将在启用当天自动生成并记录首笔账单。</string>
 
         <!-- 订阅详情区域 -->
         <string name="save">保存</string>

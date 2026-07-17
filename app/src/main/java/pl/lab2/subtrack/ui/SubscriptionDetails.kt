@@ -51,7 +51,7 @@ fun SubscriptionDetailsScreen(
     val subscription = remember(subId, viewModel.subscriptions.collectAsState().value, viewModel.archivedSubscriptions.collectAsState().value) {
         viewModel.getSubscriptionById(subId ?: "")
     }
-
+    val isFutureSub = subscription != null && subscription.startDate > System.currentTimeMillis()
     val isArchived = subscription?.status == SubscriptionStatus.ARCHIVED
 
     val realPayments by if (subscription != null) {
@@ -442,9 +442,46 @@ fun SubscriptionDetailsScreen(
                 }
             }
 
+// --- BANER DLA SUBSKRYPCJI Z PRZYSZŁĄ DATĄ ROZPOCZĘCIA ---
+            item {
+                if (!isArchived && isFutureSub) {
+                    OutlinedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.outlinedCardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
+                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+                    ) {
+                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Schedule, // Ikona zegarka/planowania
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(end = 12.dp)
+                            )
+                            Column {
+                                Text(
+                                    text = stringResource(id = R.string.future_banner_title),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = stringResource(id = R.string.future_banner_desc, dateFormatter.format(Date(subscription.startDate))),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             // --- BANER INFORMACYJNY DLA TRYBU TRIAL ---
             item {
-                if (!isArchived) {
+                // Pokazujemy baner Trial tylko, jeśli subskrypcja już się rozpoczęła
+                if (!isArchived && !isFutureSub) {
                     AnimatedVisibility(visible = subscription.isTrial) {
                         OutlinedCard(
                             modifier = Modifier.fillMaxWidth(),

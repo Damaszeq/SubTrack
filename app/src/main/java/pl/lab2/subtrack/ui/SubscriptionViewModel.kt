@@ -180,8 +180,9 @@ class SubscriptionViewModel(
 
     val totalMonthlyCost: StateFlow<Double> = subscriptions
         .map { list ->
+            val now = System.currentTimeMillis()
             list
-                .filter { it.status == SubscriptionStatus.ACTIVE }
+                .filter { it.status == SubscriptionStatus.ACTIVE && it.startDate <= now } // POPRAWKA: Tylko rozpoczęte subskrypcje
                 .sumOf { it.monthlyEquivalent }
         }
         .stateIn(
@@ -192,13 +193,16 @@ class SubscriptionViewModel(
 
     val pieChartData: StateFlow<List<PieChartEntry>> = subscriptions
         .map { subList ->
-            subList.mapIndexed { index, sub ->
-                PieChartEntry(
-                    name = sub.name,
-                    value = sub.monthlyEquivalent,
-                    color = premiumPalette[index % premiumPalette.size]
-                )
-            }
+            val now = System.currentTimeMillis()
+            subList
+                .filter { it.startDate <= now }
+                .mapIndexed { index, sub ->
+                    PieChartEntry(
+                        name = sub.name,
+                        value = sub.monthlyEquivalent,
+                        color = premiumPalette[index % premiumPalette.size]
+                    )
+                }
         }
         .stateIn(
             scope = viewModelScope,
@@ -208,9 +212,12 @@ class SubscriptionViewModel(
 
     val categoryChartData: StateFlow<List<PieChartEntry>> = subscriptions
         .map { subList ->
+            val now = System.currentTimeMillis()
+            val activeSubList = subList.filter { it.startDate <= now }
+
             val categoryMap = mutableMapOf<String, Double>()
 
-            subList.forEach { sub ->
+            activeSubList.forEach { sub ->
                 val subTags = sub.tags
                 if (subTags.isEmpty()) {
                     categoryMap["Inne"] = categoryMap.getOrDefault("Inne", 0.0) + sub.monthlyEquivalent
@@ -259,7 +266,14 @@ class SubscriptionViewModel(
         val finalNotificationSetting = if (isNotificationEnabled) "1 dzień przed" else "Wyłączone"
 
         viewModelScope.launch {
-            val nextDate = calculateNextPaymentDate(startDate, billingCycle)
+            val now = System.currentTimeMillis()
+
+            // POPRAWKA: Jeśli data rozpoczęcia jest w przyszłości, kolejną płatnością jest dokładnie data startu
+            val nextDate = if (startDate > now) {
+                startDate
+            } else {
+                calculateNextPaymentDate(startDate, billingCycle)
+            }
 
             val entity = UserSubscription(
                 id = 0,
@@ -280,38 +294,43 @@ class SubscriptionViewModel(
             val tagEntities = tags.map { Tag(name = it) }
             val insertedSubscriptionId = subscriptionRepository.insertSubscriptionWithTags(entity, tagEntities, tagDao)
 
-            val historyCalendar = Calendar.getInstance().apply {
-                timeInMillis = startDate
-                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-            }
-
-            val targetNextPaymentDate = Calendar.getInstance().apply {
-                timeInMillis = nextDate
-                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-            }
-
-            var isFirstPeriod = true
-
-            while (historyCalendar.before(targetNextPaymentDate)) {
-                // Pierwsza opłata rejestruje cenę triala (parsedPrice), kolejne już cenę regularną
-                val actualAmount = if (isTrial && !isFirstPeriod) regularPrice else parsedPrice
-
-                val paymentRecord = PaymentHistoryEntity(
-                    id = 0,
-                    subscriptionId = insertedSubscriptionId,
-                    paymentDate = historyCalendar.timeInMillis,
-                    amountPaid = actualAmount
-                )
-
-                paymentRepository.insertPayment(paymentRecord)
-                isFirstPeriod = false
-
-                when (billingCycle.lowercase(Locale.ROOT)) {
-                    "tydzień", "week", "weekly" -> historyCalendar.add(Calendar.WEEK_OF_YEAR, 1)
-                    "kwartał", "quarter" -> historyCalendar.add(Calendar.MONTH, 3)
-                    "rok", "year", "yearly", "roczny", "rocznie" -> historyCalendar.add(Calendar.YEAR, 1)
-                    else -> historyCalendar.add(Calendar.MONTH, 1)
+            // POPRAWKA: Płatności generujemy wstecznie TYLKO wtedy, gdy subskrypcja już się rozpoczęła
+            if (startDate <= now) {
+                val historyCalendar = Calendar.getInstance().apply {
+                    timeInMillis = startDate
+                    set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
                 }
+
+                val targetNextPaymentDate = Calendar.getInstance().apply {
+                    timeInMillis = nextDate
+                    set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                }
+
+                var isFirstPeriod = true
+
+                while (historyCalendar.before(targetNextPaymentDate)) {
+                    // Pierwsza opłata rejestruje cenę triala (parsedPrice), kolejne już cenę regularną
+                    val actualAmount = if (isTrial && !isFirstPeriod) regularPrice else parsedPrice
+
+                    val paymentRecord = PaymentHistoryEntity(
+                        id = 0,
+                        subscriptionId = insertedSubscriptionId,
+                        paymentDate = historyCalendar.timeInMillis,
+                        amountPaid = actualAmount
+                    )
+
+                    paymentRepository.insertPayment(paymentRecord)
+                    isFirstPeriod = false
+
+                    when (billingCycle.lowercase(Locale.ROOT)) {
+                        "tydzień", "week", "weekly" -> historyCalendar.add(Calendar.WEEK_OF_YEAR, 1)
+                        "kwartał", "quarter" -> historyCalendar.add(Calendar.MONTH, 3)
+                        "rok", "year", "yearly", "roczny", "rocznie" -> historyCalendar.add(Calendar.YEAR, 1)
+                        else -> historyCalendar.add(Calendar.MONTH, 1)
+                    }
+                }
+            } else {
+                Log.d("SUBTRACK_ADD", "Zaplanowana subskrypcja na przyszłość: Pominięto natychmiastowe generowanie płatności.")
             }
         }
     }
@@ -342,7 +361,8 @@ class SubscriptionViewModel(
             calendar.set(java.util.Calendar.MILLISECOND, 0)
             val todayStart = calendar.timeInMillis
 
-            val nextDate = if (startDate >= todayStart) {
+            // POPRAWKA: Zabezpieczenie dla przyszłych dat startu podczas edycji
+            val nextDate = if (startDate > todayStart) {
                 startDate
             } else {
                 calculateNextPaymentDate(startDate, billingCycle)
@@ -443,6 +463,11 @@ class SubscriptionViewModel(
             set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
         }
 
+        // POPRAWKA: Jeśli data rozpoczęcia jest w przyszłości, kolejną płatnością jest po prostu ta data (nie dodajemy cyklu)
+        if (calendar.after(today)) {
+            return startDate
+        }
+
         while (!calendar.after(today)) {
             when (billingCycle.lowercase(Locale.ROOT)) {
                 "tydzień", "week", "weekly" -> calendar.add(Calendar.WEEK_OF_YEAR, 1)
@@ -481,13 +506,20 @@ class SubscriptionViewModel(
 
         val resultList = mutableListOf<TimeChartEntry>()
 
+        // Ustawiamy runCal na początek wybranego okresu wstecz
         val runCal = Calendar.getInstance().apply {
             add(Calendar.MONTH, -period.months + 1)
         }
 
         val historyGroupedByMonth = payments.groupBy { sdfKey.format(Date(it.paymentDate)) }
 
-        while (!runCal.after(calendar)) {
+        // Tworzymy czytelny warunek pętli: wykonuj tak długo, aż runCal przejdzie do miesiąca PO aktualnym miesiącu
+        val targetYear = calendar.get(Calendar.YEAR)
+        val targetMonth = calendar.get(Calendar.MONTH)
+
+        while (runCal.get(Calendar.YEAR) < targetYear ||
+            (runCal.get(Calendar.YEAR) == targetYear && runCal.get(Calendar.MONTH) <= targetMonth)) {
+
             val monthKey = sdfKey.format(runCal.time)
             val label = sdfLabel.format(runCal.time)
 

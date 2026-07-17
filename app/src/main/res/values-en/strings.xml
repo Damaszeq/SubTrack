@@ -233,6 +233,10 @@
 
         <string name="label_next_regular_price">Then: %1$s / %2$s</string>
         <string name="swipe_delete_desc">Delete payment</string>
+    <string name="future_badge">Scheduled</string>
+    <string name="future_starts_today">Starts today!</string>
+    <string name="future_starts_tomorrow">Starts tomorrow</string>
+    <string name="future_starts_in_days">Starts in %1$d days</string>
 
         <!-- Dialog: Edit payment -->
         <string name="dialog_edit_payment_title">Edit payment amount</string>
@@ -252,5 +256,8 @@
         <string name="trial_banner_title">Active Trial Period</string>
         <string name="trial_banner_desc_default">Promotional billing period is currently active.</string>
         <string name="trial_banner_future_price">Future regular price: %1$s</string>
+    <!-- Future Banner Section (Scheduled Subscription) -->
+    <string name="future_banner_title">Scheduled Subscription</string>
+    <string name="future_banner_desc">This service will start on %1$s. The first payment will be automatically recorded on the start date.</string>
 
 </resources>

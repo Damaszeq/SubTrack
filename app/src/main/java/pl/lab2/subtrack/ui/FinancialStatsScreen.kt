@@ -344,42 +344,56 @@ fun FinanceTimeChart(
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
-        Box(modifier = Modifier.fillMaxWidth().height(140.dp)) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val availableWidth = size.width
-                val spacing = 32f
-                val totalSpacing = spacing * (data.size - 1)
-                val barWidth = (availableWidth - totalSpacing) / data.size
-
-                data.forEachIndexed { i, e ->
-                    val barHeight = (e.amount / maxAmount * size.height).toFloat() * animateProgress
-                    drawRoundRect(
-                        color = barColor,
-                        topLeft = Offset(i * (barWidth + spacing), size.height - barHeight),
-                        size = Size(barWidth, barHeight),
-                        cornerRadius = CornerRadius(12f, 12f)
-                    )
-                }
-            }
-        }
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp),
+            // Zmieniamy na Center, aby przy wąskich słupkach wykres był wyśrodkowany na ekranie
+            horizontalArrangement = Arrangement.Center
         ) {
-            data.forEach { e ->
+            data.forEach { entry ->
                 Column(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        // Ograniczamy maksymalną szerokość kolumny (np. do 48.dp),
+                        // dzięki czemu przy 3 miesiącach słupki nie będą gigantyczne
+                        .widthIn(max = 48.dp)
+                        .fillMaxHeight(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp) // Zwiększony odstęp boczny słupka
+                    ) {
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            val barHeight = (entry.amount / maxAmount * size.height).toFloat() * animateProgress
+                            drawRoundRect(
+                                color = barColor,
+                                topLeft = Offset(0f, size.height - barHeight),
+                                size = Size(size.width, barHeight),
+                                cornerRadius = CornerRadius(8f, 8f)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     Text(
-                        text = e.label,
+                        text = entry.label,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        textAlign = TextAlign.Center
                     )
+
                     Text(
-                        text = String.format(locale, stringResource(id = R.string.currency_format_integer_pln), e.amount),
+                        text = String.format(locale, stringResource(id = R.string.currency_format_integer_pln), entry.amount),
                         style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        textAlign = TextAlign.Center
                     )
                 }
             }

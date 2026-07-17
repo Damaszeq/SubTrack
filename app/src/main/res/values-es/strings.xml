@@ -50,6 +50,13 @@
         <string name="back_desc">Volver</string>
         <string name="edit_desc">Editar</string>
         <string name="delete_desc">Eliminar</string>
+    <string name="future_badge">Programada</string>
+    <string name="future_starts_today">¡Comienza hoy!</string>
+    <string name="future_starts_tomorrow">Comienza mañana</string>
+    <string name="future_starts_in_days">Comienza en %1$d días</string>
+    <!-- Sección de banner futuro (Suscripción programada) -->
+    <string name="future_banner_title">Suscripción programada</string>
+    <string name="future_banner_desc">Este servicio comenzará el %1$s. El primer pago se registrará automáticamente en la fecha de inicio.</string>
 
         <string name="label_total_price">Precio total</string>
         <string name="label_cycle">Ciclo</string>
